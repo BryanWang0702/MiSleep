@@ -13,7 +13,6 @@ there is a list for samples.
 """
 
 import unittest
-import pytest
 from MiSleep.io.signal_io import load_mat, load_edf, load_npz, \
     write_npz, write_edf, write_mat
 from time import time
