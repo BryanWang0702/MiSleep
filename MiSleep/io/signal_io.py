@@ -5,7 +5,7 @@
 @Author: Xueqiang Wang
 @Date: 2024/2/21
 @Description:  Load data from data file and write data into file
-                Support .mat, .edf, .npy currently
+                Support .mat, .edf, .npz currently
 
                 Load functions will return the signal data and the name for each channel:
                 signal_data, channel_names, sf
@@ -17,6 +17,7 @@
 from hdf5storage import loadmat, savemat
 import pyedflib
 import datetime
+import numpy as np
 
 
 def load_mat(data_path):
@@ -39,7 +40,7 @@ def load_mat(data_path):
     raw_data = list(loadmat(data_path).values())[-1]
     try:
         signals = raw_data['signals'][0, 0]
-        channels = list(raw_data['channels'][0, 0])
+        channels = [item for each in raw_data['channels'][0][0][0] for item in each]
         channels = [each.strip() for each in channels]
     except Exception:
         # If matlab data is not a struct, or have no channel field, will arise this
@@ -106,9 +107,9 @@ def load_edf(data_path):
         Name for each channel
     """
 
-    signals, signal_headers = pyedflib.highlevel.read_edf(data_path)
+    signals, signal_headers, _ = pyedflib.highlevel.read_edf(edf_file=data_path)
 
-    return signals, [each['label'] for each in signal_headers]
+    return np.array(signals), [each['label'] for each in signal_headers]
 
 
 def write_edf(signals, channels, sf, edf_file=None):
@@ -143,4 +144,48 @@ def write_edf(signals, channels, sf, edf_file=None):
             'prefilter': ''
         } for ch in channels]
 
-    pyedflib.highlevel.write_edf(edf_file=edf_file, signals=signals, signal_headers=signal_headers)
+    pyedflib.highlevel.write_edf(edf_file=edf_file, signals=signals,
+                                 signal_headers=signal_headers)
+
+
+def load_npz(data_path):
+    """
+    Load data from .npz file, which was stored with numpy
+    Why npz not npy? We need to store signals and channels respectively, .npz can do this
+    Parameters
+    ----------
+    data_path :
+
+    Returns
+    -------
+
+    """
+
+    npy_data = np.load(data_path)
+    try:
+        signals = npy_data['signals']
+        channels = npy_data['channels']
+
+        return signals, channels
+    except KeyError:
+        print('Ensure your .npz data was stored by MiSleep')
+        return
+
+
+def write_npz(signals, channels, npz_file=None):
+    """
+    Write data into .npz file
+    Parameters
+    ----------
+    signals :
+    channels :
+    npz_file :
+
+    Returns
+    -------
+
+    """
+    if npz_file is None:
+        npz_file = f"./{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}_saved.npz"
+
+    np.savez(npz_file, signals=signals, channels=channels)
