@@ -6,11 +6,14 @@
 @Date: 2024/2/21
 @Description:   Load data from .mat or .edf file, write data into .mat file
                 Data contains: Signals, channel name, sampling frequency
+
+                20240228: USe MiData format for the final output
 """
 
 from hdf5storage import loadmat, savemat
 import pyedflib
 import datetime
+from .base import MiData
 
 
 def load_mat(data_path):
@@ -41,7 +44,7 @@ def load_mat(data_path):
         sf = list(raw_data['sf'][0, 0][0].astype(float))
         signals = [raw_data[each][0, 0][0] for each in channels]
 
-        return signals, channels, sf
+        return MiData(signals=signals, channels=channels, sf=sf)
     except ValueError:
         try:
             channels = [item for each in raw_data['channels'][0][0][0] for item in each]
@@ -57,7 +60,7 @@ def load_mat(data_path):
             print("We recommend to save signals in different fields and "
                   "channel name/sample frequency save respectively")
 
-        return signals, channels, sf
+        return MiData(signals=signals, channels=channels, sf=sf)
 
 
 def write_mat(signals, channels, sf, mat_file=None):
@@ -110,5 +113,6 @@ def load_edf(data_path):
 
     signals, signal_headers, _ = pyedflib.highlevel.read_edf(edf_file=data_path)
 
-    return signals, [each['label'] for each in signal_headers], \
-        [each['sample_frequency'] for each in signal_headers]
+    return MiData(signals=signals,
+                  channels=[each['label'] for each in signal_headers],
+                  sf=[each['sample_frequency'] for each in signal_headers])
