@@ -9,6 +9,7 @@
 import math
 
 import numpy as np
+from MiSleep.utils.signals import signal_filter
 
 
 class MiData:
@@ -55,17 +56,6 @@ class MiData:
         self._n_channels = len(self._channels)
         self._sf = sf
 
-    @property
-    def sf(self, idx=None):
-        """Sample frequency of all signal channels, with idx (start from zero) for specified channel"""
-        if idx is None:
-            return self._sf
-        if idx >= self._n_channels:
-            raise IndexError(
-                f"Index {idx} can't larger than the signal channels number {self._n_channels}")
-
-        return self._sf[idx]
-
     def differential(self, chan1=None, chan2=None):
         """Do differential with specified channels (chan1 - chan2)"""
         if chan1 is None or chan2 is None:
@@ -103,6 +93,34 @@ class MiData:
             raise ValueError(
                 f"Mapping should be a dict which map old channel name to a new one, got {type(mapping)}")
 
+    def filter(self, chans=None, btype='lowpass', low=0.5, high=30):
+        """
+        Filter the specified channel(s) and get new channels
+        Parameters
+        ----------
+        chans : list
+            Channels to be filtered, should be a list of channels
+        btype : {'bandpass', 'lowpass', 'highpass', 'bandstop'}, optional
+            The type of filter.  Default is 'lowpass'.
+        low : float
+        high : float
+        """
+        if chans is None or not isinstance(chans, list):
+            raise ValueError(f"'chans' should be a list of channel names, got {type(chans)}")
+
+        for chan in chans:
+            if chan in self._channels:
+                chan_idx = self._channels.index('chans')
+                filtered_data, fname = signal_filter(
+                    data=self._signals[chan_idx],
+                    btype=btype, sf=self._sf[chan_idx], low=low, high=high)
+                self._signals.append(filtered_data)
+                self._channels.append(f"{chan}_{fname}")
+                self._sf.append(self._sf[chan_idx])
+                self._n_channels = len(self._channels)
+            else:
+                raise IndexError(f"{chan} channel is not in the signal channels ({self._channels})")
+
     @property
     def duration(self):
         """Duration of the signal recording"""
@@ -117,3 +135,14 @@ class MiData:
     def channels(self):
         """Channel name for each signal channel"""
         return self._channels
+
+    @property
+    def sf(self, idx=None):
+        """Sample frequency of all signal channels, with idx (start from zero) for specified channel"""
+        if idx is None:
+            return self._sf
+        if idx >= self._n_channels:
+            raise IndexError(
+                f"Index {idx} can't larger than the signal channels number {self._n_channels}")
+
+        return self._sf[idx]
