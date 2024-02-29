@@ -13,7 +13,7 @@
 from hdf5storage import loadmat, savemat
 import pyedflib
 import datetime
-from base import MiData
+from MiSleep.io.base import MiData
 
 
 def load_mat(data_path):
@@ -27,12 +27,8 @@ def load_mat(data_path):
 
     Returns
     -------
-    signal_data : list
-        List of n arrays, each dimension is one row (channel) data
-    channel_name : list
-        Name for each channel
-    sf : list
-        Sampling frequency of each channel
+    midata : MiData
+        MiSleep data format data
     """
 
     raw_data = list(loadmat(data_path).values())[-1]
@@ -103,12 +99,8 @@ def load_edf(data_path):
 
     Returns
     -------
-    signal_data : ndarray
-        Data in n-D array, each dimension is one row (channel) data
-    channel_name : list
-        Name for each channel
-    sf : list
-        List of sampling frequency for each channel
+    midata : MiData
+        MiSleep data format data
     """
 
     signals, signal_headers, _ = pyedflib.highlevel.read_edf(edf_file=data_path)

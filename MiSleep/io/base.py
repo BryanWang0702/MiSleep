@@ -46,12 +46,12 @@ class MiData:
             raise ValueError(f"Sample frequency should be a list of float, got {type(sf)}")
 
         # Verify the duration of each signal channel, and modify to a same integer duration in second
-        temp_duration = set([math.floor(len(signals[idx]) / each) for idx, each in sf])
+        temp_duration = set([math.floor(len(signals[idx]) / each) for idx, each in enumerate(sf)])
         if len(temp_duration) != 1:
             raise ValueError(f"The duration of all signal channels have 1 seconds in difference.")
 
         self._duration = list(temp_duration)[0]
-        self._signals = [signals[idx][:self._duration * each] for idx, each in sf]
+        self._signals = [signals[idx][:int(self._duration * each)] for idx, each in enumerate(sf)]
         self._channels = channels
         self._n_channels = len(self._channels)
         self._sf = sf
@@ -86,9 +86,11 @@ class MiData:
             Map the old channel name to a new channel name
         """
         if isinstance(mapping, dict):
-            for idx, each in enumerate(self._channels):
-                if each in mapping.keys():
-                    self._channels[idx] = mapping[each]
+            for each in mapping.keys():
+                if each not in self._channels:
+                    raise IndexError(f"{each} is not in the signal channel list ({self._channels})")
+                else:
+                    self._channels[self._channels.index(each)] = mapping[each]
         else:
             raise ValueError(
                 f"Mapping should be a dict which map old channel name to a new one, got {type(mapping)}")
@@ -110,7 +112,7 @@ class MiData:
 
         for chan in chans:
             if chan in self._channels:
-                chan_idx = self._channels.index('chans')
+                chan_idx = self._channels.index(chan)
                 filtered_data, fname = signal_filter(
                     data=self._signals[chan_idx],
                     btype=btype, sf=self._sf[chan_idx], low=low, high=high)
