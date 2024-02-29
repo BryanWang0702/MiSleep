@@ -11,6 +11,5 @@
 """
 
 
-def differential():
-    """Do differential between signals"""
+
 

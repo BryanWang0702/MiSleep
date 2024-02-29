@@ -4,7 +4,7 @@
 @File: base.py
 @Author: Xueqiang Wang
 @Date: 2024/2/28
-@Description:  
+@Description:
 """
 import math
 
@@ -66,23 +66,28 @@ class MiData:
 
         return self._sf[idx]
 
-    @property
-    def duration(self):
-        """Duration of the signal recording"""
-        return self._duration
+    def differential(self, chan1=None, chan2=None):
+        """Do differential with specified channels (chan1 - chan2)"""
+        if chan1 is None or chan2 is None:
+            raise ValueError(f"Specify two channel names to do differential")
 
-    @property
-    def signals(self):
-        """Signals data field"""
-        return self._signals
+        if chan1 not in self._channels:
+            raise IndexError(f"{chan1} is not in the channel names ({self._channels})")
 
-    @property
-    def channels(self):
-        """Channel name for each signal channel"""
-        return self._channels
+        if chan2 not in self._channels:
+            raise IndexError(f"{chan2} is not in the channel names ({self._channels})")
 
-    @channels.setter
-    def channels(self, mapping):
+        chan1_idx = self._channels.index(chan1)
+        chan2_idx = self._channels.index(chan2)
+        if self._signals[chan1_idx].shape[0] != self._signals[chan2_idx].shape[0]:
+            raise ValueError(f"Channel {chan1} and channel {chan2} got different dimension to do differential "
+                             f"({self._signals[chan1_idx].shape} and {self._signals[chan2_idx].shape})")
+        self._signals.append(self._signals[chan1_idx] - self._signals[chan2_idx])
+        self._channels.append(f"{chan1}_{chan2}_diff")
+        self._sf.append(self._sf[chan1_idx])
+        self._n_channels = len(self._channels)
+
+    def rename_channels(self, mapping):
         """
         Set new channels name with mapping
         Parameters
@@ -97,3 +102,18 @@ class MiData:
         else:
             raise ValueError(
                 f"Mapping should be a dict which map old channel name to a new one, got {type(mapping)}")
+
+    @property
+    def duration(self):
+        """Duration of the signal recording"""
+        return self._duration
+
+    @property
+    def signals(self):
+        """Signals data field"""
+        return self._signals
+
+    @property
+    def channels(self):
+        """Channel name for each signal channel"""
+        return self._channels

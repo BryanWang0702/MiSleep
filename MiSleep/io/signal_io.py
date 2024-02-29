@@ -7,13 +7,13 @@
 @Description:   Load data from .mat or .edf file, write data into .mat file
                 Data contains: Signals, channel name, sampling frequency
 
-                20240228: USe MiData format for the final output
+                20240228: Use MiData format for the final output
 """
 
 from hdf5storage import loadmat, savemat
 import pyedflib
 import datetime
-from .base import MiData
+from base import MiData
 
 
 def load_mat(data_path):
