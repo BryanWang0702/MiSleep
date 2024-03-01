@@ -61,8 +61,8 @@ def plot_signals(midata, chans=None, start_end=None):
     fig = plt.figure()
     axs = fig.subplots(nrows=len(channels), ncols=1)
     fig.set_tight_layout(True)
-    fig.tight_layout(pad=0, w_pad=0, h_pad=0)
-    fig.subplots_adjust(hspace=0, left=0.03, right=0.97, top=0.97, bottom=0.07)  # Adjust subplots
+    fig.tight_layout(h_pad=0, w_pad=0)
+    fig.subplots_adjust(hspace=0)  # Adjust subplots
 
     for i in range(len(channels)):
         axs[i].plot(signals[i], color='black', linewidth=0.5)
@@ -70,8 +70,8 @@ def plot_signals(midata, chans=None, start_end=None):
         axs[i].set_ylim(ymin=-y_lim, ymax=y_lim)
         axs[i].set_xlim(xmin=0, xmax=len(signals[i]))
         axs[i].xaxis.set_ticks([])
-        axs[i].yaxis.set_ticks([0], ['{:.2e}'.format(y_lim)], rotation=90)
-        axs[i].set_ylabel(channels[i])
+        axs[i].yaxis.set_ticks([])
+        axs[i].set_ylabel(f"{channels[i]}\n{y_lim:.2e}")
     axs[-1].set_xticks([int(each*sf[-1]) for each in
                         range(0, start_end[1]-start_end[0], 5)],
                        range(start_end[0], start_end[1], 5),
