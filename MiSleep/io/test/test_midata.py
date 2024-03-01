@@ -14,20 +14,20 @@ from MiSleep.io.signal_io import load_edf, load_mat
 
 class TestMiData(unittest.TestCase):
     def test_load(self):
-        midata = load_mat(r'../../datasets/test_format_mat.mat')
+        midata = load_mat(r'./datasets/test_format_mat.mat')
         print(midata.sf)
         print(midata.channels)
         print(len(midata.signals))
         print(midata._duration)
 
-        midata = load_edf(r'../../datasets/learn-nsrr01.edf')
+        midata = load_edf(r'./datasets/learn-nsrr01.edf')
         print(midata.sf)
         print(midata.channels)
         print(len(midata.signals))
         print(midata._duration)
 
     def test_rename_channel(self):
-        midata = load_edf(r'../../datasets/learn-nsrr01.edf')
+        midata = load_edf(r'./datasets/learn-nsrr01.edf')
         print(midata.channels)
         midata.rename_channels({'PR': 'UNKNOW'})
         print(midata.channels)

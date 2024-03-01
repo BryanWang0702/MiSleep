@@ -21,9 +21,9 @@ class MiData:
         if isinstance(signals, list) or isinstance(signals, np.ndarray):
             for each in signals:
                 if not isinstance(each, np.ndarray):
-                    raise ValueError(f"Signals should be a list of arrays or ndarray, got {type(each)}")
+                    raise TypeError(f"Signals should be a list of arrays or ndarray, got {type(each)}")
         else:
-            raise ValueError(f"Signals should be a list of arrays or ndarray, got {type(signals)}")
+            raise TypeError(f"Signals should be a list of arrays or ndarray, got {type(signals)}")
 
         if isinstance(channels, list):
             if len(channels) != len(signals):
@@ -31,9 +31,9 @@ class MiData:
                     f"Length of channels {len(channels)} don't match the length of signals ({len(signals)})")
             for each in channels:
                 if not isinstance(each, str):
-                    raise ValueError(f"Channels should be a list of strings, got {type(each)}")
+                    raise TypeError(f"Channels should be a list of strings, got {type(each)}")
         else:
-            raise ValueError(f"Channels should be a list of strings, got {type(channels)}")
+            raise TypeError(f"Channels should be a list of strings, got {type(channels)}")
 
         if isinstance(sf, list):
             if len(sf) != len(signals):
@@ -41,14 +41,14 @@ class MiData:
                     f"Length of sample frequency {len(sf)} don't match the length of signals ({len(signals)})")
             for each in sf:
                 if not isinstance(each, float):
-                    raise ValueError(f"Sample frequency should be a list of float, got {type(each)}")
+                    raise TypeError(f"Sample frequency should be a list of float, got {type(each)}")
         else:
-            raise ValueError(f"Sample frequency should be a list of float, got {type(sf)}")
+            raise TypeError(f"Sample frequency should be a list of float, got {type(sf)}")
 
         # Verify the duration of each signal channel, and modify to a same integer duration in second
         temp_duration = set([math.floor(len(signals[idx]) / each) for idx, each in enumerate(sf)])
         if len(temp_duration) != 1:
-            raise ValueError(f"The duration of all signal channels have 1 seconds in difference.")
+            raise ValueError(f"The duration of all signal channels are different.")
 
         self._duration = list(temp_duration)[0]
         self._signals = [signals[idx][:int(self._duration * each)] for idx, each in enumerate(sf)]
@@ -72,10 +72,8 @@ class MiData:
         if self._signals[chan1_idx].shape[0] != self._signals[chan2_idx].shape[0]:
             raise ValueError(f"Channel {chan1} and channel {chan2} got different dimension to do differential "
                              f"({self._signals[chan1_idx].shape} and {self._signals[chan2_idx].shape})")
-        self._signals.append(self._signals[chan1_idx] - self._signals[chan2_idx])
-        self._channels.append(f"{chan1}_{chan2}_diff")
-        self._sf.append(self._sf[chan1_idx])
-        self._n_channels = len(self._channels)
+        self.add(self._signals[chan1_idx] - self._signals[chan2_idx],
+                 f"{chan1}_{chan2}_diff", self._sf[chan1_idx])
 
     def rename_channels(self, mapping):
         """
@@ -92,7 +90,7 @@ class MiData:
                 else:
                     self._channels[self._channels.index(each)] = mapping[each]
         else:
-            raise ValueError(
+            raise TypeError(
                 f"Mapping should be a dict which map old channel name to a new one, got {type(mapping)}")
 
     def filter(self, chans=None, btype='lowpass', low=0.5, high=30):
@@ -108,7 +106,7 @@ class MiData:
         high : float
         """
         if chans is None or not isinstance(chans, list):
-            raise ValueError(f"'chans' should be a list of channel names, got {type(chans)}")
+            raise TypeError(f"'chans' should be a list of channel names, got {type(chans)}")
 
         for chan in chans:
             if chan in self._channels:
@@ -116,12 +114,50 @@ class MiData:
                 filtered_data, fname = signal_filter(
                     data=self._signals[chan_idx],
                     btype=btype, sf=self._sf[chan_idx], low=low, high=high)
-                self._signals.append(filtered_data)
-                self._channels.append(f"{chan}_{fname}")
-                self._sf.append(self._sf[chan_idx])
-                self._n_channels = len(self._channels)
+                self.add(filtered_data, f"{chan}_{fname}", self._sf[chan_idx])
             else:
                 raise IndexError(f"{chan} channel is not in the signal channels ({self._channels})")
+
+    def add(self, signal, channel, sf):
+        """
+        Add signal, and other information
+        Parameters
+        ----------
+        signal : array
+        channel : str
+        sf : float
+        Returns
+        -------
+
+        """
+        _duration = math.floor(len(signal) / sf)
+        if _duration != self._duration:
+            raise ValueError(f"The new added signal channel's duration ({_duration}) "
+                             f"is different with original signals ({self._duration})")
+
+        if not isinstance(channel, str):
+            raise TypeError(f"Channel name should be a string, got {type(channel)}")
+        if not isinstance(sf, int) or not isinstance(sf, float):
+            raise TypeError(f"Sample frequency should be a float, got {type(sf)}")
+
+        self._signals.append(signal)
+        self._channels.append(channel)
+        self._n_channels = len(self._channels)
+        self._sf.append(sf)
+
+    def delete(self, channel=None):
+        """Delete channel by channel name"""
+        if not isinstance(channel, str):
+            raise TypeError(f"Channel name should be a string, got {type(channel)}")
+        if channel not in self._channels:
+            raise IndexError(f"Channel name {channel} is not in the signal channels ({self._channels})")
+        if len(self._channels) == 1:
+            raise ValueError(f"Channel {channel} is the last channel of signal data, you can't delete it")
+        chan_idx = self._channels.index(channel)
+        self._signals.pop(chan_idx)
+        self._channels.pop(chan_idx)
+        self._sf.pop(chan_idx)
+        self._n_channels = len(self._channels)
 
     @property
     def duration(self):

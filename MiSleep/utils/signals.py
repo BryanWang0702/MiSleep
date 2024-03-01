@@ -10,7 +10,7 @@ import numpy as np
 from scipy import signal
 
 
-def signal_filter(data, sf=256., btype='lowpass', low=0.5, high=30):
+def signal_filter(data, sf=256., btype='lowpass', low=0.5, high=30.):
     """
     Filter the signal data, use butter filter in scipy
 
@@ -27,7 +27,7 @@ def signal_filter(data, sf=256., btype='lowpass', low=0.5, high=30):
         filter. Default is 0.5.
     high : float
         Lower than this frequency can pass, used in 'lowpass' and 'bandpass'
-        filyer. Default is 30.
+        filter. Default is 30.
 
     Returns
     ----------
@@ -35,6 +35,15 @@ def signal_filter(data, sf=256., btype='lowpass', low=0.5, high=30):
         Filtered data of signal data using butter filter
 
     """
+    if not isinstance(sf, float) or not isinstance(sf, int):
+        raise TypeError(f"Sample frequency should be a float, got {type(sf)}")
+
+    if not isinstance(low, float) or not isinstance(low, int):
+        raise TypeError(f"Low threshold should be a float, got {type(sf)}")
+
+    if not isinstance(high, float) or not isinstance(high, int):
+        raise TypeError(f"high threshold should be a float, got {type(sf)}")
+
     if btype == 'lowpass':
         fnorm = high / (.5 * sf)
         fname = f"{btype}_{high}"
