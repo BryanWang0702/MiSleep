@@ -15,7 +15,8 @@ from MiSleep.viz.signals import plot_signals
 class TestMiData(unittest.TestCase):
     def test_viz(self):
         midata = load_mat(r'./datasets/test_format_mat.mat')
-        fig, axs = plot_signals(midata=midata, start_end=[30, 56])
+        cropped_midata = midata.crop([30, 56])
+        fig, axs = plot_signals(midata=cropped_midata)
         fig.show()
 
         # midata = load_edf(r'./datasets/learn-nsrr01.edf')

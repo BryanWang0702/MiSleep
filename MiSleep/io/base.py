@@ -159,6 +159,34 @@ class MiData:
         self._sf.pop(chan_idx)
         self._n_channels = len(self._channels)
 
+    def crop(self, time_period):
+        """Crop a period of signals with the time_period (in seconds)"""
+        if not isinstance(time_period, list):
+            raise TypeError(f"'time_period' should be a list of two positive integers, got {type(time_period)}")
+
+        if len(time_period) != 2:
+            raise ValueError(f"'time_period' should be a list of two positive integers, got {time_period}")
+
+        if time_period[0] < 0 or time_period[1] < 0 or \
+                not isinstance(time_period[0], int) or not isinstance(time_period[1], int):
+            raise TypeError(f"'time_period' should be a list of two positive integers, "
+                            f"got {type(time_period[0])} and {type(time_period[1])} ")
+
+        if time_period[0] >= time_period[1]:
+            raise ValueError(f"End time (got {time_period[1]}) of 'time_period' should "
+                             f"be larger than start time (got {time_period[0]})")
+
+        if time_period[1] > self._duration:
+            time_period[1] = self._duration
+
+        signals = [self.signals[idx][int(time_period[0]*each): int(time_period[1]*each)]
+                   for idx, each in enumerate(self.sf)]
+        channels = self.channels
+        sf = self.sf
+
+        cropped_midata = MiData(signals=signals, channels=channels, sf=sf)
+        return cropped_midata
+
     @property
     def duration(self):
         """Duration of the signal recording"""
