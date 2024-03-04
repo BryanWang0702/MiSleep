@@ -41,7 +41,7 @@ def load_mat(data_path):
         signals = [raw_data[each][0, 0][0] for each in channels]
 
         return MiData(signals=signals, channels=channels, sf=sf)
-    except ValueError:
+    except Exception:
         try:
             channels = [item for each in raw_data['channels'][0][0][0] for item in each]
             channels = [each.strip() for each in channels]
@@ -51,7 +51,7 @@ def load_mat(data_path):
             # If matlab data is not a struct, or have no channel field, will arise this
             signals = raw_data
             channels = [f'ch{each + 1}' for each in range(raw_data.shape[0])]
-            sf = [256 for _ in range(raw_data.shape[0])]
+            sf = [305.1758 for _ in range(raw_data.shape[0])]
 
             print("We recommend to save signals in different fields and "
                   "channel name/sample frequency save respectively")

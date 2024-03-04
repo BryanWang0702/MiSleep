@@ -16,9 +16,6 @@ class TestMiData(unittest.TestCase):
     def test_viz(self):
         midata = load_mat(r'./datasets/test_format_mat.mat')
         cropped_midata = midata.crop([30, 56])
-        fig, axs = plot_signals(midata=cropped_midata)
+        fig, axs = plot_signals(signals=cropped_midata.signals, ch_names=cropped_midata.channels,
+                                sf=cropped_midata.sf)
         fig.show()
-
-        # midata = load_edf(r'./datasets/learn-nsrr01.edf')
-        # fig, axs = plot_signals(midata=midata, start_end=[30, 60])
-        # fig.show()

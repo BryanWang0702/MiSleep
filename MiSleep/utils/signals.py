@@ -16,8 +16,8 @@ def signal_filter(data, sf=256., btype='lowpass', low=0.5, high=30.):
 
     Parameters
     ----------
-    data : 1D-array
-        Signal data need to be filtered.
+    data : ndarray
+        1D array. Signal data need to be filtered.
     sf : float
         Sampling frequency of signal data. Default is 305.
     btype : {'lowpass', 'highpass', 'bandpass'}, optional
@@ -33,15 +33,16 @@ def signal_filter(data, sf=256., btype='lowpass', low=0.5, high=30.):
     ----------
     filtered_data : 1D-array
         Filtered data of signal data using butter filter
+    fname : str
 
     """
-    if not isinstance(sf, float) or not isinstance(sf, int):
+    if not isinstance(sf, (int, float)):
         raise TypeError(f"Sample frequency should be a float, got {type(sf)}")
 
-    if not isinstance(low, float) or not isinstance(low, int):
+    if not isinstance(low, (int, float)):
         raise TypeError(f"Low threshold should be a float, got {type(sf)}")
 
-    if not isinstance(high, float) or not isinstance(high, int):
+    if not isinstance(high, (int, float)):
         raise TypeError(f"high threshold should be a float, got {type(sf)}")
 
     if btype == 'lowpass':

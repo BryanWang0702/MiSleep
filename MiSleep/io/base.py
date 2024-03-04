@@ -131,13 +131,13 @@ class MiData:
 
         """
         _duration = math.floor(len(signal) / sf)
-        if _duration != self._duration:
+        if np.abs(_duration - self._duration) > 10:
             raise ValueError(f"The new added signal channel's duration ({_duration}) "
                              f"is different with original signals ({self._duration})")
 
         if not isinstance(channel, str):
             raise TypeError(f"Channel name should be a string, got {type(channel)}")
-        if not isinstance(sf, int) or not isinstance(sf, float):
+        if not isinstance(sf, (int, float)):
             raise TypeError(f"Sample frequency should be a float, got {type(sf)}")
 
         self._signals.append(signal)
@@ -184,8 +184,29 @@ class MiData:
         channels = self.channels
         sf = self.sf
 
-        cropped_midata = MiData(signals=signals, channels=channels, sf=sf)
-        return cropped_midata
+        return MiData(signals=signals, channels=channels, sf=sf)
+
+    def pick_chs(self, ch_names):
+        """Pick specified channels"""
+        if ch_names is None or ch_names == []:
+            ch_names = self.channels
+
+        if not isinstance(ch_names, list):
+            raise TypeError(f"'ch_names' should be a list, got {type(ch_names)}")
+
+        signals = []
+        sf = []
+        channels = []
+        for chan in ch_names:
+            if chan in self.channels:
+                chan_idx = self.channels.index(chan)
+                signals.append(self.signals[chan_idx])
+                sf.append(self.sf[chan_idx])
+                channels.append(chan)
+            else:
+                raise IndexError(f"{chan} channel is not in the signal channels ({self.channels})")
+
+        return MiData(signals=signals, channels=channels, sf=sf)
 
     @property
     def duration(self):
