@@ -17,7 +17,7 @@ from scipy import signal
 class TestMiData(unittest.TestCase):
     def test_viz_spectrum(self):
         midata = load_mat(r'./datasets/test_format_mat.mat')
-        EEG_F_midata = midata.pick_chs(ch_names=['ch1'])
+        EEG_F_midata = midata.pick_chs(ch_names=['EEG_F'])
         freq, psd = spectrum(signal=EEG_F_midata.signals[0],
                              sf=EEG_F_midata.sf[0], win_sec=5)
         fig, ax = plot_spectrum(freq, psd)
@@ -25,7 +25,7 @@ class TestMiData(unittest.TestCase):
 
     def test_viz_spectrogram(self):
         midata = load_mat(r'./datasets/test_format_mat.mat')
-        EEG_F_midata = midata.pick_chs(ch_names=['ch3'])
+        EEG_F_midata = midata.pick_chs(ch_names=['EEG_F'])
 
         # EEG_F_midata.filter(chans=['ch1'], btype='bandpass', low=0.5, high=30)
         cropped = EEG_F_midata.crop(time_period=[0, 200])
