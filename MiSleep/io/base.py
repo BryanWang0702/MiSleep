@@ -18,6 +18,22 @@ class MiData:
     """
 
     def __init__(self, signals, channels, sf, time):
+        """
+
+        Parameters
+        ----------
+        signals : list
+            List of array, signal data
+        channels : list
+            List of string, channel name for each signal channel
+            e.g. ['EEG_F', 'EEG_P', 'EMG', 'REF']
+        sf : list
+            List of float, sample frequency of each signal channel
+            e.g. [256., 256., 256., 256.]
+        time : str
+            Time of data recording, string format
+            e.g. '20240228-19:45:00'
+        """
         if isinstance(signals, list) or isinstance(signals, np.ndarray):
             for each in signals:
                 if not isinstance(each, np.ndarray):
@@ -124,7 +140,7 @@ class MiData:
         Add signal, and other information
         Parameters
         ----------
-        signal : array
+        signal : list or array
         channel : str
         sf : float
         Returns
@@ -336,12 +352,3 @@ class MiAnnotation:
     @property
     def state_map(self):
         return self._state_map
-
-
-
-
-
-
-
-
-
