@@ -36,13 +36,13 @@ class TestMiData(unittest.TestCase):
         print(midata.channels)
 
     def test_differential(self):
-        midata = load_edf(r'../../datasets/learn-nsrr01.edf')
+        midata = load_edf(r'../../../datasets/learn-nsrr01.edf')
         # Not exist will raise IndexError
         midata.differential(chan1='SaO2', chan2='not_exist')
         # if sample frequency not match, can't do differential, raise ValueError
         midata.differential(chan1='SaO2', chan2='EEG')
 
     def test_filter(self):
-        midata = load_edf(r'../../datasets/learn-nsrr01.edf')
+        midata = load_edf(r'../../../datasets/learn-nsrr01.edf')
         # chans must be a list, even only one channel to filter
         midata.filter(chans=['EEG', 'EMG'], btype='bandstop', high=5)

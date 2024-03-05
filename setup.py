@@ -38,7 +38,7 @@ CLASSIFIERS = [
 ]
 
 try:
-    from setuptools import setup
+    from setuptools import setup, find_packages
 except ImportError:
     from distutils.core import setup
 
@@ -57,6 +57,7 @@ if __name__ == "__main__":
         download_url=DOWNLOAD_URL,
         install_requires=INSTALL_REQUIRES,
         include_package_data=True,
-        packages=PACKAGES,
+        packages=find_packages(),
+        package_dir={'misleep': 'misleep'},
         classifiers=CLASSIFIERS,
     )
