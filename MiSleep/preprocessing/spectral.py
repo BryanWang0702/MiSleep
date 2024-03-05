@@ -1,6 +1,6 @@
 # -*- coding: UTF-8 -*-
 """
-@Project: MiSleep_v2 
+@Project: misleep
 @File: spectral.py
 @Author: Xueqiang Wang
 @Date: 2024/3/4
@@ -10,7 +10,7 @@ import numpy as np
 from scipy.signal import welch, stft
 from scipy.integrate import simps
 
-from MiSleep.utils.signals import signal_filter
+from misleep.utils.signals import signal_filter
 
 
 def spectrum(signal, sf, band=None, relative=True, win_sec=5):

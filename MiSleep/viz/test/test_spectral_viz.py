@@ -1,6 +1,6 @@
 # -*- coding: UTF-8 -*-
 """
-@Project: MiSleep_v2 
+@Project: misleep
 @File: test_spectral_viz.py
 @Author: Xueqiang Wang
 @Date: 2024/3/4
@@ -8,9 +8,9 @@
 """
 import unittest
 
-from MiSleep.io.signal_io import load_mat, load_edf
-from MiSleep.preprocessing.spectral import spectrum, spectrogram
-from MiSleep.viz.spectral import plot_spectrum, plot_spectrogram
+from misleep.io.signal_io import load_mat, load_edf
+from misleep.preprocessing.spectral import spectrum, spectrogram
+from misleep.viz.spectral import plot_spectrum, plot_spectrogram
 from scipy import signal
 
 

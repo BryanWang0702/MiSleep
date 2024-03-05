@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
-Name: MiSleep
-Version: 0.1.0
+Name: misleep
+Version: 1.0.1
 Summary: MiSleep: Mice Sleep EEG/EMG visualization, scoring and analysis.
 Home-page: https://github.com/BryanWang0702/MiSleep/
 Download-URL: https://github.com/BryanWang0702/MiSleep/
@@ -27,3 +27,8 @@ Requires-Dist: hdf5storage
 
 # MiSleep
 MiSleep is for EEG/EMG signal processing and visualization
+
+## Get start
+```shell
+pip install misleep
+```

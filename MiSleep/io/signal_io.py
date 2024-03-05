@@ -1,6 +1,6 @@
 # -*- coding: UTF-8 -*-
 """
-@Project: MiSleep_v2 
+@Project: misleep
 @File: signal_io.py
 @Author: Xueqiang Wang
 @Date: 2024/2/21
@@ -13,7 +13,7 @@
 from hdf5storage import loadmat, savemat
 import pyedflib
 import datetime
-from MiSleep.io.base import MiData
+from misleep.io.base import MiData
 
 
 def load_mat(data_path):

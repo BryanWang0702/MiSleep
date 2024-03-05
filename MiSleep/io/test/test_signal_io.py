@@ -1,6 +1,6 @@
 # -*- coding: UTF-8 -*-
 """
-@Project: MiSleep_v2 
+@Project: misleep
 @File: test_signal_io.py
 @Author: Xueqiang Wang
 @Date: 2024/2/22
@@ -8,7 +8,7 @@
 """
 
 import unittest
-from MiSleep.io.signal_io import load_mat, load_edf, write_mat
+from misleep.io.signal_io import load_mat, load_edf, write_mat
 from time import time
 
 

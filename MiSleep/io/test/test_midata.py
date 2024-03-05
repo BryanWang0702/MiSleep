@@ -1,6 +1,6 @@
 # -*- coding: UTF-8 -*-
 """
-@Project: MiSleep_v2 
+@Project: misleep
 @File: test_midata.py
 @Author: Xueqiang Wang
 @Date: 2024/2/29
@@ -8,8 +8,8 @@
 """
 import unittest
 
-from MiSleep.io.base import MiData
-from MiSleep.io.signal_io import load_edf, load_mat
+from misleep.io.base import MiData
+from misleep.io.signal_io import load_edf, load_mat
 
 
 class TestMiData(unittest.TestCase):

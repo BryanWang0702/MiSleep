@@ -1,6 +1,6 @@
 # -*- coding: UTF-8 -*-
 """
-@Project: MiSleep_v2 
+@Project: misleep
 @File: base.py
 @Author: Xueqiang Wang
 @Date: 2024/2/28
@@ -9,7 +9,7 @@
 import math
 
 import numpy as np
-from MiSleep.utils.signals import signal_filter
+from misleep.utils.signals import signal_filter
 
 
 class MiData:

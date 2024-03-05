@@ -1,6 +1,6 @@
 # -*- coding: UTF-8 -*-
 """
-@Project: MiSleep_v2 
+@Project: misleep
 @File: channel.py
 @Author: Xueqiang Wang
 @Date: 2024/2/28
