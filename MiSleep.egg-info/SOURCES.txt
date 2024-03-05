@@ -1,9 +1,0 @@
-LICENSE
-README.md
-setup.py
-MiSleep/__init__.py
-MiSleep.egg-info/PKG-INFO
-MiSleep.egg-info/SOURCES.txt
-MiSleep.egg-info/dependency_links.txt
-MiSleep.egg-info/requires.txt
-MiSleep.egg-info/top_level.txt
