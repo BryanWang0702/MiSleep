@@ -1,0 +1,5 @@
+numpy>=1.18.1
+matplotlib
+scipy
+pyedflib
+hdf5storage
