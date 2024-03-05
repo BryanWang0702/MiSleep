@@ -17,7 +17,7 @@ class MiData:
     MiSleep data format, basically contains signals, channel name, channel sample frequency
     """
 
-    def __init__(self, signals, channels, sf):
+    def __init__(self, signals, channels, sf, time):
         if isinstance(signals, list) or isinstance(signals, np.ndarray):
             for each in signals:
                 if not isinstance(each, np.ndarray):
@@ -55,6 +55,7 @@ class MiData:
         self._channels = channels
         self._n_channels = len(self._channels)
         self._sf = sf
+        self._time = time
 
     def differential(self, chan1=None, chan2=None):
         """Do differential with specified channels (chan1 - chan2)"""
@@ -183,8 +184,9 @@ class MiData:
                    for idx, each in enumerate(self.sf)]
         channels = self.channels
         sf = self.sf
+        time = self.time
 
-        return MiData(signals=signals, channels=channels, sf=sf)
+        return MiData(signals=signals, channels=channels, sf=sf, time=time)
 
     def pick_chs(self, ch_names):
         """Pick specified channels"""
@@ -206,7 +208,7 @@ class MiData:
             else:
                 raise IndexError(f"{chan} channel is not in the signal channels ({self.channels})")
 
-        return MiData(signals=signals, channels=channels, sf=sf)
+        return MiData(signals=signals, channels=channels, sf=sf, time=self.time)
 
     @property
     def duration(self):
@@ -219,9 +221,14 @@ class MiData:
         return self._signals
 
     @property
-    def channels(self):
+    def channels(self, idx=None):
         """Channel name for each signal channel"""
-        return self._channels
+        if idx is None:
+            return self._channels
+        if idx >= self._n_channels:
+            raise IndexError(
+                f"Index {idx} can't larger than the signal channels number {self._n_channels}")
+        return self._channels[idx]
 
     @property
     def sf(self, idx=None):
@@ -233,3 +240,108 @@ class MiData:
                 f"Index {idx} can't larger than the signal channels number {self._n_channels}")
 
         return self._sf[idx]
+
+    @property
+    def time(self):
+        """Get data recording acquisition time"""
+        return self._time
+
+
+class MiAnnotation:
+    """
+    MiSleep annotation class
+    1 -- NREM
+    2 -- REM
+    3 -- Wake
+    4 -- Init
+    """
+    def __init__(self, sleep_state, marker=None, start_end=None, state_map=None):
+        """
+
+        Parameters
+        ----------
+        sleep_state : List
+            The length of sleep_state is the total second of the recording.
+            The content map should be defined in the state_map
+            [1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, ....]
+        marker : List, optional
+            Label of marker event, like 'injection', ...
+            e.g. [[1, 'injection'], [30, 'injection']]
+        start_end : List, optional
+            Label of start end event, like 'spindle', 'SWA', ...
+            e.g. [[1, 'spindle'], [2, 'spindle'], ...]
+        state_map : dict, optional
+            Dict of state mapping, map sleep_state content to a specific meaning
+            Default is {1: 'NREM', 2: 'REM', 3: 'Wake', 4: 'Init'}
+        """
+
+        if not isinstance(sleep_state, list):
+            raise TypeError(f"'sleep_state' should be a list, got {type(sleep_state)}")
+
+        if state_map is None:
+            self._state_map = {
+                1: 'NREM',
+                2: 'REM',
+                3: 'Wake',
+                4: 'Init'
+            }
+        else:
+            self._state_map = state_map
+
+        for each in sleep_state:
+            if each not in self._state_map.keys():
+                raise ValueError(f"Content {each} in the 'sleep_state' does not exist in {self._state_map}")
+
+        self._sleep_state = sleep_state
+        self._anno_length = len(sleep_state)
+
+        if marker is not None:
+            if not isinstance(marker, list):
+                raise TypeError(f"'marker' should be a list, got {type(marker)}")
+            self._marker = marker
+
+        if start_end is not None:
+            if not isinstance(start_end, list):
+                raise TypeError(f"'start_end' should be a list, got {type(start_end)}")
+            self._start_end = start_end
+
+    @property
+    def sleep_state(self, time_period=None):
+        """Return sleep state list (crop by time_period, e.g. [0, 100])"""
+        if time_period is None:
+            return self._sleep_state
+
+        return self._sleep_state[time_period[0]: time_period[1]]
+
+    @property
+    def marker(self, time_period=None):
+        """Get Marker list, can select by 'time_period'"""
+        if time_period is None:
+            return self._marker
+
+        return [each for each in self._marker if time_period[0] <= each[0] <= time_period[1]]
+
+    @property
+    def start_end(self, time_period=None):
+        """Get 'start_end' list, can select by 'time_period'"""
+        if time_period is None:
+            return self._start_end
+
+        return [each for each in self._start_end if time_period[0] <= each[0] <= time_period[1]]
+
+    @property
+    def anno_length(self):
+        return self._anno_length
+
+    @property
+    def state_map(self):
+        return self._state_map
+
+
+
+
+
+
+
+
+

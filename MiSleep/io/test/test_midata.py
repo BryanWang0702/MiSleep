@@ -14,7 +14,7 @@ from misleep.io.signal_io import load_edf, load_mat
 
 class TestMiData(unittest.TestCase):
     def test_load(self):
-        midata = load_mat(r'./datasets/test_format_mat.mat')
+        midata = load_mat(r'E:\workplace\EEGProcessing\00_DATA\nice_data\20240114_male2_nf.mat')
         print(midata.sf)
         print(midata.channels)
         print(len(midata.signals))
