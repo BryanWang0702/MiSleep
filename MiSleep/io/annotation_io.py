@@ -6,8 +6,8 @@
 @Date: 2024/3/6
 @Description:  Annotation io, default is for MiSleep annotation, `NAME.txt`
 """
-from misleep import MiAnnotation
-from misleep import marker2mianno, start_end2mianno, sleep_state2mianno
+from misleep.io.base import MiAnnotation
+from misleep.utils.annotation import marker2mianno, start_end2mianno, sleep_state2mianno
 
 
 def load_misleep_anno(file_path):

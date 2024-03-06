@@ -19,6 +19,7 @@ INSTALL_REQUIRES = [
     "scipy",
     "pyedflib",
     "hdf5storage",
+    "pyqt5"
 ]
 
 PACKAGES = [

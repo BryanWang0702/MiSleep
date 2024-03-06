@@ -9,3 +9,4 @@
 
 from .base import *
 from .signal_io import *
+from .annotation_io import *

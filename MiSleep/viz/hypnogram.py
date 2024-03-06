@@ -35,11 +35,8 @@ def plot_hypno(sleep_state, state_map=None):
     fig = plt.figure(figsize=(20, 3))
     ax = fig.subplots(nrows=1, ncols=1)
     ax.step(range(len(sleep_state)), sleep_state, where='mid', linewidth=1)
-    ax.set_ylim(0.5, max(state_map.keys())+0.5)
-    ax.set_xlim(0, len(sleep_state)-1)
-    ax.xaxis.set_ticks([])
+    ax.set_ylim(0.5, max(state_map.keys()) + 0.5)
+    ax.set_xlim(0, len(sleep_state) - 1)
     ax.yaxis.set_ticks(list(state_map.keys()), list(state_map.values()))
 
     return fig, ax
-
-

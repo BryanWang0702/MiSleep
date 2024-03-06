@@ -17,7 +17,7 @@ class MiData:
     MiSleep data format, basically contains signals, channel name, channel sample frequency
     """
 
-    def __init__(self, signals, channels, sf, time):
+    def __init__(self, signals, channels, sf, time, describe=None):
         """
 
         Parameters
@@ -33,6 +33,8 @@ class MiData:
         time : str
             Time of data recording, string format
             e.g. '20240228-19:45:00'
+        describe : str, optional
+            Description of data. Default is None
         """
         if isinstance(signals, list) or isinstance(signals, np.ndarray):
             for each in signals:
@@ -60,6 +62,14 @@ class MiData:
                     raise TypeError(f"Sample frequency should be a list of float, got {type(each)}")
         else:
             raise TypeError(f"Sample frequency should be a list of float, got {type(sf)}")
+
+        if describe is None:
+            self._describe = ''
+        else:
+            self._describe = describe
+
+        if not isinstance(self._describe, str):
+            raise TypeError(f"'describe' should be a string for data description, got {type(describe)}")
 
         # Verify the duration of each signal channel, and modify to a same integer duration in second
         temp_duration = set([math.floor(len(signals[idx]) / each) for idx, each in enumerate(sf)])
@@ -196,7 +206,7 @@ class MiData:
         if time_period[1] > self._duration:
             time_period[1] = self._duration
 
-        signals = [self.signals[idx][int(time_period[0]*each): int(time_period[1]*each)]
+        signals = [self.signals[idx][int(time_period[0] * each): int(time_period[1] * each)]
                    for idx, each in enumerate(self.sf)]
         channels = self.channels
         sf = self.sf
@@ -262,6 +272,11 @@ class MiData:
         """Get data recording acquisition time"""
         return self._time
 
+    @property
+    def describe(self):
+        """Get data description"""
+        return self._describe
+
 
 class MiAnnotation:
     """
@@ -271,6 +286,7 @@ class MiAnnotation:
     3 -- Wake
     4 -- Init
     """
+
     def __init__(self, sleep_state, marker=None, start_end=None, state_map=None):
         """
 

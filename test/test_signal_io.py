@@ -15,14 +15,14 @@ from time import time
 class TestSignalIO(unittest.TestCase):
     def test_load_mat_write_mat(self):
         """Test load_mat and write_mat"""
-        mat_path = r'../../../datasets/mat_from_mat.mat'
+        mat_path = r'../datasets/mat_from_mat_.mat'
         s = time()
-        signals, channels, sf = load_mat(data_path=mat_path)
+        midata = load_mat(data_path=mat_path)
         e = time()
         print(f"Load data from .mat file, cost {e-s} seconds\n"
-              f"Signals shape {len(signals)}, channels: {channels}, sampling frequency: {sf}")
+              f"Signals shape {len(midata.signals)}, channels: {midata.channels}, sampling frequency: {midata.sf}")
 
-        write_mat(signals, channels, sf, r'../../../datasets/mat_from_mat_.mat')
+        write_mat(midata.signals, midata.channels, midata.sf, midata.time, r'../datasets/mat_from_mat.mat')
         print('Saved to .mat successfully')
 
     def test_load_edf_write_mat(self):
