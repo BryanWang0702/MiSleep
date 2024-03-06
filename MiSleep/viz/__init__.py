@@ -9,3 +9,4 @@
 
 from .signals import *
 from .spectral import *
+from .hypnogram import *

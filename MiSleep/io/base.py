@@ -281,11 +281,11 @@ class MiAnnotation:
             The content map should be defined in the state_map
             [1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, ....]
         marker : List, optional
-            Label of marker event, like 'injection', ...
+            Label of single time point event, like 'injection', ...
             e.g. [[1, 'injection'], [30, 'injection']]
         start_end : List, optional
             Label of start end event, like 'spindle', 'SWA', ...
-            e.g. [[1, 'spindle'], [2, 'spindle'], ...]
+            e.g. [[1, 20, 'spindle'], [30, 50, 'SWA'], ...]
         state_map : dict, optional
             Dict of state mapping, map sleep_state content to a specific meaning
             Default is {1: 'NREM', 2: 'REM', 3: 'Wake', 4: 'Init'}
@@ -343,7 +343,7 @@ class MiAnnotation:
         if time_period is None:
             return self._start_end
 
-        return [each for each in self._start_end if time_period[0] <= each[0] <= time_period[1]]
+        return [each for each in self._start_end if time_period[0] <= each[0] and each[1] <= time_period[1]]
 
     @property
     def anno_length(self):

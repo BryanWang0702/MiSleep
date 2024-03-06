@@ -27,7 +27,7 @@ class TestSignalIO(unittest.TestCase):
 
     def test_load_edf_write_mat(self):
         """Test load_edf and write_mat"""
-        edf_path = r'../../../datasets/learn-nsrr01.edf'
+        edf_path = r'../datasets/learn-nsrr01.edf'
         s = time()
         signals, channels, sf = load_edf(data_path=edf_path)
         e = time()

@@ -11,7 +11,6 @@ import unittest
 from misleep.io.signal_io import load_mat, load_edf
 from misleep.preprocessing.spectral import spectrum, spectrogram
 from misleep.viz.spectral import plot_spectrum, plot_spectrogram
-from scipy import signal
 
 
 class TestMiData(unittest.TestCase):

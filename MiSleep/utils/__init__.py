@@ -8,3 +8,4 @@
 """
 
 from .signals import *
+from .annotation import *
