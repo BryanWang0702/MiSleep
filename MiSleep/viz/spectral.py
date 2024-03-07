@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def plot_spectrum(f, p, background=False):
+def plot_spectrum(f, p):
     """
 
     Parameters
@@ -20,12 +20,6 @@ def plot_spectrum(f, p, background=False):
         Frequency of spectrum
     p : List
         Power of each frequency bin
-    background : bool
-         Whether plot the background of each band
-         0.5~4  Delta
-         4~7    Theta
-         7~12   Alpha
-         12~30  Beta
     Returns
     -------
     fig :
@@ -40,20 +34,6 @@ def plot_spectrum(f, p, background=False):
     ax.set_xlim(0, f[-1])
     ax.set_xlabel("Frequency (Hz)")
     ax.set_ylabel("Power spectral density (Power/Hz)")
-
-    if background:
-        idx_delta = f[np.logical_and(f >= 0.5, f <= 4)]
-        idx_theta = f[np.logical_and(f >= 4, f <= 7)]
-        idx_alpha = f[np.logical_and(f >= 7, f <= 12)]
-        idx_beta = f[np.logical_and(f >= 12, f <= 30)]
-        ax.fill_between(idx_delta, [0] * len(idx_delta), [y_lim] * len(idx_delta),
-                        color='#ffe0c0')
-        ax.fill_between(idx_theta, [0] * len(idx_theta), [y_lim] * len(idx_theta),
-                        color='#ffffe0')
-        ax.fill_between(idx_alpha, [0] * len(idx_alpha), [y_lim] * len(idx_alpha),
-                        color='#ccf9e8')
-        ax.fill_between(idx_beta, [0] * len(idx_beta), [y_lim] * len(idx_beta),
-                        color='#c8def9')
 
     return fig, ax
 

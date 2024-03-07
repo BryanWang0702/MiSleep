@@ -3,3 +3,4 @@ matplotlib
 scipy
 pyedflib
 hdf5storage
+pyqt5
