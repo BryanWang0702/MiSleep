@@ -1,0 +1,630 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MiSleep</class>
+ <widget class="QMainWindow" name="MiSleep">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1196</width>
+    <height>981</height>
+   </rect>
+  </property>
+  <property name="font">
+   <font>
+    <stylestrategy>PreferAntialias</stylestrategy>
+   </font>
+  </property>
+  <property name="focusPolicy">
+   <enum>Qt::WheelFocus</enum>
+  </property>
+  <property name="windowTitle">
+   <string>MiSleep</string>
+  </property>
+  <property name="toolButtonStyle">
+   <enum>Qt::ToolButtonTextBesideIcon</enum>
+  </property>
+  <property name="animated">
+   <bool>true</bool>
+  </property>
+  <property name="documentMode">
+   <bool>true</bool>
+  </property>
+  <property name="tabShape">
+   <enum>QTabWidget::Rounded</enum>
+  </property>
+  <property name="dockNestingEnabled">
+   <bool>false</bool>
+  </property>
+  <property name="dockOptions">
+   <set>QMainWindow::AllowTabbedDocks|QMainWindow::AnimatedDocks|QMainWindow::GroupedDragging</set>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QGridLayout" name="gridLayout_3">
+    <item row="2" column="0">
+     <widget class="QListView" name="HyponArea">
+      <property name="minimumSize">
+       <size>
+        <width>700</width>
+        <height>100</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>16777215</width>
+        <height>130</height>
+       </size>
+      </property>
+      <property name="frameShape">
+       <enum>QFrame::NoFrame</enum>
+      </property>
+      <property name="movement">
+       <enum>QListView::Static</enum>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="0">
+     <widget class="QScrollBar" name="ScrollerBar">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="0">
+     <widget class="QListView" name="SignalArea">
+      <property name="minimumSize">
+       <size>
+        <width>700</width>
+        <height>500</height>
+       </size>
+      </property>
+      <property name="frameShape">
+       <enum>QFrame::NoFrame</enum>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Sunken</enum>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QDockWidget" name="LogDock">
+   <property name="minimumSize">
+    <size>
+     <width>150</width>
+     <height>190</height>
+    </size>
+   </property>
+   <property name="maximumSize">
+    <size>
+     <width>540</width>
+     <height>300</height>
+    </size>
+   </property>
+   <property name="features">
+    <set>QDockWidget::DockWidgetFloatable|QDockWidget::DockWidgetMovable</set>
+   </property>
+   <property name="windowTitle">
+    <string>Log</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>2</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_3">
+    <layout class="QFormLayout" name="formLayout">
+     <item row="0" column="0">
+      <widget class="QLabel" name="label_4">
+       <property name="text">
+        <string>Data path:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QLineEdit" name="lineEdit">
+       <property name="readOnly">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="label_5">
+       <property name="text">
+        <string>Label path:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QLineEdit" name="lineEdit_2">
+       <property name="readOnly">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0" colspan="2">
+      <widget class="QUndoView" name="LogUndoView"/>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <widget class="QDockWidget" name="ChannelDock">
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Ignored" vsizetype="Preferred">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <property name="minimumSize">
+    <size>
+     <width>255</width>
+     <height>450</height>
+    </size>
+   </property>
+   <property name="maximumSize">
+    <size>
+     <width>540</width>
+     <height>500</height>
+    </size>
+   </property>
+   <property name="layoutDirection">
+    <enum>Qt::LeftToRight</enum>
+   </property>
+   <property name="features">
+    <set>QDockWidget::DockWidgetFloatable|QDockWidget::DockWidgetMovable</set>
+   </property>
+   <property name="windowTitle">
+    <string>Channel</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>2</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_4">
+    <layout class="QGridLayout" name="gridLayout">
+     <item row="0" column="0" colspan="3">
+      <widget class="QPushButton" name="DefaultCh4SpecBt">
+       <property name="text">
+        <string>Default channel for spectrogram</string>
+       </property>
+      </widget>
+     </item>
+     <item row="9" column="0">
+      <widget class="QLabel" name="label_2">
+       <property name="text">
+        <string>Shift:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="0" colspan="3">
+      <widget class="Line" name="line">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+      </widget>
+     </item>
+     <item row="9" column="2">
+      <widget class="QPushButton" name="ShiftDownBt">
+       <property name="text">
+        <string>Down</string>
+       </property>
+      </widget>
+     </item>
+     <item row="10" column="0" colspan="3">
+      <widget class="Line" name="line_3">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+      </widget>
+     </item>
+     <item row="7" column="0" colspan="3">
+      <widget class="Line" name="line_2">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+      </widget>
+     </item>
+     <item row="8" column="0">
+      <widget class="QLabel" name="label">
+       <property name="text">
+        <string>Scaler:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="0">
+      <widget class="QPushButton" name="ShowChBt">
+       <property name="text">
+        <string>Show</string>
+       </property>
+      </widget>
+     </item>
+     <item row="6" column="0" colspan="3">
+      <widget class="QPushButton" name="FilterConfirmBt">
+       <property name="text">
+        <string>Filter</string>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="1">
+      <widget class="QDoubleSpinBox" name="FilterLowSpin">
+       <property name="decimals">
+        <number>1</number>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1">
+      <widget class="QPushButton" name="HideChBt">
+       <property name="text">
+        <string>Hide</string>
+       </property>
+      </widget>
+     </item>
+     <item row="8" column="1">
+      <widget class="QPushButton" name="ScalerUpBt">
+       <property name="text">
+        <string>+</string>
+       </property>
+      </widget>
+     </item>
+     <item row="8" column="2">
+      <widget class="QPushButton" name="ScalerDownBt">
+       <property name="text">
+        <string>-</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0" colspan="3">
+      <widget class="QListView" name="ChListView"/>
+     </item>
+     <item row="5" column="0">
+      <widget class="QComboBox" name="FilterTypeCombo">
+       <item>
+        <property name="text">
+         <string>BandPass</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>HighPass</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>LowPass</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>BandStop</string>
+        </property>
+       </item>
+      </widget>
+     </item>
+     <item row="11" column="0" colspan="3">
+      <widget class="QPushButton" name="PlotSpecBt">
+       <property name="text">
+        <string>Plot spectrum and spectrogram</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="2">
+      <widget class="QPushButton" name="DeleteChBt">
+       <property name="text">
+        <string>Delete</string>
+       </property>
+      </widget>
+     </item>
+     <item row="9" column="1">
+      <widget class="QPushButton" name="ShiftUpBt">
+       <property name="text">
+        <string>UP</string>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="2">
+      <widget class="QDoubleSpinBox" name="FilterHighSpin">
+       <property name="decimals">
+        <number>1</number>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="label_3">
+       <property name="text">
+        <string>Percentile: </string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QDoubleSpinBox" name="doubleSpinBox">
+       <property name="decimals">
+        <number>1</number>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <widget class="QDockWidget" name="AnnotationDock">
+   <property name="minimumSize">
+    <size>
+     <width>255</width>
+     <height>154</height>
+    </size>
+   </property>
+   <property name="maximumSize">
+    <size>
+     <width>540</width>
+     <height>160</height>
+    </size>
+   </property>
+   <property name="features">
+    <set>QDockWidget::DockWidgetFloatable|QDockWidget::DockWidgetMovable</set>
+   </property>
+   <property name="windowTitle">
+    <string>Anntation</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>2</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_5">
+    <layout class="QGridLayout" name="gridLayout_2">
+     <item row="2" column="0" colspan="5">
+      <widget class="QPushButton" name="SaveLabelBt">
+       <property name="text">
+        <string>Save label</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="0" colspan="2">
+      <widget class="QRadioButton" name="MarkerRadio">
+       <property name="text">
+        <string>Marker</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="5">
+      <widget class="QPushButton" name="LabelBt">
+       <property name="text">
+        <string>Label</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="5">
+      <widget class="QPushButton" name="WakeBt">
+       <property name="text">
+        <string>3:Wake</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="5">
+      <widget class="QPushButton" name="InitBt">
+       <property name="text">
+        <string>4:Init</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0" colspan="4">
+      <widget class="QPushButton" name="NREMBt">
+       <property name="text">
+        <string>1:NREM</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="4">
+      <widget class="QPushButton" name="REMBt">
+       <property name="text">
+        <string>2:REM</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="2">
+      <widget class="Line" name="line_4">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="3" colspan="2">
+      <widget class="QRadioButton" name="StartEndRadio">
+       <property name="text">
+        <string>Start-End</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <widget class="QDockWidget" name="TimeDock">
+   <property name="minimumSize">
+    <size>
+     <width>162</width>
+     <height>148</height>
+    </size>
+   </property>
+   <property name="maximumSize">
+    <size>
+     <width>540</width>
+     <height>160</height>
+    </size>
+   </property>
+   <property name="acceptDrops">
+    <bool>false</bool>
+   </property>
+   <property name="autoFillBackground">
+    <bool>true</bool>
+   </property>
+   <property name="features">
+    <set>QDockWidget::DockWidgetFloatable|QDockWidget::DockWidgetMovable</set>
+   </property>
+   <property name="allowedAreas">
+    <set>Qt::AllDockWidgetAreas</set>
+   </property>
+   <property name="windowTitle">
+    <string>Time</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>2</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_7">
+    <layout class="QGridLayout" name="gridLayout_4">
+     <item row="0" column="0">
+      <widget class="QDateTimeEdit" name="DateTimeEdit">
+       <property name="displayFormat">
+        <string>dd - HH:mm:ss</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QSpinBox" name="SecondSpin"/>
+     </item>
+     <item row="1" column="0" colspan="2">
+      <widget class="QComboBox" name="ShowRangeCombo">
+       <item>
+        <property name="text">
+         <string>Show 30 seconds</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Show 1 minute</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Show 5 minutes</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Show 30 minutes</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Show 1 hour</string>
+        </property>
+       </item>
+      </widget>
+     </item>
+     <item row="2" column="0">
+      <widget class="QRadioButton" name="CustomEpochRadio">
+       <property name="text">
+        <string>Custom epoch</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="QSpinBox" name="EpochNumSpin"/>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <widget class="QToolBar" name="LoadBar">
+   <property name="font">
+    <font>
+     <family>Arial</family>
+     <pointsize>11</pointsize>
+     <stylestrategy>PreferAntialias</stylestrategy>
+    </font>
+   </property>
+   <property name="windowTitle">
+    <string>LoadBar</string>
+   </property>
+   <property name="movable">
+    <bool>true</bool>
+   </property>
+   <property name="allowedAreas">
+    <set>Qt::AllToolBarAreas</set>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+   <addaction name="actionLoad_Data"/>
+   <addaction name="separator"/>
+   <addaction name="actionLoad_Label"/>
+   <addaction name="separator"/>
+   <addaction name="actionShow"/>
+   <addaction name="separator"/>
+  </widget>
+  <widget class="QToolBar" name="SaveBar">
+   <property name="font">
+    <font>
+     <family>Arial</family>
+     <pointsize>11</pointsize>
+     <stylestrategy>PreferAntialias</stylestrategy>
+    </font>
+   </property>
+   <property name="windowTitle">
+    <string>SaveBar</string>
+   </property>
+   <property name="movable">
+    <bool>true</bool>
+   </property>
+   <property name="allowedAreas">
+    <set>Qt::AllToolBarAreas</set>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+   <addaction name="actionSave_data"/>
+   <addaction name="separator"/>
+   <addaction name="actionSave_Label"/>
+   <addaction name="separator"/>
+  </widget>
+  <widget class="QToolBar" name="toolBar">
+   <property name="font">
+    <font>
+     <family>Arial</family>
+     <pointsize>11</pointsize>
+     <stylestrategy>PreferAntialias</stylestrategy>
+    </font>
+   </property>
+   <property name="windowTitle">
+    <string>toolBar</string>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+   <addaction name="actionMiSleep"/>
+  </widget>
+  <action name="actionLoad_Data">
+   <property name="text">
+    <string>Load Data</string>
+   </property>
+  </action>
+  <action name="actionLoad_Label">
+   <property name="text">
+    <string>Load Label</string>
+   </property>
+  </action>
+  <action name="actionShow">
+   <property name="text">
+    <string>Show</string>
+   </property>
+  </action>
+  <action name="actionSave_data">
+   <property name="text">
+    <string>Save Data</string>
+   </property>
+  </action>
+  <action name="actionSave_Label">
+   <property name="text">
+    <string>Save Label</string>
+   </property>
+  </action>
+  <action name="actionMiSleep">
+   <property name="text">
+    <string>MiSleep</string>
+   </property>
+  </action>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

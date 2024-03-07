@@ -29,7 +29,7 @@ def plot_signals(signals, sf=None, ch_names=None):
     """
 
     duration = math.floor(len(signals[0]) / sf[0])
-    fig = plt.figure()
+    fig = plt.figure(figsize=(duration*0.3 if duration < 60 else 18, 1*len(signals)))
     axs = fig.subplots(nrows=len(signals), ncols=1)
     if len(signals) == 1:
         axs = [axs]

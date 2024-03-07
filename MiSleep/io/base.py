@@ -100,7 +100,7 @@ class MiData:
             raise ValueError(f"Channel {chan1} and channel {chan2} got different dimension to do differential "
                              f"({self._signals[chan1_idx].shape} and {self._signals[chan2_idx].shape})")
         self.add(self._signals[chan1_idx] - self._signals[chan2_idx],
-                 f"{chan1}_{chan2}_diff", self._sf[chan1_idx])
+                 f"{chan1}_{chan2}_DIFF", self._sf[chan1_idx])
 
     def rename_channels(self, mapping):
         """
@@ -120,7 +120,7 @@ class MiData:
             raise TypeError(
                 f"Mapping should be a dict which map old channel name to a new one, got {type(mapping)}")
 
-    def filter(self, chans=None, btype='lowpass', low=0.5, high=30):
+    def filter(self, chans=None, btype='bandpass', low=0.5, high=30):
         """
         Filter the specified channel(s) and get new channels
         Parameters
@@ -128,7 +128,7 @@ class MiData:
         chans : list
             Channels to be filtered, should be a list of channels
         btype : {'bandpass', 'lowpass', 'highpass', 'bandstop'}, optional
-            The type of filter.  Default is 'lowpass'.
+            The type of filter.  Default is 'bandpass'.
         low : float
         high : float
         """
