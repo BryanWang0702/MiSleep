@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1196</width>
-    <height>981</height>
+    <width>1445</width>
+    <height>1006</height>
    </rect>
   </property>
   <property name="font">
@@ -20,6 +20,10 @@
   </property>
   <property name="windowTitle">
    <string>MiSleep</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="../resources/misleep.qrc">
+    <normaloff>:/logo/logo.png</normaloff>:/logo/logo.png</iconset>
   </property>
   <property name="toolButtonStyle">
    <enum>Qt::ToolButtonTextBesideIcon</enum>
@@ -88,24 +92,24 @@
     </item>
    </layout>
   </widget>
-  <widget class="QDockWidget" name="LogDock">
+  <widget class="QDockWidget" name="MetaDock">
    <property name="minimumSize">
     <size>
-     <width>150</width>
-     <height>190</height>
+     <width>246</width>
+     <height>100</height>
     </size>
    </property>
    <property name="maximumSize">
     <size>
      <width>540</width>
-     <height>300</height>
+     <height>400</height>
     </size>
    </property>
    <property name="features">
     <set>QDockWidget::DockWidgetFloatable|QDockWidget::DockWidgetMovable</set>
    </property>
    <property name="windowTitle">
-    <string>Log</string>
+    <string>Meta</string>
    </property>
    <attribute name="dockWidgetArea">
     <number>2</number>
@@ -120,7 +124,7 @@
       </widget>
      </item>
      <item row="0" column="1">
-      <widget class="QLineEdit" name="lineEdit">
+      <widget class="QLineEdit" name="DataPathEdit">
        <property name="readOnly">
         <bool>true</bool>
        </property>
@@ -129,19 +133,39 @@
      <item row="1" column="0">
       <widget class="QLabel" name="label_5">
        <property name="text">
-        <string>Label path:</string>
+        <string>Annotation path:</string>
        </property>
       </widget>
      </item>
      <item row="1" column="1">
-      <widget class="QLineEdit" name="lineEdit_2">
+      <widget class="QLineEdit" name="AnnoPathEdit">
        <property name="readOnly">
         <bool>true</bool>
        </property>
       </widget>
      </item>
-     <item row="2" column="0" colspan="2">
-      <widget class="QUndoView" name="LogUndoView"/>
+     <item row="2" column="0">
+      <widget class="QLabel" name="label_6">
+       <property name="text">
+        <string>Acquisition Time:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="QDateTimeEdit" name="AcTimeEdit">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="readOnly">
+        <bool>true</bool>
+       </property>
+       <property name="keyboardTracking">
+        <bool>false</bool>
+       </property>
+       <property name="displayFormat">
+        <string>yyyy/MM/dd HH:mm:ss</string>
+       </property>
+      </widget>
      </item>
     </layout>
    </widget>
@@ -162,7 +186,7 @@
    <property name="maximumSize">
     <size>
      <width>540</width>
-     <height>500</height>
+     <height>600</height>
     </size>
    </property>
    <property name="layoutDirection">
@@ -244,6 +268,9 @@
      </item>
      <item row="5" column="1">
       <widget class="QDoubleSpinBox" name="FilterLowSpin">
+       <property name="keyboardTracking">
+        <bool>false</bool>
+       </property>
        <property name="decimals">
         <number>1</number>
        </property>
@@ -271,7 +298,29 @@
       </widget>
      </item>
      <item row="2" column="0" colspan="3">
-      <widget class="QListView" name="ChListView"/>
+      <widget class="QListView" name="ChListView">
+       <property name="showDropIndicator" stdset="0">
+        <bool>false</bool>
+       </property>
+       <property name="dragEnabled">
+        <bool>false</bool>
+       </property>
+       <property name="dragDropMode">
+        <enum>QAbstractItemView::NoDragDrop</enum>
+       </property>
+       <property name="defaultDropAction">
+        <enum>Qt::CopyAction</enum>
+       </property>
+       <property name="selectionMode">
+        <enum>QAbstractItemView::MultiSelection</enum>
+       </property>
+       <property name="selectionBehavior">
+        <enum>QAbstractItemView::SelectItems</enum>
+       </property>
+       <property name="verticalScrollMode">
+        <enum>QAbstractItemView::ScrollPerPixel</enum>
+       </property>
+      </widget>
      </item>
      <item row="5" column="0">
       <widget class="QComboBox" name="FilterTypeCombo">
@@ -320,6 +369,9 @@
      </item>
      <item row="5" column="2">
       <widget class="QDoubleSpinBox" name="FilterHighSpin">
+       <property name="keyboardTracking">
+        <bool>false</bool>
+       </property>
        <property name="decimals">
         <number>1</number>
        </property>
@@ -333,7 +385,7 @@
       </widget>
      </item>
      <item row="1" column="1">
-      <widget class="QDoubleSpinBox" name="doubleSpinBox">
+      <widget class="QDoubleSpinBox" name="PercentileSpin">
        <property name="decimals">
         <number>1</number>
        </property>
@@ -345,14 +397,14 @@
   <widget class="QDockWidget" name="AnnotationDock">
    <property name="minimumSize">
     <size>
-     <width>255</width>
+     <width>262</width>
      <height>154</height>
     </size>
    </property>
    <property name="maximumSize">
     <size>
      <width>540</width>
-     <height>160</height>
+     <height>200</height>
     </size>
    </property>
    <property name="features">
@@ -369,7 +421,7 @@
      <item row="2" column="0" colspan="5">
       <widget class="QPushButton" name="SaveLabelBt">
        <property name="text">
-        <string>Save label</string>
+        <string>Save annotation</string>
        </property>
       </widget>
      </item>
@@ -383,7 +435,7 @@
      <item row="0" column="5">
       <widget class="QPushButton" name="LabelBt">
        <property name="text">
-        <string>Label</string>
+        <string>Annotation</string>
        </property>
       </widget>
      </item>
@@ -401,20 +453,6 @@
        </property>
       </widget>
      </item>
-     <item row="1" column="0" colspan="4">
-      <widget class="QPushButton" name="NREMBt">
-       <property name="text">
-        <string>1:NREM</string>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="4">
-      <widget class="QPushButton" name="REMBt">
-       <property name="text">
-        <string>2:REM</string>
-       </property>
-      </widget>
-     </item>
      <item row="0" column="2">
       <widget class="Line" name="line_4">
        <property name="orientation">
@@ -429,20 +467,34 @@
        </property>
       </widget>
      </item>
+     <item row="1" column="0" colspan="3">
+      <widget class="QPushButton" name="NREMBt">
+       <property name="text">
+        <string>1:NREM</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="3" colspan="2">
+      <widget class="QPushButton" name="REMBt">
+       <property name="text">
+        <string>2:REM</string>
+       </property>
+      </widget>
+     </item>
     </layout>
    </widget>
   </widget>
   <widget class="QDockWidget" name="TimeDock">
    <property name="minimumSize">
     <size>
-     <width>162</width>
+     <width>167</width>
      <height>148</height>
     </size>
    </property>
    <property name="maximumSize">
     <size>
      <width>540</width>
-     <height>160</height>
+     <height>200</height>
     </size>
    </property>
    <property name="acceptDrops">
@@ -467,13 +519,20 @@
     <layout class="QGridLayout" name="gridLayout_4">
      <item row="0" column="0">
       <widget class="QDateTimeEdit" name="DateTimeEdit">
+       <property name="keyboardTracking">
+        <bool>false</bool>
+       </property>
        <property name="displayFormat">
         <string>dd - HH:mm:ss</string>
        </property>
       </widget>
      </item>
      <item row="0" column="1">
-      <widget class="QSpinBox" name="SecondSpin"/>
+      <widget class="QSpinBox" name="SecondSpin">
+       <property name="keyboardTracking">
+        <bool>false</bool>
+       </property>
+      </widget>
      </item>
      <item row="1" column="0" colspan="2">
       <widget class="QComboBox" name="ShowRangeCombo">
@@ -504,15 +563,22 @@
        </item>
       </widget>
      </item>
-     <item row="2" column="0">
-      <widget class="QRadioButton" name="CustomEpochRadio">
-       <property name="text">
-        <string>Custom epoch</string>
+     <item row="2" column="1">
+      <widget class="QSpinBox" name="EpochNumSpin">
+       <property name="keyboardTracking">
+        <bool>false</bool>
+       </property>
+       <property name="minimum">
+        <number>5</number>
        </property>
       </widget>
      </item>
-     <item row="2" column="1">
-      <widget class="QSpinBox" name="EpochNumSpin"/>
+     <item row="2" column="0">
+      <widget class="QCheckBox" name="CustomSecondsCheck">
+       <property name="text">
+        <string>Custom seconds</string>
+       </property>
+      </widget>
      </item>
     </layout>
    </widget>
@@ -542,7 +608,7 @@
    </attribute>
    <addaction name="actionLoad_Data"/>
    <addaction name="separator"/>
-   <addaction name="actionLoad_Label"/>
+   <addaction name="actionLoad_Annotation"/>
    <addaction name="separator"/>
    <addaction name="actionShow"/>
    <addaction name="separator"/>
@@ -572,10 +638,10 @@
    </attribute>
    <addaction name="actionSave_data"/>
    <addaction name="separator"/>
-   <addaction name="actionSave_Label"/>
+   <addaction name="actionSave_Annotation"/>
    <addaction name="separator"/>
   </widget>
-  <widget class="QToolBar" name="toolBar">
+  <widget class="QToolBar" name="AboutBar">
    <property name="font">
     <font>
      <family>Arial</family>
@@ -592,16 +658,16 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
-   <addaction name="actionMiSleep"/>
+   <addaction name="actionAbout"/>
   </widget>
   <action name="actionLoad_Data">
    <property name="text">
     <string>Load Data</string>
    </property>
   </action>
-  <action name="actionLoad_Label">
+  <action name="actionLoad_Annotation">
    <property name="text">
-    <string>Load Label</string>
+    <string>Load Annotation</string>
    </property>
   </action>
   <action name="actionShow">
@@ -614,17 +680,19 @@
     <string>Save Data</string>
    </property>
   </action>
-  <action name="actionSave_Label">
+  <action name="actionSave_Annotation">
    <property name="text">
-    <string>Save Label</string>
+    <string>Save Annotation</string>
    </property>
   </action>
-  <action name="actionMiSleep">
+  <action name="actionAbout">
    <property name="text">
-    <string>MiSleep</string>
+    <string>About</string>
    </property>
   </action>
  </widget>
- <resources/>
+ <resources>
+  <include location="../resources/misleep.qrc"/>
+ </resources>
  <connections/>
 </ui>

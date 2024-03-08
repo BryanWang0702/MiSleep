@@ -38,7 +38,7 @@ def plot_spectrum(f, p):
     return fig, ax
 
 
-def plot_spectrogram(f, t, Sxx, percentile=100, band=None):
+def plot_spectrogram(f, t, Sxx, percentile=100, band=None, color_bar=False):
     """Plot the spectrogram, percentile is for color adjustment"""
     if not isinstance(percentile, (int, float)):
         raise TypeError(f"'percentile' should be a float between 0~100, got {percentile}")
@@ -48,8 +48,12 @@ def plot_spectrogram(f, t, Sxx, percentile=100, band=None):
     ax = fig.subplots(nrows=1, ncols=1)
     if band is not None:
         ax.set_ylim(band[0], band[1])
-    pcm = ax.pcolormesh(t, f, Sxx, cmap=cmap, vmax=np.percentile(Sxx, percentile))
-    fig.colorbar(pcm, ax=ax)
+
+    if color_bar:
+        pcm = ax.pcolormesh(t, f, Sxx, cmap=cmap, vmax=np.percentile(Sxx, percentile))
+        fig.colorbar(pcm, ax=ax)
+    else:
+        ax.pcolormesh(t, f, Sxx, cmap=cmap, vmax=np.percentile(Sxx, percentile))
     ax.set_xlabel("Time (S)")
     ax.set_ylabel("Frequency (HZ)")
 

@@ -56,8 +56,7 @@ def load_mat(data_path):
             sf = [305.1758 for _ in range(raw_data.shape[0])]
             time = datetime.datetime.now().strftime("%y%m%d-%H:%M:%S")
 
-            print("We recommend to save signals in different fields and "
-                  "channel name/sample frequency save respectively")
+            raise Warning("We recommend to save data in new MiSleep data format.")
 
         return MiData(signals=signals, channels=channels, sf=sf, time=time)
 
