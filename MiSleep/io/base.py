@@ -206,7 +206,7 @@ class MiData:
         if time_period[1] > self._duration:
             time_period[1] = self._duration
 
-        signals = [self.signals[idx][int(time_period[0] * each): int(time_period[1] * each)]
+        signals = [self.signals[idx][int(time_period[0] * each): int(time_period[1]+1 * each)]
                    for idx, each in enumerate(self.sf)]
         channels = self.channels
         sf = self.sf
@@ -215,7 +215,7 @@ class MiData:
         return MiData(signals=signals, channels=channels, sf=sf, time=time)
 
     def pick_chs(self, ch_names):
-        """Pick specified channels"""
+        """Pick specified channels, can be list of channel names"""
         if ch_names is None or ch_names == []:
             ch_names = self.channels
 
@@ -276,6 +276,10 @@ class MiData:
     def describe(self):
         """Get data description"""
         return self._describe
+
+    @property
+    def n_channels(self):
+        return self._n_channels
 
 
 class MiAnnotation:

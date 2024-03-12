@@ -8,12 +8,13 @@
 """
 from datetime import datetime
 
+import numpy as np
 from PyQt5.QtCore import QCoreApplication, Qt, QStringListModel
 from PyQt5.QtWidgets import QMainWindow, QFileDialog, QMessageBox, QAction
+from matplotlib import pyplot as plt
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 
-from misleep import spectrogram
-from misleep.viz.spectral import plot_spectrogram
-from misleep.viz.signals import plot_signals
+from misleep.preprocessing.spectral import spectrogram
 from misleep.io.base import MiData, MiAnnotation
 from misleep.io.signal_io import load_mat, load_edf
 from misleep.io.annotation_io import load_misleep_anno
@@ -42,12 +43,24 @@ class main_window(QMainWindow, Ui_MiSleep):
 
         # Set initial params
         self.current_sec = 0
-        self.current_y_lims = None  # list of y lim for each channel
-        self.current_y_shift = None  # list of y shift for each channel
+        self.show_duration = 30  # Seconds of duration to plot
+        self.y_lims = None  # list of y lim for each channel
+        self.y_shift = None  # list of y shift for each channel
         self.show_idx = None  # Channels to show in plot area
         self.state_map_dict = {1: 'NREM', 2: 'REM', 3: 'Wake', 4: 'INIT'}
         self.current_spectrogram_idx = 0
         self.spectrogram_percentile = 99.7
+        self.show_midata = None
+
+        # Signal area and hypo area figure
+        self.signal_figure = plt.figure()
+        self.signal_ax = self.signal_figure.subplots()
+        self.signal_figure.set_tight_layout(True)
+        self.signal_figure.tight_layout(h_pad=0, w_pad=0)
+        self.signal_figure.subplots_adjust(hspace=0)  # Adjust subplots
+        self.signal_canvas = FigureCanvas(self.signal_figure)
+        # Add button click release event for signal canvas
+        self.signal_canvas.mpl_connect("button_release_event", self.click_signal)
 
         # Initial params for widgets
         self.channel_slm = QStringListModel()
@@ -117,7 +130,7 @@ class main_window(QMainWindow, Ui_MiSleep):
             try:
                 self.mianno = load_misleep_anno(self.anno_path)
             except AssertionError as e:
-                if e == "Empty":
+                if e.args[0] == "Empty":
                     if isinstance(self.midata, MiData):
                         self.mianno = create_new_mianno(self.midata.duration)
                     else:
@@ -126,7 +139,7 @@ class main_window(QMainWindow, Ui_MiSleep):
                         self.anno_path = ""
                         return
 
-                if e == "Invalid":
+                if e.args[0] == "Invalid":
                     QMessageBox.about(self, "Error",
                                       r"Annotation file invalid, check "
                                       r"<a href='https://github.com/BryanWang0702/MiSleep'>MiSleep</a> for detail.")
@@ -147,19 +160,62 @@ class main_window(QMainWindow, Ui_MiSleep):
                               r"Seems that annotation length is different with data duration.")
             return
 
+        self.show_idx = range(self.midata.n_channels)
+        self.y_lims = [max(each[:1000]) for each in self.midata.signals]
+        self.y_shift = [0 for _ in range(self.midata.n_channels)]
+
+        # Set canvas for plot area
+        self.SignalArea.setWidget(self.signal_canvas)
+
         self.plot_signals()
         self.plot_hypo()
+        self.signal_figure.canvas.draw()  # Redraw canvas
+        self.signal_figure.canvas.flush_events()  # Flush canvas
 
     def plot_signals(self):
-        """Main plot function, plot signal area, including the spectrogram"""
-        f, t, Sxx = spectrogram(signal=self.midata.signals[self.current_spectrogram_idx],
-                                sf=self.midata.sf[self.current_spectrogram_idx],
-                                step=1, window=5, norm=True)
-        fig_spec, ax_spec = plot_spectrogram(f, t, Sxx, percentile=self.spectrogram_percentile)
-        fig_signal, axs_signal = plot_signals(signals=self.midata.signals,
-                                              ch_names=self.midata.channels,
-                                              sf=self.midata.sf)
-        fig_signal
+        """Main plot function, plot signal area, once replot the signal, update all figures"""
+        self.signal_figure.clf()
+        self.signal_ax = self.signal_figure.subplots(nrows=len(self.show_idx) + 1, ncols=1)
+        # plot the spectrogram
+        self.plot_spectrogram()
+
+        for i, each in enumerate(self.show_idx):
+            self.signal_ax[i + 1].plot(self.midata.signals[each][
+                                       int(self.current_sec * self.midata.sf[each]):
+                                       int((self.current_sec + self.show_duration) * self.midata.sf[each])],
+                                       color='black', linewidth=0.5)
+            y_lim = self.y_lims[each]
+            self.signal_ax[i + 1].set_ylim(ymin=-y_lim, ymax=y_lim)
+            self.signal_ax[i + 1].set_xlim(xmin=0, xmax=self.show_duration*self.midata.sf[each])
+            self.signal_ax[i + 1].xaxis.set_ticks([])
+            self.signal_ax[i + 1].yaxis.set_ticks([])
+            self.signal_ax[i + 1].set_ylabel(f"{self.midata.channels[each]}\n{y_lim:.2e}")
+        self.signal_ax[-1].xaxis.set_ticks([int(each * self.midata.sf[self.show_idx[-1]]) for each in
+                                            range(0, self.show_duration, 5)],
+                                           range(self.current_sec, self.current_sec + self.show_duration, 5),
+                                           rotation=45)
+        self.signal_ax[-1].xaxis.set_ticks([int(each * self.midata.sf[self.show_idx[-1]]) for each in
+                                            range(0, self.show_duration)], minor=True)
+
+        self.plot_label()
+        self.plot_hypo()
+
+    def plot_spectrogram(self):
+        """Redraw spectrogram"""
+        f, t, Sxx = spectrogram(signal=self.midata.signals[self.current_spectrogram_idx][
+                                       int(self.current_sec * self.midata.sf[self.current_spectrogram_idx]):
+                                       int((self.current_sec + self.show_duration) * self.midata.sf[
+                                           self.current_spectrogram_idx])],
+                                sf=self.midata.sf[self.current_spectrogram_idx], step=1, window=1, norm=True)
+        cmap = plt.cm.get_cmap('jet')
+
+        self.signal_ax[0].set_xticks([])
+        self.signal_ax[0].set_ylim(0, 30)
+        self.signal_ax[0].pcolormesh(t, f, Sxx, cmap=cmap,
+                                     vmax=np.percentile(Sxx, self.spectrogram_percentile))
+
+    def plot_label(self):
+        """Plot label (interaction with users) in the signal area"""
 
     def plot_hypo(self):
         """Plot hypnogram area"""
@@ -168,6 +224,9 @@ class main_window(QMainWindow, Ui_MiSleep):
         """Fill channel listView with self.midata.channels"""
         self.channel_slm.setStringList(self.midata.channels)
         self.ChListView.setModel(self.channel_slm)
+
+    def click_signal(self):
+        """Click the signal area and add marker or start_end label, triggered by button_release_event"""
 
     def about_bar_dispatcher(self, signal):
         """Triggered by AboutBar action, show About dialog"""

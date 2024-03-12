@@ -22,7 +22,7 @@ def load_misleep_anno(file_path):
 
     # Read out the annotation file and split by `\n` to get each line
     annotation = open(file_path, 'r').read().split('\n')
-    if not annotation:
+    if annotation == [""]:
         raise AssertionError("Empty")
     try:
         marker_idx = annotation.index('==========Marker==========')

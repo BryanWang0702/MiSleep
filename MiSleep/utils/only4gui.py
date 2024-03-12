@@ -12,16 +12,20 @@ from matplotlib import pyplot as plt
 from misleep.preprocessing.spectral import spectrogram
 
 
-def plot_signal_area4GUI(midata, start, duration, spec_idx, spec_percentile, y_lim):
+def plot_signal_area4GUI(midata, start, duration, spec, spec_percentile, y_lim, y_shift):
     """Plot signal area for GUI
     Parameters
     ----------
     midata : MiData
+        All preprocessings were done, only plot in this function
     start : start position
     duration : plot duration
-    spec_idx : choose which channel to plot spectrogram
-    spec_percentile : colorbar percentage for spectrogram
+    spec : List
+        Spectrogram values, create by misleep.preprocessing.spectral.spectrogram, e.g. [f, t, Sxx]
+    spec_percentile : float
+        Percentile for spectrogram vmax
     y_lim : y lim for signals
+    y_shift : y shift for signals
     """
     fig = plt.figure()
     axs = fig.subplots(nrows=midata.n_channel + 1, ncols=1)
@@ -29,9 +33,7 @@ def plot_signal_area4GUI(midata, start, duration, spec_idx, spec_percentile, y_l
     fig.tight_layout(h_pad=0, w_pad=0)
     fig.subplots_adjust(hspace=0)  # Adjust subplots
 
-    f, t, Sxx = spectrogram(signal=midata.signals[spec_idx],
-                            sf=midata.sf[spec_idx],
-                            step=1, window=5, norm=True)
+    f, t, Sxx = spec
     cmap = plt.cm.get_cmap('jet')
     axs[0].set_ylim(0, 30)
     axs[0].pcolormesh(t, f, Sxx, cmap=cmap,
@@ -53,3 +55,7 @@ def plot_signal_area4GUI(midata, start, duration, spec_idx, spec_percentile, y_l
                         range(0, duration)], minor=True)
 
     return fig, axs
+
+
+def plot_spec4GUI():
+    pass

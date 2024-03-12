@@ -45,28 +45,6 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout_3">
-    <item row="2" column="0">
-     <widget class="QListView" name="HyponArea">
-      <property name="minimumSize">
-       <size>
-        <width>700</width>
-        <height>100</height>
-       </size>
-      </property>
-      <property name="maximumSize">
-       <size>
-        <width>16777215</width>
-        <height>130</height>
-       </size>
-      </property>
-      <property name="frameShape">
-       <enum>QFrame::NoFrame</enum>
-      </property>
-      <property name="movement">
-       <enum>QListView::Static</enum>
-      </property>
-     </widget>
-    </item>
     <item row="1" column="0">
      <widget class="QScrollBar" name="ScrollerBar">
       <property name="orientation">
@@ -75,19 +53,55 @@
      </widget>
     </item>
     <item row="0" column="0">
-     <widget class="QListView" name="SignalArea">
+     <widget class="QScrollArea" name="SignalArea">
       <property name="minimumSize">
        <size>
         <width>700</width>
         <height>500</height>
        </size>
       </property>
-      <property name="frameShape">
-       <enum>QFrame::NoFrame</enum>
+      <property name="widgetResizable">
+       <bool>true</bool>
       </property>
-      <property name="frameShadow">
-       <enum>QFrame::Sunken</enum>
+      <widget class="QWidget" name="scrollAreaWidgetContents">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>1147</width>
+         <height>800</height>
+        </rect>
+       </property>
+      </widget>
+     </widget>
+    </item>
+    <item row="2" column="0">
+     <widget class="QScrollArea" name="HypnoArea">
+      <property name="minimumSize">
+       <size>
+        <width>0</width>
+        <height>120</height>
+       </size>
       </property>
+      <property name="maximumSize">
+       <size>
+        <width>16777215</width>
+        <height>130</height>
+       </size>
+      </property>
+      <property name="widgetResizable">
+       <bool>true</bool>
+      </property>
+      <widget class="QWidget" name="scrollAreaWidgetContents_2">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>1147</width>
+         <height>128</height>
+        </rect>
+       </property>
+      </widget>
      </widget>
     </item>
    </layout>
@@ -95,8 +109,8 @@
   <widget class="QDockWidget" name="MetaDock">
    <property name="minimumSize">
     <size>
-     <width>246</width>
-     <height>100</height>
+     <width>264</width>
+     <height>112</height>
     </size>
    </property>
    <property name="maximumSize">
