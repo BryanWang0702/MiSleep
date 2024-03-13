@@ -82,6 +82,8 @@ class main_window(QMainWindow, Ui_MiSleep):
 
         self.init_qt()
 
+        self.TEST_COUNT = 0
+
     def init_qt(self):
         """Initial actions for qt widgets"""
         # Set triggers for toolBars
@@ -344,9 +346,15 @@ class main_window(QMainWindow, Ui_MiSleep):
             self.current_sec = second
 
         # These 3 set functions will call the value change operation in cycle, stop first
+        self.ScrollerBar.blockSignals(True)
+        self.SecondSpin.blockSignals(True)
+        self.DateTimeEdit.blockSignals(True)
         self.ScrollerBar.setValue(self.current_sec)
         self.SecondSpin.setValue(self.current_sec)
         self.DateTimeEdit.setDateTime(self.ac_time + datetime.timedelta(seconds=self.current_sec))
+        self.ScrollerBar.blockSignals(False)
+        self.SecondSpin.blockSignals(False)
+        self.DateTimeEdit.blockSignals(False)
         self.plot_signals()
         self.plot_hypo()
         self.plot_label()
@@ -380,9 +388,8 @@ class main_window(QMainWindow, Ui_MiSleep):
         current_sec = int((dateTime - self.ac_time).total_seconds())
         self.redraw_all(second=current_sec)
 
-    def channel_rename(self, event):
+    def channel_rename(self):
         """Channel rename"""
-
         new_channels = self.channel_slm.stringList()
         for idx, each in enumerate(self.midata.channels):
             if each != new_channels[idx]:
