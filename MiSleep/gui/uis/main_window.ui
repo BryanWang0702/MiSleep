@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1445</width>
-    <height>1006</height>
+    <height>959</height>
    </rect>
   </property>
   <property name="font">
@@ -45,39 +45,6 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout_3">
-    <item row="1" column="0">
-     <widget class="QScrollBar" name="ScrollerBar">
-      <property name="tracking">
-       <bool>false</bool>
-      </property>
-      <property name="orientation">
-       <enum>Qt::Horizontal</enum>
-      </property>
-     </widget>
-    </item>
-    <item row="0" column="0">
-     <widget class="QScrollArea" name="SignalArea">
-      <property name="minimumSize">
-       <size>
-        <width>700</width>
-        <height>500</height>
-       </size>
-      </property>
-      <property name="widgetResizable">
-       <bool>true</bool>
-      </property>
-      <widget class="QWidget" name="scrollAreaWidgetContents">
-       <property name="geometry">
-        <rect>
-         <x>0</x>
-         <y>0</y>
-         <width>1147</width>
-         <height>800</height>
-        </rect>
-       </property>
-      </widget>
-     </widget>
-    </item>
     <item row="2" column="0">
      <widget class="QScrollArea" name="HypnoArea">
       <property name="minimumSize">
@@ -100,11 +67,44 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>1147</width>
+         <width>1106</width>
          <height>128</height>
         </rect>
        </property>
       </widget>
+     </widget>
+    </item>
+    <item row="0" column="0">
+     <widget class="QScrollArea" name="SignalArea">
+      <property name="minimumSize">
+       <size>
+        <width>700</width>
+        <height>500</height>
+       </size>
+      </property>
+      <property name="widgetResizable">
+       <bool>true</bool>
+      </property>
+      <widget class="QWidget" name="scrollAreaWidgetContents">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>1106</width>
+         <height>753</height>
+        </rect>
+       </property>
+      </widget>
+     </widget>
+    </item>
+    <item row="1" column="0">
+     <widget class="QScrollBar" name="ScrollerBar">
+      <property name="tracking">
+       <bool>false</bool>
+      </property>
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
      </widget>
     </item>
    </layout>
@@ -196,7 +196,7 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>255</width>
+     <width>315</width>
      <height>450</height>
     </size>
    </property>
@@ -220,38 +220,10 @@
    </attribute>
    <widget class="QWidget" name="dockWidgetContents_4">
     <layout class="QGridLayout" name="gridLayout">
-     <item row="0" column="0" colspan="3">
-      <widget class="QPushButton" name="DefaultCh4SpecBt">
+     <item row="3" column="2">
+      <widget class="QPushButton" name="DeleteChBt">
        <property name="text">
-        <string>Default channel for spectrogram</string>
-       </property>
-      </widget>
-     </item>
-     <item row="9" column="0">
-      <widget class="QLabel" name="label_2">
-       <property name="text">
-        <string>Shift:</string>
-       </property>
-      </widget>
-     </item>
-     <item row="4" column="0" colspan="3">
-      <widget class="Line" name="line">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-      </widget>
-     </item>
-     <item row="9" column="2">
-      <widget class="QPushButton" name="ShiftDownBt">
-       <property name="text">
-        <string>Down</string>
-       </property>
-      </widget>
-     </item>
-     <item row="10" column="0" colspan="3">
-      <widget class="Line" name="line_3">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
+        <string>Delete</string>
        </property>
       </widget>
      </item>
@@ -262,40 +234,6 @@
        </property>
       </widget>
      </item>
-     <item row="8" column="0">
-      <widget class="QLabel" name="label">
-       <property name="text">
-        <string>Scaler:</string>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="0">
-      <widget class="QPushButton" name="ShowChBt">
-       <property name="text">
-        <string>Show</string>
-       </property>
-      </widget>
-     </item>
-     <item row="6" column="0" colspan="3">
-      <widget class="QPushButton" name="FilterConfirmBt">
-       <property name="text">
-        <string>Filter</string>
-       </property>
-      </widget>
-     </item>
-     <item row="5" column="1">
-      <widget class="QDoubleSpinBox" name="FilterLowSpin">
-       <property name="keyboardTracking">
-        <bool>false</bool>
-       </property>
-       <property name="decimals">
-        <number>1</number>
-       </property>
-       <property name="singleStep">
-        <double>0.100000000000000</double>
-       </property>
-      </widget>
-     </item>
      <item row="3" column="1">
       <widget class="QPushButton" name="HideChBt">
        <property name="text">
@@ -303,17 +241,17 @@
        </property>
       </widget>
      </item>
-     <item row="8" column="1">
-      <widget class="QPushButton" name="ScalerUpBt">
-       <property name="text">
-        <string>+</string>
-       </property>
-      </widget>
-     </item>
      <item row="8" column="2">
       <widget class="QPushButton" name="ScalerDownBt">
        <property name="text">
         <string>-</string>
+       </property>
+      </widget>
+     </item>
+     <item row="10" column="0" colspan="3">
+      <widget class="Line" name="line_3">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
        </property>
       </widget>
      </item>
@@ -339,6 +277,112 @@
        </property>
        <property name="verticalScrollMode">
         <enum>QAbstractItemView::ScrollPerItem</enum>
+       </property>
+      </widget>
+     </item>
+     <item row="8" column="0">
+      <widget class="QLabel" name="label">
+       <property name="text">
+        <string>Scaler:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="9" column="2">
+      <widget class="QPushButton" name="ShiftDownBt">
+       <property name="text">
+        <string>Down</string>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="2">
+      <widget class="QDoubleSpinBox" name="FilterHighSpin">
+       <property name="keyboardTracking">
+        <bool>false</bool>
+       </property>
+       <property name="decimals">
+        <number>1</number>
+       </property>
+       <property name="singleStep">
+        <double>0.100000000000000</double>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="0">
+      <widget class="QPushButton" name="ShowChBt">
+       <property name="text">
+        <string>Show</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QDoubleSpinBox" name="PercentileSpin">
+       <property name="decimals">
+        <number>1</number>
+       </property>
+       <property name="singleStep">
+        <double>0.100000000000000</double>
+       </property>
+      </widget>
+     </item>
+     <item row="9" column="0">
+      <widget class="QLabel" name="label_2">
+       <property name="text">
+        <string>Shift:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="label_3">
+       <property name="text">
+        <string>Percentile: </string>
+       </property>
+      </widget>
+     </item>
+     <item row="8" column="1">
+      <widget class="QPushButton" name="ScalerUpBt">
+       <property name="text">
+        <string>+</string>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="0" colspan="3">
+      <widget class="Line" name="line">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+      </widget>
+     </item>
+     <item row="9" column="1">
+      <widget class="QPushButton" name="ShiftUpBt">
+       <property name="text">
+        <string>UP</string>
+       </property>
+      </widget>
+     </item>
+     <item row="6" column="0" colspan="3">
+      <widget class="QPushButton" name="FilterConfirmBt">
+       <property name="text">
+        <string>Filter</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="0" colspan="3">
+      <widget class="QPushButton" name="DefaultCh4SpecBt">
+       <property name="text">
+        <string>Default channel for spectrogram</string>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="1">
+      <widget class="QDoubleSpinBox" name="FilterLowSpin">
+       <property name="keyboardTracking">
+        <bool>false</bool>
+       </property>
+       <property name="decimals">
+        <number>1</number>
+       </property>
+       <property name="singleStep">
+        <double>0.100000000000000</double>
        </property>
       </widget>
      </item>
@@ -370,50 +414,6 @@
       <widget class="QPushButton" name="PlotSpecBt">
        <property name="text">
         <string>Plot spectrum and spectrogram</string>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="2">
-      <widget class="QPushButton" name="DeleteChBt">
-       <property name="text">
-        <string>Delete</string>
-       </property>
-      </widget>
-     </item>
-     <item row="9" column="1">
-      <widget class="QPushButton" name="ShiftUpBt">
-       <property name="text">
-        <string>UP</string>
-       </property>
-      </widget>
-     </item>
-     <item row="5" column="2">
-      <widget class="QDoubleSpinBox" name="FilterHighSpin">
-       <property name="keyboardTracking">
-        <bool>false</bool>
-       </property>
-       <property name="decimals">
-        <number>1</number>
-       </property>
-       <property name="singleStep">
-        <double>0.100000000000000</double>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="0">
-      <widget class="QLabel" name="label_3">
-       <property name="text">
-        <string>Percentile: </string>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="1">
-      <widget class="QDoubleSpinBox" name="PercentileSpin">
-       <property name="decimals">
-        <number>1</number>
-       </property>
-       <property name="singleStep">
-        <double>0.100000000000000</double>
        </property>
       </widget>
      </item>

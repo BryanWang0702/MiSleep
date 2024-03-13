@@ -108,6 +108,10 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.ShowChBt.clicked.connect(self.show_chs)
         self.HideChBt.clicked.connect(self.hide_chs)
         self.DeleteChBt.clicked.connect(self.delete_chs)
+        self.ScalerUpBt.clicked.connect(self.scaler_up)
+        self.ScalerDownBt.clicked.connect(self.scaler_down)
+        self.ShiftUpBt.clicked.connect(self.shift_up)
+        self.ShiftDownBt.clicked.connect(self.shift_down)
 
         # Custom second spin edit and ShowRangeCombo
         self.ShowRangeCombo.setEnabled(True)
@@ -203,6 +207,7 @@ class main_window(QMainWindow, Ui_MiSleep):
 
         self.show_idx = list(range(self.midata.n_channels))
         self.y_lims = [max(each[:1000]) for each in self.midata.signals]
+        self.y_lims = [1e-3 if each == 0. else each for each in self.y_lims]
         self.y_shift = [0 for _ in range(self.midata.n_channels)]
 
         self.ScrollerBar.setRange(0, self.mianno.anno_length)
@@ -244,7 +249,8 @@ class main_window(QMainWindow, Ui_MiSleep):
                                        int((self.current_sec + self.show_duration) * self.midata.sf[each])],
                                        color='black', linewidth=0.5)
             y_lim = self.y_lims[each]
-            self.signal_ax[i + 1].set_ylim(ymin=-y_lim, ymax=y_lim)
+            y_shift = self.y_shift[each]
+            self.signal_ax[i + 1].set_ylim(ymin=-y_lim + y_shift, ymax=y_lim + y_shift)
             self.signal_ax[i + 1].set_xlim(xmin=0, xmax=self.show_duration * self.midata.sf[each])
             self.signal_ax[i + 1].xaxis.set_ticks([])
             self.signal_ax[i + 1].yaxis.set_ticks([])
@@ -302,8 +308,8 @@ class main_window(QMainWindow, Ui_MiSleep):
         # self.hypo_axvline.remove()
         # self.hypo_axvline = self.hypo_ax.axvline(self.current_sec, color='gray', alpha=0.8)
         line_width = self.show_duration
-        if self.show_duration < self.mianno.anno_length*0.001:
-            line_width = int(self.mianno.anno_length*0.001)
+        if self.show_duration < self.mianno.anno_length * 0.001:
+            line_width = int(self.mianno.anno_length * 0.001)
         self.hypo_ax.fill_between(range(self.current_sec, self.current_sec + line_width), 0, 0.7,
                                   facecolor='red', alpha=1)
         self.hypo_ax.step(range(self.mianno.anno_length), self.mianno.sleep_state, where='mid', linewidth=1)
@@ -371,6 +377,8 @@ class main_window(QMainWindow, Ui_MiSleep):
     def hide_chs(self):
         """Hide selected channels"""
         selected_channels = [each.row() for each in self.ChListView.selectedIndexes()]
+        if not selected_channels:
+            return
         all_channels = copy.deepcopy(self.show_idx)
         for each in selected_channels:
             if each in all_channels:
@@ -385,20 +393,72 @@ class main_window(QMainWindow, Ui_MiSleep):
 
     def delete_chs(self):
         """Delete selected channels"""
+        selected_channel = [each.row() for each in self.ChListView.selectedIndexes()]
+        if not selected_channel:
+            return
         box = QMessageBox.question(self, 'Warning', 'You are deleting data!',
                                    QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
 
         if box == QMessageBox.Yes:
-            selected_channel = [each.row() for each in self.ChListView.selectedIndexes()]
+
             if len(selected_channel) == self.midata.n_channels:
                 QMessageBox.about(self, "Error", "You can't delete all channels!")
                 return
+
+            spec_name = self.midata.channels[self.current_spectrogram_idx]
             for each in sorted(selected_channel, reverse=True):
+                # Mark the deleted position
+                self.y_lims[each] = -1
+                self.y_shift[each] = -1
                 self.midata.delete(self.midata.channels[each])
+
+            # Recover the y_lims, y_shift and spec_idx
+            self.y_lims = [each for each in self.y_lims if each != -1]
+            self.y_shift = [each for each in self.y_shift if each != -1]
+            if spec_name in self.midata.channels:
+                self.current_spectrogram_idx = self.midata.channels.index(spec_name)
+            else:
+                self.current_spectrogram_idx = 0
 
             self.show_idx = list(range(self.midata.n_channels))
             self.fill_channel_listView()
             self.redraw_all(second=self.current_sec)
+
+    def scaler_up(self):
+        """Adjust selected channels' scaler, triggered by ScalerUpBt"""
+        selected_channel = [each.row() for each in self.ChListView.selectedIndexes()]
+        if not selected_channel:
+            return
+
+        self.y_lims = [lim * 0.9 if idx in selected_channel else lim for idx, lim in enumerate(self.y_lims)]
+        self.plot_signals()
+
+    def scaler_down(self):
+        """Scaler down, triggered by ScalerDownBt"""
+        selected_channel = [each.row() for each in self.ChListView.selectedIndexes()]
+        if not selected_channel:
+            return
+
+        self.y_lims = [lim * 1.1 if idx in selected_channel else lim for idx, lim in enumerate(self.y_lims)]
+        self.plot_signals()
+
+    def shift_up(self):
+        """Shift up selected channel"""
+        selected_channel = [each.row() for each in self.ChListView.selectedIndexes()]
+        if not selected_channel:
+            return
+        self.y_shift = [shift - self.y_lims[idx] * 0.05 if idx in selected_channel else shift for idx, shift in
+                        enumerate(self.y_shift)]
+        self.plot_signals()
+
+    def shift_down(self):
+        """Shift down selected channel"""
+        selected_channel = [each.row() for each in self.ChListView.selectedIndexes()]
+        if not selected_channel:
+            return
+        self.y_shift = [shift + self.y_lims[idx] * 0.05 if idx in selected_channel else shift for idx, shift in
+                        enumerate(self.y_shift)]
+        self.plot_signals()
 
     def set_show_duration(self, type_='Combo'):
         """Set show_duration with ShowRangeCombo or EpochNumSpin"""
