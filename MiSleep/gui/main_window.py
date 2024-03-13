@@ -131,6 +131,41 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.ShowRangeCombo.currentIndexChanged.connect(self.ShowRangeCombo_changed)
         self.CustomSecondsCheck.clicked.connect(self.CustomSecondCheck_clicked)
 
+    def operate_all_signals(self, state=True):
+        """Block or open all signals"""
+        self.AboutBar.blockSignals(state)
+        self.LoadBar.blockSignals(state)
+        self.SaveBar.blockSignals(state)
+
+        self.PercentileSpin.blockSignals(state)
+        self.DefaultCh4SpecBt.blockSignals(state)
+
+        self.ScrollerBar.blockSignals(state)
+
+        self.SecondSpin.blockSignals(state)
+        self.DateTimeEdit.blockSignals(state)
+
+        # Channel operations
+        self.ShowChBt.blockSignals(state)
+        self.HideChBt.blockSignals(state)
+        self.DeleteChBt.blockSignals(state)
+        self.ScalerUpBt.blockSignals(state)
+        self.ScalerDownBt.blockSignals(state)
+        self.ShiftUpBt.blockSignals(state)
+        self.ShiftDownBt.blockSignals(state)
+        # Channel name change
+        self.channel_slm.blockSignals(state)
+
+        # Filter
+        self.FilterTypeCombo.blockSignals(state)
+        self.FilterConfirmBt.blockSignals(state)
+
+        # Custom second spin edit and ShowRangeCombo
+        self.ShowRangeCombo.blockSignals(state)
+        self.EpochNumSpin.blockSignals(state)
+        self.ShowRangeCombo.blockSignals(state)
+        self.CustomSecondsCheck.blockSignals(state)
+
     def load_data(self):
         """Triggered by actionLoad_Data, get MiData"""
         data_path, _ = QFileDialog.getOpenFileName(self, 'Select data file', r'',
@@ -374,8 +409,10 @@ class main_window(QMainWindow, Ui_MiSleep):
 
     def scroller_change(self):
         """ScrollerBar value changed"""
+        self.ScrollerBar.setDisabled(True)
         current_sec = self.ScrollerBar.value()
         self.redraw_all(second=current_sec)
+        self.ScrollerBar.setEnabled(True)
 
     def SecondSpin_change(self):
         """SecondSpin changed"""
