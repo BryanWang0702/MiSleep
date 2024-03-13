@@ -32,7 +32,7 @@ def start_end2mianno(start_end):
 def sleep_state2mianno(sleep_state):
     """Transfer sleep_state to [1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, ...]"""
     start_end = [each.split(', ') for each in sleep_state]
-    return [item for each in start_end for item in [int(each[6])] * (int(each[4]) - int(each[1]))]
+    return [item for each in start_end for item in [int(each[6])] * (int(each[4]) - int(each[1]) + 1)]
 
 
 def create_new_mianno(data_duration):
