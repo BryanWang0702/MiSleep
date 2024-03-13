@@ -50,6 +50,7 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.show_idx = None  # Channels to show in plot area
         self.state_map_dict = {1: 'NREM', 2: 'REM', 3: 'Wake', 4: 'INIT'}
         self.ShowRangeCombo_dict = {0: 30, 1: 60, 2: 300, 3: 1800, 4: 3600}
+        self.FilterTypeCombo_dict = {0: 'bandpass', 1: 'highpass', 2: 'lowpass', 3: 'bandstop'}
         self.current_spectrogram_idx = 0
         self.spectrogram_percentile = 99.7
         self.show_midata = None
@@ -112,6 +113,12 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.ScalerDownBt.clicked.connect(self.scaler_down)
         self.ShiftUpBt.clicked.connect(self.shift_up)
         self.ShiftDownBt.clicked.connect(self.shift_down)
+        # Channel name change
+        self.channel_slm.dataChanged.connect(self.channel_rename)
+
+        # Filter
+        self.FilterTypeCombo.currentIndexChanged.connect(self.FilterTypeCombo_change)
+        self.FilterConfirmBt.clicked.connect(self.filter_confirm)
 
         # Custom second spin edit and ShowRangeCombo
         self.ShowRangeCombo.setEnabled(True)
@@ -252,6 +259,13 @@ class main_window(QMainWindow, Ui_MiSleep):
             y_shift = self.y_shift[each]
             self.signal_ax[i + 1].set_ylim(ymin=-y_lim + y_shift, ymax=y_lim + y_shift)
             self.signal_ax[i + 1].set_xlim(xmin=0, xmax=self.show_duration * self.midata.sf[each])
+            self.signal_ax[i + 1].fill_between(range(0, int(10 * self.midata.sf[each])), -y_lim + y_shift,
+                                               y_lim + y_shift, facecolor='orange', alpha=0.1)
+            self.signal_ax[i + 1].fill_between(range(int(10 * self.midata.sf[each]), int(20 * self.midata.sf[each])),
+                                               -y_lim + y_shift, y_lim + y_shift, facecolor='skyblue', alpha=0.1)
+            self.signal_ax[i + 1].fill_between(range(int(20 * self.midata.sf[each]), int(30 * self.midata.sf[each])),
+                                               -y_lim + y_shift, y_lim + y_shift, facecolor='red', alpha=0.1)
+
             self.signal_ax[i + 1].xaxis.set_ticks([])
             self.signal_ax[i + 1].yaxis.set_ticks([])
             self.signal_ax[i + 1].set_ylabel(f"{self.midata.channels[each]}\n\n{y_lim:.2e}")
@@ -366,6 +380,16 @@ class main_window(QMainWindow, Ui_MiSleep):
         current_sec = int((dateTime - self.ac_time).total_seconds())
         self.redraw_all(second=current_sec)
 
+    def channel_rename(self, event):
+        """Channel rename"""
+
+        new_channels = self.channel_slm.stringList()
+        for idx, each in enumerate(self.midata.channels):
+            if each != new_channels[idx]:
+                self.midata.rename_channels({each: new_channels[idx]})
+        self.fill_channel_listView()
+        self.plot_signals()
+
     def show_chs(self):
         """show selected channels"""
         selected_channels = [each.row() for each in self.ChListView.selectedIndexes()]
@@ -459,6 +483,41 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.y_shift = [shift + self.y_lims[idx] * 0.05 if idx in selected_channel else shift for idx, shift in
                         enumerate(self.y_shift)]
         self.plot_signals()
+
+    def filter_confirm(self):
+        """Filter operations, triggered by FilterConfirmBt"""
+        selected_channel = [each.row() for each in self.ChListView.selectedIndexes()]
+        if not selected_channel:
+            return
+        if len(selected_channel) > 1:
+            QMessageBox.about(self, "Error", "Select one channel to be the default channel for spectrogram.")
+            return
+
+        filter_type = self.FilterTypeCombo_dict[self.FilterTypeCombo.currentIndex()]
+        low = self.FilterLowSpin.value()
+        high = self.FilterHighSpin.value()
+        if filter_type == 'bandpass' or filter_type == 'bandstop':
+            if low >= high:
+                return
+        self.midata.filter(chans=[self.midata.channels[selected_channel[0]]], btype=filter_type, low=low, high=high)
+        self.y_lims.append(self.y_lims[selected_channel[0]])
+        self.y_shift.append(self.y_shift[selected_channel[0]])
+
+        self.show_idx.append(self.midata.n_channels - 1)
+        self.fill_channel_listView()
+        self.redraw_all(second=self.current_sec)
+
+    def FilterTypeCombo_change(self):
+        """FilterTypeCombo changed"""
+        if self.FilterTypeCombo.currentIndex() == 0 or self.FilterTypeCombo.currentIndex() == 3:
+            self.FilterHighSpin.setEnabled(True)
+            self.FilterLowSpin.setEnabled(True)
+        if self.FilterTypeCombo.currentIndex() == 1:
+            self.FilterHighSpin.setDisabled(True)
+            self.FilterLowSpin.setEnabled(True)
+        if self.FilterTypeCombo.currentIndex() == 2:
+            self.FilterHighSpin.setEnabled(True)
+            self.FilterLowSpin.setDisabled(True)
 
     def set_show_duration(self, type_='Combo'):
         """Set show_duration with ShowRangeCombo or EpochNumSpin"""

@@ -270,7 +270,7 @@
         <enum>Qt::CopyAction</enum>
        </property>
        <property name="selectionMode">
-        <enum>QAbstractItemView::MultiSelection</enum>
+        <enum>QAbstractItemView::ExtendedSelection</enum>
        </property>
        <property name="selectionBehavior">
         <enum>QAbstractItemView::SelectItems</enum>
@@ -302,8 +302,14 @@
        <property name="decimals">
         <number>1</number>
        </property>
+       <property name="minimum">
+        <double>0.200000000000000</double>
+       </property>
        <property name="singleStep">
         <double>0.100000000000000</double>
+       </property>
+       <property name="value">
+        <double>30.000000000000000</double>
        </property>
       </widget>
      </item>
@@ -380,6 +386,12 @@
        </property>
        <property name="decimals">
         <number>1</number>
+       </property>
+       <property name="minimum">
+        <double>0.200000000000000</double>
+       </property>
+       <property name="maximum">
+        <double>100.000000000000000</double>
        </property>
        <property name="singleStep">
         <double>0.100000000000000</double>

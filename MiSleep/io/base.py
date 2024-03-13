@@ -71,6 +71,15 @@ class MiData:
         if not isinstance(self._describe, str):
             raise TypeError(f"'describe' should be a string for data description, got {type(describe)}")
 
+        # Avoid duplicated name
+        temp_channel = []
+        for each in channels:
+            if each in temp_channel:
+                temp_channel.append(f"{each}_1")
+            else:
+                temp_channel.append(each)
+        channels = temp_channel
+
         # Verify the duration of each signal channel, and modify to a same integer duration in second
         temp_duration = set([math.floor(len(signals[idx]) / each) for idx, each in enumerate(sf)])
         if len(temp_duration) != 1:
@@ -115,6 +124,8 @@ class MiData:
                 if each not in self._channels:
                     raise IndexError(f"{each} is not in the signal channel list ({self._channels})")
                 else:
+                    while mapping[each] in self.channels:
+                        mapping[each] = f"{mapping[each]}_1"
                     self._channels[self._channels.index(each)] = mapping[each]
         else:
             raise TypeError(
@@ -166,6 +177,9 @@ class MiData:
             raise TypeError(f"Channel name should be a string, got {type(channel)}")
         if not isinstance(sf, (int, float)):
             raise TypeError(f"Sample frequency should be a float, got {type(sf)}")
+
+        if channel in self.channels:
+            channel = f"{channel}_1"
 
         self._signals.append(signal)
         self._channels.append(channel)
