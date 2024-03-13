@@ -206,7 +206,7 @@ class MiData:
         if time_period[1] > self._duration:
             time_period[1] = self._duration
 
-        signals = [self.signals[idx][int(time_period[0] * each): int(time_period[1]+1 * each)]
+        signals = [self.signals[idx][int(time_period[0] * each): int(time_period[1] * each)]
                    for idx, each in enumerate(self.sf)]
         channels = self.channels
         sf = self.sf

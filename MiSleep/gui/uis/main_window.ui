@@ -47,6 +47,9 @@
    <layout class="QGridLayout" name="gridLayout_3">
     <item row="1" column="0">
      <widget class="QScrollBar" name="ScrollerBar">
+      <property name="tracking">
+       <bool>false</bool>
+      </property>
       <property name="orientation">
        <enum>Qt::Horizontal</enum>
       </property>
@@ -288,6 +291,9 @@
        <property name="decimals">
         <number>1</number>
        </property>
+       <property name="singleStep">
+        <double>0.100000000000000</double>
+       </property>
       </widget>
      </item>
      <item row="3" column="1">
@@ -332,7 +338,7 @@
         <enum>QAbstractItemView::SelectItems</enum>
        </property>
        <property name="verticalScrollMode">
-        <enum>QAbstractItemView::ScrollPerPixel</enum>
+        <enum>QAbstractItemView::ScrollPerItem</enum>
        </property>
       </widget>
      </item>
@@ -389,6 +395,9 @@
        <property name="decimals">
         <number>1</number>
        </property>
+       <property name="singleStep">
+        <double>0.100000000000000</double>
+       </property>
       </widget>
      </item>
      <item row="1" column="0">
@@ -402,6 +411,9 @@
       <widget class="QDoubleSpinBox" name="PercentileSpin">
        <property name="decimals">
         <number>1</number>
+       </property>
+       <property name="singleStep">
+        <double>0.100000000000000</double>
        </property>
       </widget>
      </item>
