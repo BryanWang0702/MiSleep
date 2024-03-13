@@ -71,7 +71,7 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.hypo_ax = self.hypo_figure.subplots()
         self.hypo_canvas = FigureCanvas(self.hypo_figure)
         self.hypo_canvas.mpl_connect("button_release_event", self.click_hypo)
-        self.hypo_axvline = self.hypo_ax.axvline(self.current_sec, color='gray', alpha=0.8)
+        # self.hypo_axvline = self.hypo_ax.axvline(self.current_sec, color='gray', alpha=0.8)
 
         # Initial params for widgets
         self.channel_slm = QStringListModel()
@@ -88,7 +88,12 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.LoadBar.actionTriggered[QAction].connect(self.load_bar_dispatcher)
         self.SaveBar.actionTriggered[QAction].connect(self.save_bar_dispatcher)
 
+        # Spectrogram percentile change
         self.PercentileSpin.setValue(self.spectrogram_percentile)
+        self.PercentileSpin.setRange(0, 100)
+        self.PercentileSpin.valueChanged.connect(self.spec_percentile_change)
+        # Spectrogram default channel
+        self.DefaultCh4SpecBt.clicked.connect(self.default_ch4Spec)
 
         # Scroll bar
         self.ScrollerBar.valueChanged.connect(self.scroller_change)
@@ -102,11 +107,13 @@ class main_window(QMainWindow, Ui_MiSleep):
         # Channel operations
         self.ShowChBt.clicked.connect(self.show_chs)
         self.HideChBt.clicked.connect(self.hide_chs)
+        self.DeleteChBt.clicked.connect(self.delete_chs)
 
         # Custom second spin edit and ShowRangeCombo
         self.ShowRangeCombo.setEnabled(True)
         self.EpochNumSpin.setDisabled(True)
         self.EpochNumSpin.setRange(1, 720)
+        self.EpochNumSpin.setValue(6)
         self.EpochNumSpin.valueChanged.connect(self.EpochNumSpin_changed)
         self.ShowRangeCombo.currentIndexChanged.connect(self.ShowRangeCombo_changed)
         self.CustomSecondsCheck.clicked.connect(self.CustomSecondCheck_clicked)
@@ -194,7 +201,7 @@ class main_window(QMainWindow, Ui_MiSleep):
                               r"Seems that annotation length is different with data duration.")
             return
 
-        self.show_idx = range(self.midata.n_channels)
+        self.show_idx = list(range(self.midata.n_channels))
         self.y_lims = [max(each[:1000]) for each in self.midata.signals]
         self.y_shift = [0 for _ in range(self.midata.n_channels)]
 
@@ -202,6 +209,8 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.SecondSpin.setRange(0, self.mianno.anno_length)
         self.DateTimeEdit.setDateTimeRange(self.ac_time, self.ac_time + datetime.timedelta(
             seconds=self.mianno.anno_length))
+
+        self.hypo_ax = self.hypo_figure.subplots(nrows=1, ncols=1)
 
         # Set canvas for plot area
         self.SignalArea.setWidget(self.signal_canvas)
@@ -239,7 +248,7 @@ class main_window(QMainWindow, Ui_MiSleep):
             self.signal_ax[i + 1].set_xlim(xmin=0, xmax=self.show_duration * self.midata.sf[each])
             self.signal_ax[i + 1].xaxis.set_ticks([])
             self.signal_ax[i + 1].yaxis.set_ticks([])
-            self.signal_ax[i + 1].set_ylabel(f"{self.midata.channels[each]}\n{y_lim:.2e}")
+            self.signal_ax[i + 1].set_ylabel(f"{self.midata.channels[each]}\n\n{y_lim:.2e}")
         self.signal_ax[-1].xaxis.set_ticks([int(each * self.midata.sf[self.show_idx[-1]]) for each in
                                             range(0, self.show_duration + 1, 5)],
                                            range(self.current_sec, self.current_sec + self.show_duration + 1, 5),
@@ -247,8 +256,26 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.signal_ax[-1].xaxis.set_ticks([int(each * self.midata.sf[self.show_idx[-1]]) for each in
                                             range(0, self.show_duration + 1)], minor=True)
 
-    def plot_spectrogram(self):
+        self.signal_figure.canvas.draw()
+        self.signal_figure.canvas.flush_events()
+
+    def spec_percentile_change(self):
+        """Triggered by spectrogramPercentile change"""
+        self.spectrogram_percentile = self.PercentileSpin.value()
+        self.plot_spectrogram(flush=True)
+
+    def default_ch4Spec(self):
+        """Set default channel for spectrogram"""
+        selected_channel = [each.row() for each in self.ChListView.selectedIndexes()]
+        if len(selected_channel) != 1:
+            QMessageBox.about(self, "Error", "Select one channel to be the default channel for spectrogram.")
+            return
+        self.current_spectrogram_idx = selected_channel[0]
+        self.plot_spectrogram(flush=True)
+
+    def plot_spectrogram(self, flush=False):
         """Redraw spectrogram"""
+        self.signal_ax[0].clear()
         f, t, Sxx = spectrogram(signal=self.midata.signals[self.current_spectrogram_idx][
                                        int(self.current_sec * self.midata.sf[self.current_spectrogram_idx]):
                                        int((self.current_sec + self.show_duration) * self.midata.sf[
@@ -258,22 +285,34 @@ class main_window(QMainWindow, Ui_MiSleep):
 
         self.signal_ax[0].set_xticks([])
         self.signal_ax[0].set_ylim(0, 30)
+        self.signal_ax[0].set_ylabel(f'{self.midata.channels[self.current_spectrogram_idx]}')
         self.signal_ax[0].pcolormesh(t, f, Sxx, cmap=cmap,
                                      vmax=np.percentile(Sxx, self.spectrogram_percentile))
+
+        if flush:
+            self.signal_figure.canvas.draw()
+            self.signal_figure.canvas.flush_events()
 
     def plot_label(self):
         """Plot label (interaction with users) in the signal area"""
 
     def plot_hypo(self):
         """Plot hypnogram area"""
-        self.hypo_figure.clf()
-        self.hypo_ax = self.hypo_figure.subplots(nrows=1, ncols=1)
-        self.hypo_axvline.remove()
-        self.hypo_axvline = self.hypo_ax.axvline(self.current_sec, color='gray', alpha=0.8)
+        self.hypo_ax.clear()
+        # self.hypo_axvline.remove()
+        # self.hypo_axvline = self.hypo_ax.axvline(self.current_sec, color='gray', alpha=0.8)
+        line_width = self.show_duration
+        if self.show_duration < self.mianno.anno_length*0.001:
+            line_width = int(self.mianno.anno_length*0.001)
+        self.hypo_ax.fill_between(range(self.current_sec, self.current_sec + line_width), 0, 0.7,
+                                  facecolor='red', alpha=1)
         self.hypo_ax.step(range(self.mianno.anno_length), self.mianno.sleep_state, where='mid', linewidth=1)
-        self.hypo_ax.set_ylim(0.5, 4.5)
+        self.hypo_ax.set_ylim(0, 4.5)
         self.hypo_ax.set_xlim(0, self.mianno.anno_length)
         self.hypo_ax.yaxis.set_ticks([1, 2, 3, 4], ['NREM', 'REM', 'Wake', 'INIT'])
+
+        self.hypo_figure.canvas.draw()
+        self.hypo_figure.canvas.flush_events()
 
     def redraw_all(self, second=0):
         """Second validation and Redraw all"""
@@ -284,13 +323,13 @@ class main_window(QMainWindow, Ui_MiSleep):
         else:
             self.current_sec = second
 
+        # These 3 set functions will call the value change operation in cycle, stop first
         self.ScrollerBar.setValue(self.current_sec)
         self.SecondSpin.setValue(self.current_sec)
         self.DateTimeEdit.setDateTime(self.ac_time + datetime.timedelta(seconds=self.current_sec))
         self.plot_signals()
         self.plot_hypo()
         self.plot_label()
-        self.clear_refresh()
 
     def fill_channel_listView(self):
         """Fill channel listView with self.midata.channels"""
@@ -300,8 +339,10 @@ class main_window(QMainWindow, Ui_MiSleep):
     def click_signal(self):
         """Click the signal area and add marker or start_end label, triggered by button_release_event"""
 
-    def click_hypo(self):
+    def click_hypo(self, event):
         """Click hypnogram and jump to the time"""
+        current_sec = int(event.xdata)
+        self.redraw_all(second=current_sec)
 
     def scroller_change(self):
         """ScrollerBar value changed"""
@@ -326,7 +367,6 @@ class main_window(QMainWindow, Ui_MiSleep):
             return
         self.show_idx = sorted(selected_channels)
         self.plot_signals()
-        self.clear_refresh()
 
     def hide_chs(self):
         """Hide selected channels"""
@@ -342,10 +382,23 @@ class main_window(QMainWindow, Ui_MiSleep):
 
         self.show_idx = all_channels
         self.plot_signals()
-        self.clear_refresh()
 
     def delete_chs(self):
         """Delete selected channels"""
+        box = QMessageBox.question(self, 'Warning', 'You are deleting data!',
+                                   QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+
+        if box == QMessageBox.Yes:
+            selected_channel = [each.row() for each in self.ChListView.selectedIndexes()]
+            if len(selected_channel) == self.midata.n_channels:
+                QMessageBox.about(self, "Error", "You can't delete all channels!")
+                return
+            for each in sorted(selected_channel, reverse=True):
+                self.midata.delete(self.midata.channels[each])
+
+            self.show_idx = list(range(self.midata.n_channels))
+            self.fill_channel_listView()
+            self.redraw_all(second=self.current_sec)
 
     def set_show_duration(self, type_='Combo'):
         """Set show_duration with ShowRangeCombo or EpochNumSpin"""
