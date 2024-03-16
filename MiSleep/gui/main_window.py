@@ -68,12 +68,15 @@ class main_window(QMainWindow, Ui_MiSleep):
         # Add button click release event for signal canvas
         self.signal_canvas.mpl_connect("button_release_event", self.click_signal)
 
+        # Start-end for labels
+        self.start_end = []
+
         # Hypnogram area figure
         self.hypo_figure = plt.figure(layout='constrained')
         self.hypo_ax = self.hypo_figure.subplots()
         self.hypo_canvas = FigureCanvas(self.hypo_figure)
         self.hypo_canvas.mpl_connect("button_release_event", self.click_hypo)
-        # self.hypo_axvline = self.hypo_ax.axvline(self.current_sec, color='gray', alpha=0.8)
+        self.hypo_axvline = self.hypo_ax.axvline(self.current_sec, color='gray', alpha=0.8)
 
         # Initial params for widgets
         self.channel_slm = QStringListModel()
@@ -308,7 +311,8 @@ class main_window(QMainWindow, Ui_MiSleep):
             # plot label
             for state in sleep_state:
                 self.signal_ax[i + 1].fill_between(
-                    range(int(state[0] * self.midata.sf[each]), int((state[1]+1) * self.midata.sf[each])), -y_lim + y_shift,
+                    range(int(state[0] * self.midata.sf[each]), int((state[1] + 1) * self.midata.sf[each])),
+                    -y_lim + y_shift,
                     y_lim + y_shift, facecolor=self.state_color_dict[state[2]], alpha=0.1)
         self.signal_ax[-1].xaxis.set_ticks([int(each * self.midata.sf[self.show_idx[-1]]) for each in
                                             range(0, self.show_duration + 1, 5)],
@@ -356,21 +360,27 @@ class main_window(QMainWindow, Ui_MiSleep):
 
     def plot_label(self):
         """Plot label (interaction with users) in the signal area"""
+        for each in self.start_end:
+            if self.current_sec < each < self.current_sec + self.show_duration:
+                for idx in self.show_idx:
+                    self.signal_ax[idx + 1].axvline(int((each - self.current_sec) * self.midata.sf[idx]), color='lime',
+                                                    alpha=1)
+
+        self.plot_signals()
+        self.plot_hypo()
+        self.clear_refresh()
 
     def plot_hypo(self):
         """Plot hypnogram area"""
         self.hypo_ax.clear()
-        # self.hypo_axvline.remove()
-        # self.hypo_axvline = self.hypo_ax.axvline(self.current_sec, color='gray', alpha=0.8)
-        line_width = self.show_duration
-        if self.show_duration < self.mianno.anno_length * 0.001:
-            line_width = int(self.mianno.anno_length * 0.001)
-        self.hypo_ax.fill_between(range(self.current_sec, self.current_sec + line_width), 0, 0.7,
-                                  facecolor='red', alpha=1)
+        self.hypo_axvline.remove()
+        self.hypo_axvline = self.sleep_ax.axvline(self.position_sec, color='gray', alpha=0.8)
         self.hypo_ax.step(range(self.mianno.anno_length), self.mianno.sleep_state, where='mid', linewidth=1)
         self.hypo_ax.set_ylim(0, 4.5)
         self.hypo_ax.set_xlim(0, self.mianno.anno_length)
         self.hypo_ax.yaxis.set_ticks([1, 2, 3, 4], ['NREM', 'REM', 'Wake', 'INIT'])
+        for each in self.start_end:
+            self.hypo_ax.axvline(each, color='lime', alpha=1)
 
         self.hypo_figure.canvas.draw()
         self.hypo_figure.canvas.flush_events()
@@ -403,8 +413,30 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.channel_slm.setStringList(self.midata.channels)
         self.ChListView.setModel(self.channel_slm)
 
-    def click_signal(self):
+    def click_signal(self, event):
         """Click the signal area and add marker or start_end label, triggered by button_release_event"""
+        if event.inaxes == self.signal_ax[0]:
+            return
+
+        try:
+            sec = int(event.xdata / self.midata.sf[
+                self.show_idx[np.where(self.signal_ax == event.inaxes)[0][0] - 1]]) + self.current_sec
+        except TypeError:
+            return
+
+        if not self.start_end:
+            self.start_end.append(sec)
+        elif len(self.start_end) == 2:
+            # Clear start end label
+            self.start_end = []
+            self.start_end.append(sec)
+        else:
+            if sec <= self.start_end[0]:
+                QMessageBox.about(self, "Error", "End should be larger than Start!")
+                return
+            self.start_end.append(sec)
+
+        self.plot_label()
 
     def click_hypo(self, event):
         """Click hypnogram and jump to the time"""
