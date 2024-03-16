@@ -19,7 +19,7 @@ from misleep.preprocessing.spectral import spectrogram
 from misleep.io.base import MiData, MiAnnotation
 from misleep.io.signal_io import load_mat, load_edf
 from misleep.io.annotation_io import load_misleep_anno
-from misleep.utils.annotation import create_new_mianno
+from misleep.utils.annotation import create_new_mianno, lst2group
 from misleep.gui.about import about_dialog
 from misleep.gui.uis import Ui_MiSleep
 
@@ -49,6 +49,7 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.y_shift = None  # list of y shift for each channel
         self.show_idx = None  # Channels to show in plot area
         self.state_map_dict = {1: 'NREM', 2: 'REM', 3: 'Wake', 4: 'INIT'}
+        self.state_color_dict = {1: 'orange', 2: 'skyblue', 3: 'red', 4: 'white'}
         self.ShowRangeCombo_dict = {0: 30, 1: 60, 2: 300, 3: 1800, 4: 3600}
         self.FilterTypeCombo_dict = {0: 'bandpass', 1: 'highpass', 2: 'lowpass', 3: 'bandstop'}
         self.current_spectrogram_idx = 0
@@ -244,10 +245,10 @@ class main_window(QMainWindow, Ui_MiSleep):
                               r"Load data file and annotation file first.")
             return
 
-        if self.midata.duration != self.mianno.anno_length:
-            QMessageBox.about(self, "Error",
-                              r"Seems that annotation length is different with data duration.")
-            return
+        # if self.midata.duration != self.mianno.anno_length:
+        #     QMessageBox.about(self, "Error",
+        #                       r"Seems that annotation length is different with data duration.")
+        #     return
 
         self.show_idx = list(range(self.midata.n_channels))
         self.y_lims = [max(each[:1000]) for each in self.midata.signals]
@@ -287,6 +288,10 @@ class main_window(QMainWindow, Ui_MiSleep):
         # plot the spectrogram
         self.plot_spectrogram()
 
+        # Get label
+        sleep_state = self.mianno.sleep_state[self.current_sec: self.current_sec + self.show_duration + 1]
+        sleep_state = lst2group([i, each] for i, each in enumerate(sleep_state))
+
         for i, each in enumerate(self.show_idx):
             self.signal_ax[i + 1].plot(self.midata.signals[each][
                                        int(self.current_sec * self.midata.sf[each]):
@@ -296,16 +301,15 @@ class main_window(QMainWindow, Ui_MiSleep):
             y_shift = self.y_shift[each]
             self.signal_ax[i + 1].set_ylim(ymin=-y_lim + y_shift, ymax=y_lim + y_shift)
             self.signal_ax[i + 1].set_xlim(xmin=0, xmax=self.show_duration * self.midata.sf[each])
-            self.signal_ax[i + 1].fill_between(range(0, int(10 * self.midata.sf[each])), -y_lim + y_shift,
-                                               y_lim + y_shift, facecolor='orange', alpha=0.1)
-            self.signal_ax[i + 1].fill_between(range(int(10 * self.midata.sf[each]), int(20 * self.midata.sf[each])),
-                                               -y_lim + y_shift, y_lim + y_shift, facecolor='skyblue', alpha=0.1)
-            self.signal_ax[i + 1].fill_between(range(int(20 * self.midata.sf[each]), int(30 * self.midata.sf[each])),
-                                               -y_lim + y_shift, y_lim + y_shift, facecolor='red', alpha=0.1)
-
             self.signal_ax[i + 1].xaxis.set_ticks([])
             self.signal_ax[i + 1].yaxis.set_ticks([])
             self.signal_ax[i + 1].set_ylabel(f"{self.midata.channels[each]}\n\n{y_lim:.2e}")
+
+            # plot label
+            for state in sleep_state:
+                self.signal_ax[i + 1].fill_between(
+                    range(int(state[0] * self.midata.sf[each]), int((state[1]+1) * self.midata.sf[each])), -y_lim + y_shift,
+                    y_lim + y_shift, facecolor=self.state_color_dict[state[2]], alpha=0.1)
         self.signal_ax[-1].xaxis.set_ticks([int(each * self.midata.sf[self.show_idx[-1]]) for each in
                                             range(0, self.show_duration + 1, 5)],
                                            range(self.current_sec, self.current_sec + self.show_duration + 1, 5),

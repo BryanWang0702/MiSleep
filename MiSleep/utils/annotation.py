@@ -6,7 +6,24 @@
 @Date: 2024/3/6
 @Description:  
 """
+from itertools import groupby
+
 from misleep.io.base import MiAnnotation
+
+
+def lst2group(pre_lst):
+    """
+    Convert a list like [[1, 2], [2, 2], [3, 2], [4, 2], [5, 2], [6, 1], [7, 1], [8, 1], [9, 3], [10, 3]] to
+    [[1, 5, 2], [6, 8, 1], [9, 10, 3]]
+    :param pre_lst:
+    :return:
+    """
+
+    # Convert to [[[1, 2], [2, 2], [3, 2], [4, 2], [5, 2]], [[6, 1], [7, 1], [8, 1]], [[9, 3], [10, 3]]]
+    pre_lst = [list(group) for idx, group in groupby(pre_lst, key=lambda x: x[1])]
+
+    # Convert to [[1, 5, 2], [6, 8, 1], [9, 10, 3]]
+    return [[each[0][0], each[-1][0], each[0][1]] for each in pre_lst]
 
 
 def marker2mianno(marker):
