@@ -20,7 +20,8 @@ from misleep.preprocessing.spectral import spectrogram
 from misleep.io.base import MiData, MiAnnotation
 from misleep.io.signal_io import load_mat, load_edf
 from misleep.io.annotation_io import load_misleep_anno
-from misleep.utils.annotation import create_new_mianno, lst2group
+from misleep.gui.utils import create_new_mianno
+from misleep.utils.annotation import lst2group
 from misleep.gui.about import about_dialog
 from misleep.gui.uis import Ui_MiSleep
 import multiprocessing
