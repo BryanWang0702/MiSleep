@@ -4,7 +4,8 @@
 @File: main_window.py
 @Author: Xueqiang Wang
 @Date: 2024/3/8
-@Description:  Main window of MiSleep gui
+@Description:  Main window of MiSleep gui, all plot business is based on 
+                annotations.
 """
 import copy
 import datetime
@@ -24,7 +25,6 @@ from misleep.gui.utils import create_new_mianno
 from misleep.utils.annotation import lst2group
 from misleep.gui.about import about_dialog
 from misleep.gui.uis import Ui_MiSleep
-import multiprocessing
 
 
 class EventProcessThread(QThread):
@@ -66,10 +66,15 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.y_lims = None  # list of y lim for each channel
         self.y_shift = None  # list of y shift for each channel
         self.show_idx = None  # Channels to show in plot area
-        self.state_map_dict = {1: 'NREM', 2: 'REM', 3: 'Wake', 4: 'INIT'}
-        self.state_color_dict = {1: 'orange', 2: 'skyblue', 3: 'red', 4: 'white'}
+        self.state_map_dict = {1: "NREM", 2: "REM", 3: "Wake", 4: "INIT"}
+        self.state_color_dict = {1: "orange", 2: "skyblue", 3: "red", 4: "white"}
         self.ShowRangeCombo_dict = {0: 30, 1: 60, 2: 300, 3: 1800, 4: 3600}
-        self.FilterTypeCombo_dict = {0: 'bandpass', 1: 'highpass', 2: 'lowpass', 3: 'bandstop'}
+        self.FilterTypeCombo_dict = {
+            0: "bandpass",
+            1: "highpass",
+            2: "lowpass",
+            3: "bandstop",
+        }
         self.current_spectrogram_idx = 0
         self.spectrogram_percentile = 99.7
         self.show_midata = None
@@ -92,11 +97,13 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.start_end = []
 
         # Hypnogram area figure
-        self.hypo_figure = plt.figure(layout='constrained')
+        self.hypo_figure = plt.figure(layout="constrained")
         self.hypo_ax = self.hypo_figure.subplots()
         self.hypo_canvas = FigureCanvas(self.hypo_figure)
         self.hypo_canvas.mpl_connect("button_release_event", self.click_hypo)
-        self.hypo_axvline = self.hypo_ax.axvline(self.current_sec, color='gray', alpha=0.8)
+        self.hypo_axvline = self.hypo_ax.axvline(
+            self.current_sec, color="gray", alpha=0.8
+        )
 
         # Initial params for widgets
         self.channel_slm = QStringListModel()
@@ -215,35 +222,46 @@ class main_window(QMainWindow, Ui_MiSleep):
 
     def load_data(self):
         """Triggered by actionLoad_Data, get MiData"""
-        data_path, _ = QFileDialog.getOpenFileName(self, 'Select data file', r'',
-                                                   'Matlab Files (*.mat *.MAT);;EDF Files (*.edf *.EDF)')
+        data_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Select data file",
+            r"",
+            "Matlab Files (*.mat *.MAT);;EDF Files (*.edf *.EDF)",
+        )
 
         if data_path == "":
             return
         self.data_path = data_path
-        if self.data_path.endswith(('.mat', '.MAT')):
+        if self.data_path.endswith((".mat", ".MAT")):
             try:
                 self.midata = load_mat(data_path=self.data_path)
             except Exception:
-                QMessageBox.about(self, "Error",
-                                  r"Data file invalid, check "
-                                  r"<a href='https://github.com/BryanWang0702/MiSleep'>MiSleep</a> for detail.")
+                QMessageBox.about(
+                    self,
+                    "Error",
+                    r"Data file invalid, check "
+                    r"<a href='https://github.com/BryanWang0702/MiSleep'>MiSleep</a> for detail.",
+                )
                 self.data_path = ""
                 return
 
-        if self.data_path.endswith(('.edf', '.EDF')):
+        if self.data_path.endswith((".edf", ".EDF")):
             try:
                 self.midata = load_edf(data_path=self.data_path)
             except Exception:
-                QMessageBox.about(self, "Error",
-                                  r"Data file invalid, check "
-                                  r"<a href='https://github.com/BryanWang0702/MiSleep'>MiSleep</a> for detail.")
+                QMessageBox.about(
+                    self,
+                    "Error",
+                    r"Data file invalid, check "
+                    r"<a href='https://github.com/BryanWang0702/MiSleep'>MiSleep</a> for detail.",
+                )
                 self.data_path = ""
                 return
 
         # Set meta info
         self.DataPathEdit.setText(self.data_path)
-        self.ac_time = datetime.datetime.strptime(self.midata.time, "%Y%m%d-%H:%M:%S")
+        self.ac_time = datetime.datetime.strptime(self.midata.time, 
+                                                  "%Y%m%d-%H:%M:%S")
         self.AcTimeEdit.setDateTime(self.ac_time)
 
         # Set channel infos
@@ -253,14 +271,15 @@ class main_window(QMainWindow, Ui_MiSleep):
 
     def load_anno(self):
         """Triggered by actionLoad_Annotation"""
-        anno_path, _ = QFileDialog.getOpenFileName(self, 'Select annotation file', r'',
-                                                   'txt Files (*.txt *.TXT)')
+        anno_path, _ = QFileDialog.getOpenFileName(
+            self, "Select annotation file", r"", "txt Files (*.txt *.TXT)"
+        )
 
         if anno_path == "":
             return
         self.anno_path = anno_path
 
-        if self.anno_path.endswith(('.txt', '.TXT')):
+        if self.anno_path.endswith((".txt", ".TXT")):
             try:
                 self.mianno = load_misleep_anno(self.anno_path)
             except AssertionError as e:
@@ -268,15 +287,21 @@ class main_window(QMainWindow, Ui_MiSleep):
                     if isinstance(self.midata, MiData):
                         self.mianno = create_new_mianno(self.midata.duration)
                     else:
-                        QMessageBox.about(self, "Error",
-                                          "To create a new annotation file, load a data file first.")
+                        QMessageBox.about(
+                            self,
+                            "Error",
+                            "To create a new annotation file, load a data file first.",
+                        )
                         self.anno_path = ""
                         return
 
                 if e.args[0] == "Invalid":
-                    QMessageBox.about(self, "Error",
-                                      r"Annotation file invalid, check "
-                                      r"<a href='https://github.com/BryanWang0702/MiSleep'>MiSleep</a> for detail.")
+                    QMessageBox.about(
+                        self,
+                        "Error",
+                        r"Annotation file invalid, check "
+                        r"<a href='https://github.com/BryanWang0702/MiSleep'>MiSleep</a> for detail.",
+                    )
                     self.data_path = ""
                     return
         # Set meta info
@@ -286,9 +311,12 @@ class main_window(QMainWindow, Ui_MiSleep):
 
     def check_show(self):
         """Check and show all, triggered by actionShow"""
-        if not isinstance(self.midata, MiData) or not isinstance(self.mianno, MiAnnotation):
-            QMessageBox.about(self, "Error",
-                              r"Load data file and annotation file first.")
+        if not isinstance(self.midata, MiData) or not isinstance(
+            self.mianno, MiAnnotation
+        ):
+            QMessageBox.about(
+                self, "Error", r"Load data file and annotation file first."
+            )
             return
 
         # if self.midata.duration != self.mianno.anno_length:
@@ -298,7 +326,7 @@ class main_window(QMainWindow, Ui_MiSleep):
 
         self.show_idx = list(range(self.midata.n_channels))
         self.y_lims = [max(each[:1000]) for each in self.midata.signals]
-        self.y_lims = [1e-3 if each == 0. else each for each in self.y_lims]
+        self.y_lims = [1e-3 if each == 0.0 else each for each in self.y_lims]
         self.y_shift = [0 for _ in range(self.midata.n_channels)]
 
         self.ScrollerBar.setRange(0, self.mianno.anno_length)
@@ -306,8 +334,10 @@ class main_window(QMainWindow, Ui_MiSleep):
 
         # Prevent DateTimeEdit change
         self.DateTimeEdit.blockSignals(True)
-        self.DateTimeEdit.setDateTimeRange(self.ac_time, self.ac_time + datetime.timedelta(
-            seconds=self.mianno.anno_length))
+        self.DateTimeEdit.setDateTimeRange(
+            self.ac_time,
+            self.ac_time + datetime.timedelta(seconds=self.mianno.anno_length),
+        )
         self.DateTimeEdit.blockSignals(False)
 
         self.hypo_ax = self.hypo_figure.subplots(nrows=1, ncols=1)
@@ -333,39 +363,67 @@ class main_window(QMainWindow, Ui_MiSleep):
     def plot_signals(self, flush=True):
         """Main plot function, plot signal area, once replot the signal, update all figures"""
         self.signal_figure.clf()
-        self.signal_ax = self.signal_figure.subplots(nrows=len(self.show_idx) + 1, ncols=1)
+        self.signal_ax = self.signal_figure.subplots(
+            nrows=len(self.show_idx) + 1, ncols=1
+        )
         # plot the spectrogram
         self.plot_spectrogram()
 
         # Get label
-        sleep_state = self.mianno.sleep_state[self.current_sec: self.current_sec + self.show_duration + 1]
+        sleep_state = self.mianno.sleep_state[
+            self.current_sec : self.current_sec + self.show_duration + 1
+        ]
         sleep_state = lst2group([i, each] for i, each in enumerate(sleep_state))
 
         for i, each in enumerate(self.show_idx):
-            self.signal_ax[i + 1].plot(self.midata.signals[each][
-                                       int(self.current_sec * self.midata.sf[each]):
-                                       int((self.current_sec + self.show_duration) * self.midata.sf[each])],
-                                       color='black', linewidth=0.5)
+            self.signal_ax[i + 1].plot(
+                self.midata.signals[each][
+                    int(self.current_sec * self.midata.sf[each]) : int(
+                        (self.current_sec + self.show_duration) * self.midata.sf[each]
+                    )
+                ],
+                color="black",
+                linewidth=0.5,
+            )
             y_lim = self.y_lims[each]
             y_shift = self.y_shift[each]
             self.signal_ax[i + 1].set_ylim(ymin=-y_lim + y_shift, ymax=y_lim + y_shift)
-            self.signal_ax[i + 1].set_xlim(xmin=0, xmax=self.show_duration * self.midata.sf[each])
+            self.signal_ax[i + 1].set_xlim(
+                xmin=0, xmax=self.show_duration * self.midata.sf[each]
+            )
             self.signal_ax[i + 1].xaxis.set_ticks([])
             self.signal_ax[i + 1].yaxis.set_ticks([])
-            self.signal_ax[i + 1].set_ylabel(f"{self.midata.channels[each]}\n\n{y_lim:.2e}")
+            self.signal_ax[i + 1].set_ylabel(
+                f"{self.midata.channels[each]}\n\n{y_lim:.2e}"
+            )
 
             # plot label
             for state in sleep_state:
                 self.signal_ax[i + 1].fill_between(
-                    range(int(state[0] * self.midata.sf[each]), int((state[1] + 1) * self.midata.sf[each])),
+                    range(
+                        int(state[0] * self.midata.sf[each]),
+                        int((state[1] + 1) * self.midata.sf[each]),
+                    ),
                     -y_lim + y_shift,
-                    y_lim + y_shift, facecolor=self.state_color_dict[state[2]], alpha=0.1)
-        self.signal_ax[-1].xaxis.set_ticks([int(each * self.midata.sf[self.show_idx[-1]]) for each in
-                                            range(0, self.show_duration + 1, 5)],
-                                           range(self.current_sec, self.current_sec + self.show_duration + 1, 5),
-                                           rotation=45)
-        self.signal_ax[-1].xaxis.set_ticks([int(each * self.midata.sf[self.show_idx[-1]]) for each in
-                                            range(0, self.show_duration + 1)], minor=True)
+                    y_lim + y_shift,
+                    facecolor=self.state_color_dict[state[2]],
+                    alpha=0.1,
+                )
+        self.signal_ax[-1].xaxis.set_ticks(
+            [
+                int(each * self.midata.sf[self.show_idx[-1]])
+                for each in range(0, self.show_duration + 1, 5)
+            ],
+            range(self.current_sec, self.current_sec + self.show_duration + 1, 5),
+            rotation=45,
+        )
+        self.signal_ax[-1].xaxis.set_ticks(
+            [
+                int(each * self.midata.sf[self.show_idx[-1]])
+                for each in range(0, self.show_duration + 1)
+            ],
+            minor=True,
+        )
 
         if flush:
             self.signal_figure.canvas.draw()
@@ -380,7 +438,11 @@ class main_window(QMainWindow, Ui_MiSleep):
         """Set default channel for spectrogram"""
         selected_channel = [each.row() for each in self.ChListView.selectedIndexes()]
         if len(selected_channel) != 1:
-            QMessageBox.about(self, "Error", "Select one channel to be the default channel for spectrogram.")
+            QMessageBox.about(
+                self,
+                "Error",
+                "Select one channel to be the default channel for spectrogram.",
+            )
             return
         self.current_spectrogram_idx = selected_channel[0]
         self.plot_spectrogram(flush=True)
@@ -388,25 +450,37 @@ class main_window(QMainWindow, Ui_MiSleep):
     def plot_spectrogram(self, flush=False):
         """Redraw spectrogram"""
         self.signal_ax[0].clear()
-        f, t, Sxx = spectrogram(signal=self.midata.signals[self.current_spectrogram_idx][
-                                       int(self.current_sec * self.midata.sf[self.current_spectrogram_idx]):
-                                       int((self.current_sec + self.show_duration) * self.midata.sf[
-                                           self.current_spectrogram_idx])],
-                                sf=self.midata.sf[self.current_spectrogram_idx], step=1, window=1, norm=True)
-        cmap = plt.cm.get_cmap('jet')
+        f, t, Sxx = spectrogram(
+            signal=self.midata.signals[self.current_spectrogram_idx][
+                int(
+                    self.current_sec * self.midata.sf[self.current_spectrogram_idx]
+                ) : int(
+                    (self.current_sec + self.show_duration)
+                    * self.midata.sf[self.current_spectrogram_idx]
+                )
+            ],
+            sf=self.midata.sf[self.current_spectrogram_idx],
+            step=1,
+            window=1,
+            norm=True,
+        )
+        cmap = plt.cm.get_cmap("jet")
 
         self.signal_ax[0].set_xticks([])
         self.signal_ax[0].set_ylim(0, 30)
-        self.signal_ax[0].set_ylabel(f'{self.midata.channels[self.current_spectrogram_idx]}')
-        self.signal_ax[0].pcolormesh(t, f, Sxx, cmap=cmap,
-                                     vmax=np.percentile(Sxx, self.spectrogram_percentile))
+        self.signal_ax[0].set_ylabel(
+            f"{self.midata.channels[self.current_spectrogram_idx]}"
+        )
+        self.signal_ax[0].pcolormesh(
+            t, f, Sxx, cmap=cmap, vmax=np.percentile(Sxx, self.spectrogram_percentile)
+        )
 
         if flush:
             self.signal_figure.canvas.draw()
             self.signal_figure.canvas.flush_events()
 
-    def plot_label(self):
-        """Plot label (interaction with users) in the signal area"""
+    def plot_start_end_line(self):
+        """Plot start_end lime line (interaction with users) in the signal area"""
         if self.start_end == []:
             return
 
@@ -417,29 +491,43 @@ class main_window(QMainWindow, Ui_MiSleep):
             except:
                 pass
         for i, each in enumerate(self.start_end):
-            if self.current_sec < each < self.current_sec + self.show_duration:
+            if self.current_sec <= each <= self.current_sec + self.show_duration:
                 for idx in self.show_idx:
                     y_lim = self.y_lims[idx]
                     y_shift = self.y_shift[idx]
                     if i == 0:
-                        self.signal_start_end_axvline.append(self.signal_ax[idx + 1].axvline(
-                            int((each - self.current_sec) * self.midata.sf[idx]),
-                            color='lime',
-                            alpha=1))
                         self.signal_start_end_axvline.append(
-                            self.signal_ax[-1].text(x=int((each - self.current_sec) * self.midata.sf[idx]),
-                                                    y=-y_lim + y_shift,
-                                                    s="S", color='lime'))
+                            self.signal_ax[idx + 1].axvline(
+                                int((each - self.current_sec) * self.midata.sf[idx]),
+                                color="lime",
+                                alpha=1,
+                            )
+                        )
+                        self.signal_start_end_axvline.append(
+                            self.signal_ax[-1].text(
+                                x=int((each - self.current_sec) * self.midata.sf[idx]),
+                                y=-y_lim + y_shift,
+                                s="S",
+                                color="lime",
+                            )
+                        )
                     if i == 1:
-                        self.signal_start_end_axvline.append(self.signal_ax[idx + 1].axvline(
-                            int((each - self.current_sec) * self.midata.sf[idx]),
-                            color='lime',
-                            alpha=1))
                         self.signal_start_end_axvline.append(
-                            self.signal_ax[-1].text(x=int((each - self.current_sec) * self.midata.sf[idx]),
-                                                    y=-y_lim + y_shift,
-                                                    horizontalalignment="right",
-                                                    s="E", color='lime'))
+                            self.signal_ax[idx + 1].axvline(
+                                int((each - self.current_sec) * self.midata.sf[idx]),
+                                color="lime",
+                                alpha=1,
+                            )
+                        )
+                        self.signal_start_end_axvline.append(
+                            self.signal_ax[-1].text(
+                                x=int((each - self.current_sec) * self.midata.sf[idx]),
+                                y=-y_lim + y_shift,
+                                horizontalalignment="right",
+                                s="E",
+                                color="lime",
+                            )
+                        )
         self.signal_figure.canvas.draw()
         self.signal_figure.canvas.flush_events()
 
@@ -449,13 +537,20 @@ class main_window(QMainWindow, Ui_MiSleep):
         """Plot hypnogram area"""
         self.hypo_ax.clear()
         self.hypo_axvline.remove()
-        self.hypo_axvline = self.hypo_ax.axvline(self.current_sec, color='gray', alpha=0.8)
-        self.hypo_ax.step(range(self.mianno.anno_length), self.mianno.sleep_state, where='mid', linewidth=1)
+        self.hypo_axvline = self.hypo_ax.axvline(
+            self.current_sec, color="gray", alpha=0.8
+        )
+        self.hypo_ax.step(
+            range(self.mianno.anno_length),
+            self.mianno.sleep_state,
+            where="mid",
+            linewidth=1,
+        )
         self.hypo_ax.set_ylim(0, 4.5)
         self.hypo_ax.set_xlim(0, self.mianno.anno_length)
-        self.hypo_ax.yaxis.set_ticks([1, 2, 3, 4], ['NREM', 'REM', 'Wake', 'INIT'])
+        self.hypo_ax.yaxis.set_ticks([1, 2, 3, 4], ["NREM", "REM", "Wake", "INIT"])
         for each in self.start_end:
-            self.hypo_ax.axvline(each, color='lime', alpha=1)
+            self.hypo_ax.axvline(each, color="lime", alpha=1)
 
         self.hypo_figure.canvas.draw()
         self.hypo_figure.canvas.flush_events()
@@ -475,13 +570,15 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.DateTimeEdit.blockSignals(True)
         self.ScrollerBar.setValue(self.current_sec)
         self.SecondSpin.setValue(self.current_sec)
-        self.DateTimeEdit.setDateTime(self.ac_time + datetime.timedelta(seconds=self.current_sec))
+        self.DateTimeEdit.setDateTime(
+            self.ac_time + datetime.timedelta(seconds=self.current_sec)
+        )
         self.ScrollerBar.blockSignals(False)
         self.SecondSpin.blockSignals(False)
         self.DateTimeEdit.blockSignals(False)
         self.plot_signals()
         self.plot_hypo()
-        self.plot_label()
+        self.plot_start_end_line()
 
     def fill_channel_listView(self):
         """Fill channel listView with self.midata.channels"""
@@ -494,8 +591,13 @@ class main_window(QMainWindow, Ui_MiSleep):
             return
 
         try:
-            sec = int(event.xdata / self.midata.sf[
-                self.show_idx[np.where(self.signal_ax == event.inaxes)[0][0] - 1]]) + self.current_sec
+            sec = (
+                int(event.xdata / self.midata.sf[
+                        self.show_idx[np.where(self.signal_ax == event.inaxes)[0][0] - 1]
+                    ]
+                )
+                + self.current_sec
+            )
         except TypeError:
             return
 
@@ -509,10 +611,9 @@ class main_window(QMainWindow, Ui_MiSleep):
             if sec < self.start_end[0]:
                 QMessageBox.about(self, "Error", "End should be larger than Start!")
                 return
-            self.start_end.append(sec+1)
+            self.start_end.append(sec + 1)
 
-
-        self.plot_label()
+        self.plot_start_end_line()
 
     def click_hypo(self, event):
         """Click hypnogram and jump to the time"""
@@ -576,8 +677,13 @@ class main_window(QMainWindow, Ui_MiSleep):
         selected_channel = [each.row() for each in self.ChListView.selectedIndexes()]
         if not selected_channel:
             return
-        box = QMessageBox.question(self, 'Warning', 'You are deleting data!',
-                                   QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        box = QMessageBox.question(
+            self,
+            "Warning",
+            "You are deleting data!",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
+        )
 
         if box == QMessageBox.Yes:
 
@@ -610,7 +716,10 @@ class main_window(QMainWindow, Ui_MiSleep):
         if not selected_channel:
             return
 
-        self.y_lims = [lim * 0.9 if idx in selected_channel else lim for idx, lim in enumerate(self.y_lims)]
+        self.y_lims = [
+            lim * 0.9 if idx in selected_channel else lim
+            for idx, lim in enumerate(self.y_lims)
+        ]
         self.plot_signals()
 
     def scaler_down(self):
@@ -619,7 +728,10 @@ class main_window(QMainWindow, Ui_MiSleep):
         if not selected_channel:
             return
 
-        self.y_lims = [lim * 1.1 if idx in selected_channel else lim for idx, lim in enumerate(self.y_lims)]
+        self.y_lims = [
+            lim * 1.1 if idx in selected_channel else lim
+            for idx, lim in enumerate(self.y_lims)
+        ]
         self.plot_signals()
 
     def shift_up(self):
@@ -627,8 +739,10 @@ class main_window(QMainWindow, Ui_MiSleep):
         selected_channel = [each.row() for each in self.ChListView.selectedIndexes()]
         if not selected_channel:
             return
-        self.y_shift = [shift - self.y_lims[idx] * 0.05 if idx in selected_channel else shift for idx, shift in
-                        enumerate(self.y_shift)]
+        self.y_shift = [
+            shift - self.y_lims[idx] * 0.05 if idx in selected_channel else shift
+            for idx, shift in enumerate(self.y_shift)
+        ]
         self.plot_signals()
 
     def shift_down(self):
@@ -636,8 +750,10 @@ class main_window(QMainWindow, Ui_MiSleep):
         selected_channel = [each.row() for each in self.ChListView.selectedIndexes()]
         if not selected_channel:
             return
-        self.y_shift = [shift + self.y_lims[idx] * 0.05 if idx in selected_channel else shift for idx, shift in
-                        enumerate(self.y_shift)]
+        self.y_shift = [
+            shift + self.y_lims[idx] * 0.05 if idx in selected_channel else shift
+            for idx, shift in enumerate(self.y_shift)
+        ]
         self.plot_signals()
 
     def filter_confirm(self):
@@ -646,16 +762,25 @@ class main_window(QMainWindow, Ui_MiSleep):
         if not selected_channel:
             return
         if len(selected_channel) > 1:
-            QMessageBox.about(self, "Error", "Select one channel to be the default channel for spectrogram.")
+            QMessageBox.about(
+                self,
+                "Error",
+                "Select one channel to be the default channel for spectrogram.",
+            )
             return
 
         filter_type = self.FilterTypeCombo_dict[self.FilterTypeCombo.currentIndex()]
         low = self.FilterLowSpin.value()
         high = self.FilterHighSpin.value()
-        if filter_type == 'bandpass' or filter_type == 'bandstop':
+        if filter_type == "bandpass" or filter_type == "bandstop":
             if low >= high:
                 return
-        self.midata.filter(chans=[self.midata.channels[selected_channel[0]]], btype=filter_type, low=low, high=high)
+        self.midata.filter(
+            chans=[self.midata.channels[selected_channel[0]]],
+            btype=filter_type,
+            low=low,
+            high=high,
+        )
         self.y_lims.append(self.y_lims[selected_channel[0]])
         self.y_shift.append(self.y_shift[selected_channel[0]])
 
@@ -665,7 +790,10 @@ class main_window(QMainWindow, Ui_MiSleep):
 
     def FilterTypeCombo_change(self):
         """FilterTypeCombo changed"""
-        if self.FilterTypeCombo.currentIndex() == 0 or self.FilterTypeCombo.currentIndex() == 3:
+        if (
+            self.FilterTypeCombo.currentIndex() == 0
+            or self.FilterTypeCombo.currentIndex() == 3
+        ):
             self.FilterHighSpin.setEnabled(True)
             self.FilterLowSpin.setEnabled(True)
         if self.FilterTypeCombo.currentIndex() == 1:
@@ -675,18 +803,21 @@ class main_window(QMainWindow, Ui_MiSleep):
             self.FilterHighSpin.setEnabled(True)
             self.FilterLowSpin.setDisabled(True)
 
-    def set_show_duration(self, type_='Combo'):
+    def set_show_duration(self, type_="Combo"):
         """Set show_duration with ShowRangeCombo or EpochNumSpin"""
 
-        if type_ == 'Combo':
+        if type_ == "Combo":
             selected_idx = self.ShowRangeCombo.currentIndex()
-            if self.ShowRangeCombo_dict[selected_idx] + self.current_sec >= self.mianno.anno_length:
+            if (
+                self.ShowRangeCombo_dict[selected_idx] + self.current_sec
+                >= self.mianno.anno_length
+            ):
                 self.show_duration = 30
                 self.current_sec = 0
                 self.ShowRangeCombo.setCurrentIndex(0)
             else:
                 self.show_duration = self.ShowRangeCombo_dict[selected_idx]
-        if type_ == 'Spin':
+        if type_ == "Spin":
             show_duration = self.EpochNumSpin.value() * self.epoch_length
             if show_duration + self.current_sec >= self.mianno.anno_length:
                 self.show_duration = 30
@@ -703,32 +834,32 @@ class main_window(QMainWindow, Ui_MiSleep):
         if self.CustomSecondsCheck.isChecked():
             self.ShowRangeCombo.setDisabled(True)
             self.EpochNumSpin.setEnabled(True)
-            self.set_show_duration(type_='Spin')
+            self.set_show_duration(type_="Spin")
         else:
             self.ShowRangeCombo.setEnabled(True)
             self.EpochNumSpin.setDisabled(True)
-            self.set_show_duration(type_='Combo')
+            self.set_show_duration(type_="Combo")
 
     def ShowRangeCombo_changed(self):
         """Triggered by ShowRangeCombo index change"""
-        self.set_show_duration(type_='Combo')
+        self.set_show_duration(type_="Combo")
 
     def EpochNumSpin_changed(self):
         """Triggered by EpochNumSpin value change"""
-        self.set_show_duration(type_='Spin')
+        self.set_show_duration(type_="Spin")
 
     def about_bar_dispatcher(self, signal):
         """Triggered by AboutBar action, show About dialog"""
-        if signal.text() == 'About':
+        if signal.text() == "About":
             self.about_dialog.exec()
 
     def load_bar_dispatcher(self, signal):
         """Triggered by LoadBar action, load data, load annotation, show"""
-        if signal.text() == 'Load Data':
+        if signal.text() == "Load Data":
             self.load_data()
-        if signal.text() == 'Load Annotation':
+        if signal.text() == "Load Annotation":
             self.load_anno()
-        if signal.text() == 'Show':
+        if signal.text() == "Show":
             self.check_show()
 
         # if signal.text() == 'Load Data':

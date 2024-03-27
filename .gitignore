@@ -1,4 +1,5 @@
 #ignore directories
+*/__pycache__
 misleep/__pycache__
 misleep/io/__pycache__
 misleep/io/test/__pycache__
@@ -10,3 +11,5 @@ MiSleep/gui/__pycache__
 .idea
 datasets
 
+#ignore files
+*.pyc
