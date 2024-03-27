@@ -8,9 +8,10 @@
 """
 import copy
 import datetime
+from queue import Queue
 
 import numpy as np
-from PyQt5.QtCore import QCoreApplication, Qt, QStringListModel
+from PyQt5.QtCore import QCoreApplication, Qt, QStringListModel, QThread, pyqtSignal
 from PyQt5.QtWidgets import QMainWindow, QFileDialog, QMessageBox, QAction
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -22,6 +23,22 @@ from misleep.io.annotation_io import load_misleep_anno
 from misleep.utils.annotation import create_new_mianno, lst2group
 from misleep.gui.about import about_dialog
 from misleep.gui.uis import Ui_MiSleep
+import multiprocessing
+
+
+class EventProcessThread(QThread):
+    slot_func = pyqtSignal(object)
+
+    def __init__(self, parent=None):
+        super().__init__(parent=parent)
+        self.queue = Queue()
+
+    def run(self):
+        event = self.queue.get()
+        self.slot_func.emit(event)
+
+    def put(self, event):
+        self.queue.put(event)
 
 
 class main_window(QMainWindow, Ui_MiSleep):
@@ -67,6 +84,8 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.signal_canvas = FigureCanvas(self.signal_figure)
         # Add button click release event for signal canvas
         self.signal_canvas.mpl_connect("button_release_event", self.click_signal)
+        # start and end axvline, only two lines
+        self.signal_start_end_axvline = []
 
         # Start-end for labels
         self.start_end = []
@@ -84,6 +103,10 @@ class main_window(QMainWindow, Ui_MiSleep):
         # Initial about dialog and spec window
         self.about_dialog = about_dialog()
 
+        # event processor
+        # self.event_processor = EventProcessThread()
+        self.queue = Queue()
+
         self.init_qt()
 
         self.TEST_COUNT = 0
@@ -91,6 +114,11 @@ class main_window(QMainWindow, Ui_MiSleep):
     def init_qt(self):
         """Initial actions for qt widgets"""
         # Set triggers for toolBars
+        # self.AboutBar.actionTriggered[QAction].connect(self.about_bar_dispatcher)
+        # self.LoadBar.actionTriggered[QAction].connect(self.load_bar_dispatcher)
+        # self.SaveBar.actionTriggered[QAction].connect(self.save_bar_dispatcher)
+
+        # Use lambda to pass param for queue
         self.AboutBar.actionTriggered[QAction].connect(self.about_bar_dispatcher)
         self.LoadBar.actionTriggered[QAction].connect(self.load_bar_dispatcher)
         self.SaveBar.actionTriggered[QAction].connect(self.save_bar_dispatcher)
@@ -137,10 +165,6 @@ class main_window(QMainWindow, Ui_MiSleep):
 
     def operate_all_signals(self, state=True):
         """Block or open all signals"""
-        self.AboutBar.blockSignals(state)
-        self.LoadBar.blockSignals(state)
-        self.SaveBar.blockSignals(state)
-
         self.PercentileSpin.blockSignals(state)
         self.DefaultCh4SpecBt.blockSignals(state)
 
@@ -169,6 +193,24 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.EpochNumSpin.blockSignals(state)
         self.ShowRangeCombo.blockSignals(state)
         self.CustomSecondsCheck.blockSignals(state)
+
+    def event_collector(self, event, args=None):
+        """Collect event"""
+        self.event_processor.put(event)
+        self.event_processor.slot_func.connect(self.test_ptqtSignal_connect)
+        self.event_processor.start()
+        # self.queue.put(event)
+        # event = self.queue.get()
+        # try:
+        #     event()
+        # except:
+        #     pass
+
+    def test_ptqtSignal_connect(self, event):
+        try:
+            event()
+        except:
+            pass
 
     def load_data(self):
         """Triggered by actionLoad_Data, get MiData"""
@@ -260,8 +302,12 @@ class main_window(QMainWindow, Ui_MiSleep):
 
         self.ScrollerBar.setRange(0, self.mianno.anno_length)
         self.SecondSpin.setRange(0, self.mianno.anno_length)
+
+        # Prevent DateTimeEdit change
+        self.DateTimeEdit.blockSignals(True)
         self.DateTimeEdit.setDateTimeRange(self.ac_time, self.ac_time + datetime.timedelta(
             seconds=self.mianno.anno_length))
+        self.DateTimeEdit.blockSignals(False)
 
         self.hypo_ax = self.hypo_figure.subplots(nrows=1, ncols=1)
 
@@ -278,13 +324,12 @@ class main_window(QMainWindow, Ui_MiSleep):
             self.signal_figure.clf()
             self.hypo_figure.clf()
 
+        self.hypo_figure.canvas.draw()
+        self.hypo_figure.canvas.flush_events()
         self.signal_figure.canvas.draw()
         self.signal_figure.canvas.flush_events()
 
-        self.hypo_figure.canvas.draw()
-        self.hypo_figure.canvas.flush_events()
-
-    def plot_signals(self):
+    def plot_signals(self, flush=True):
         """Main plot function, plot signal area, once replot the signal, update all figures"""
         self.signal_figure.clf()
         self.signal_ax = self.signal_figure.subplots(nrows=len(self.show_idx) + 1, ncols=1)
@@ -321,8 +366,9 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.signal_ax[-1].xaxis.set_ticks([int(each * self.midata.sf[self.show_idx[-1]]) for each in
                                             range(0, self.show_duration + 1)], minor=True)
 
-        self.signal_figure.canvas.draw()
-        self.signal_figure.canvas.flush_events()
+        if flush:
+            self.signal_figure.canvas.draw()
+            self.signal_figure.canvas.flush_events()
 
     def spec_percentile_change(self):
         """Triggered by spectrogramPercentile change"""
@@ -360,21 +406,49 @@ class main_window(QMainWindow, Ui_MiSleep):
 
     def plot_label(self):
         """Plot label (interaction with users) in the signal area"""
-        for each in self.start_end:
+        if self.start_end == []:
+            return
+
+        # self.plot_signals(flush=False)
+        for axvline in self.signal_start_end_axvline:
+            try:
+                axvline.remove()
+            except:
+                pass
+        for i, each in enumerate(self.start_end):
             if self.current_sec < each < self.current_sec + self.show_duration:
                 for idx in self.show_idx:
-                    self.signal_ax[idx + 1].axvline(int((each - self.current_sec) * self.midata.sf[idx]), color='lime',
-                                                    alpha=1)
+                    y_lim = self.y_lims[idx]
+                    y_shift = self.y_shift[idx]
+                    if i == 0:
+                        self.signal_start_end_axvline.append(self.signal_ax[idx + 1].axvline(
+                            int((each - self.current_sec) * self.midata.sf[idx]),
+                            color='lime',
+                            alpha=1))
+                        self.signal_start_end_axvline.append(
+                            self.signal_ax[-1].text(x=int((each - self.current_sec) * self.midata.sf[idx]),
+                                                    y=-y_lim + y_shift,
+                                                    s="S", color='lime'))
+                    if i == 1:
+                        self.signal_start_end_axvline.append(self.signal_ax[idx + 1].axvline(
+                            int((each - self.current_sec) * self.midata.sf[idx]),
+                            color='lime',
+                            alpha=1))
+                        self.signal_start_end_axvline.append(
+                            self.signal_ax[-1].text(x=int((each - self.current_sec) * self.midata.sf[idx]),
+                                                    y=-y_lim + y_shift,
+                                                    horizontalalignment="right",
+                                                    s="E", color='lime'))
+        self.signal_figure.canvas.draw()
+        self.signal_figure.canvas.flush_events()
 
-        self.plot_signals()
         self.plot_hypo()
-        self.clear_refresh()
 
     def plot_hypo(self):
         """Plot hypnogram area"""
         self.hypo_ax.clear()
         self.hypo_axvline.remove()
-        self.hypo_axvline = self.sleep_ax.axvline(self.position_sec, color='gray', alpha=0.8)
+        self.hypo_axvline = self.hypo_ax.axvline(self.current_sec, color='gray', alpha=0.8)
         self.hypo_ax.step(range(self.mianno.anno_length), self.mianno.sleep_state, where='mid', linewidth=1)
         self.hypo_ax.set_ylim(0, 4.5)
         self.hypo_ax.set_xlim(0, self.mianno.anno_length)
@@ -431,10 +505,11 @@ class main_window(QMainWindow, Ui_MiSleep):
             self.start_end = []
             self.start_end.append(sec)
         else:
-            if sec <= self.start_end[0]:
+            if sec < self.start_end[0]:
                 QMessageBox.about(self, "Error", "End should be larger than Start!")
                 return
-            self.start_end.append(sec)
+            self.start_end.append(sec+1)
+
 
         self.plot_label()
 
@@ -445,10 +520,10 @@ class main_window(QMainWindow, Ui_MiSleep):
 
     def scroller_change(self):
         """ScrollerBar value changed"""
-        self.ScrollerBar.setDisabled(True)
+        # self.ScrollerBar.setDisabled(True)
         current_sec = self.ScrollerBar.value()
         self.redraw_all(second=current_sec)
-        self.ScrollerBar.setEnabled(True)
+        # self.ScrollerBar.setEnabled(True)
 
     def SecondSpin_change(self):
         """SecondSpin changed"""
@@ -654,6 +729,13 @@ class main_window(QMainWindow, Ui_MiSleep):
             self.load_anno()
         if signal.text() == 'Show':
             self.check_show()
+
+        # if signal.text() == 'Load Data':
+        #     self.event_collector(self.load_data)
+        # if signal.text() == 'Load Annotation':
+        #     self.event_collector(self.load_anno)
+        # if signal.text() == 'Show':
+        #     self.event_collector(self.check_show)
 
     def save_bar_dispatcher(self, signal):
         """Triggered by SaveBar action, save data, save annotation"""

@@ -8,7 +8,7 @@
 """
 import unittest
 
-from misleep import show
+from misleep.gui.show import show
 
 
 class TestMiData(unittest.TestCase):
