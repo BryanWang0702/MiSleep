@@ -481,8 +481,6 @@ class main_window(QMainWindow, Ui_MiSleep):
 
     def plot_start_end_line(self):
         """Plot start_end lime line (interaction with users) in the signal area"""
-        if self.start_end == []:
-            return
 
         # self.plot_signals(flush=False)
         for axvline in self.signal_start_end_axvline:
@@ -600,6 +598,23 @@ class main_window(QMainWindow, Ui_MiSleep):
             )
         except TypeError:
             return
+
+        if event.button == 3:
+            # Mouse right click, cancel the exist line(s)
+
+            # Remove the start_end lime line, if right click the start line,
+            # cancel two lines
+            if len(self.start_end) == 0:
+                return
+            if len(self.start_end) >= 1 and sec == self.start_end[0]:
+                self.start_end = []
+            if len(self.start_end) == 2 and sec+1 == self.start_end[1]:
+                self.start_end.pop(1)
+
+            self.plot_start_end_line()
+
+            return
+
 
         if not self.start_end:
             self.start_end.append(sec)
