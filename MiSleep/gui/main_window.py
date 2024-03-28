@@ -24,7 +24,9 @@ from misleep.io.annotation_io import load_misleep_anno
 from misleep.gui.utils import create_new_mianno
 from misleep.utils.annotation import lst2group
 from misleep.gui.about import about_dialog
-from misleep.gui.uis import Ui_MiSleep
+from misleep.gui.label_dialog import label_dialog
+from misleep.gui.spec_dialog import spec_dialog
+from misleep.gui.uis.main_window_ui import Ui_MiSleep
 
 
 class EventProcessThread(QThread):
@@ -81,6 +83,10 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.epoch_length = 5
         self.ac_time = None
 
+        # Default marker label and start_end label for label dialog
+        self.marker_label = ['Injection', 'Pat', 'Add water', 'label', 'label']
+        self.start_end_label = ['Spindle', 'Slow wave activity', 'start_end_label']
+
         # Signal area figure
         self.signal_figure = plt.figure()
         self.signal_ax = self.signal_figure.subplots()
@@ -110,10 +116,14 @@ class main_window(QMainWindow, Ui_MiSleep):
 
         # Initial about dialog and spec window
         self.about_dialog = about_dialog()
+        self.spec_dialog = spec_dialog()
+        # Initial label dialog
+        self.label_dialog = label_dialog(marker_label=self.marker_label,
+                                         start_end_label=self.start_end_label)
 
-        # event processor
-        # self.event_processor = EventProcessThread()
-        self.queue = Queue()
+        # Check wheher operation done and saved or not
+        self.is_saved = True
+        
 
         self.init_qt()
 
@@ -162,6 +172,9 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.FilterTypeCombo.currentIndexChanged.connect(self.FilterTypeCombo_change)
         self.FilterConfirmBt.clicked.connect(self.filter_confirm)
 
+        # PlotSpecBt
+        self.PlotSpecBt.clicked.connect(self.show_spec_dialog)
+
         # Custom second spin edit and ShowRangeCombo
         self.ShowRangeCombo.setEnabled(True)
         self.EpochNumSpin.setDisabled(True)
@@ -170,6 +183,9 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.EpochNumSpin.valueChanged.connect(self.EpochNumSpin_changed)
         self.ShowRangeCombo.currentIndexChanged.connect(self.ShowRangeCombo_changed)
         self.CustomSecondsCheck.clicked.connect(self.CustomSecondCheck_clicked)
+
+        # Label radio check start_end by default
+        self.StartEndRadio.setChecked(True)
 
     def operate_all_signals(self, state=True):
         """Block or open all signals"""
@@ -267,6 +283,7 @@ class main_window(QMainWindow, Ui_MiSleep):
         # Set channel infos
         self.fill_channel_listView()
 
+        self.start_end = []
         self.clear_refresh(clf=True)
 
     def load_anno(self):
@@ -306,7 +323,7 @@ class main_window(QMainWindow, Ui_MiSleep):
                     return
         # Set meta info
         self.AnnoPathEdit.setText(self.anno_path)
-
+        self.start_end = []
         self.clear_refresh(clf=True)
 
     def check_show(self):
@@ -425,6 +442,9 @@ class main_window(QMainWindow, Ui_MiSleep):
             minor=True,
         )
 
+        self.plot_start_end_line(flush=False)
+        self.plot_marker_line(flush=False)
+
         if flush:
             self.signal_figure.canvas.draw()
             self.signal_figure.canvas.flush_events()
@@ -479,7 +499,7 @@ class main_window(QMainWindow, Ui_MiSleep):
             self.signal_figure.canvas.draw()
             self.signal_figure.canvas.flush_events()
 
-    def plot_start_end_line(self):
+    def plot_start_end_line(self, flush=True):
         """Plot start_end lime line (interaction with users) in the signal area"""
 
         # self.plot_signals(flush=False)
@@ -526,10 +546,35 @@ class main_window(QMainWindow, Ui_MiSleep):
                                 color="lime",
                             )
                         )
-        self.signal_figure.canvas.draw()
-        self.signal_figure.canvas.flush_events()
 
-        self.plot_hypo()
+        if flush:
+            self.signal_figure.canvas.draw()
+            self.signal_figure.canvas.flush_events()
+
+            self.plot_hypo()
+
+    def plot_marker_line(self, flush=True):
+        """Plot marker line in the signal area with clicking"""
+        for each in self.mianno.marker:
+            if self.current_sec <= each[0] <= self.current_sec + self.show_duration:
+                for idx in self.show_idx:
+                    self.signal_ax[idx + 1].axvline(
+                        int((each[0] - self.current_sec) * self.midata.sf[idx]),
+                        color="Red",
+                        alpha=1,
+                    )
+                self.signal_ax[1].text(
+                    x=int((each[0] - self.current_sec) * self.midata.sf[idx]),
+                    y=self.y_lims[0] + self.y_shift[0],
+                    s=each[1],
+                    verticalalignment="top",
+                    color="Red",
+                )
+        
+        if flush:
+            self.signal_figure.canvas.draw()
+            self.signal_figure.canvas.flush_events()
+            self.plot_hypo()
 
     def plot_hypo(self):
         """Plot hypnogram area"""
@@ -549,6 +594,9 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.hypo_ax.yaxis.set_ticks([1, 2, 3, 4], ["NREM", "REM", "Wake", "INIT"])
         for each in self.start_end:
             self.hypo_ax.axvline(each, color="lime", alpha=1)
+
+        for each in self.mianno.marker:
+            self.hypo_ax.axvline(each[0], color="Red", alpha=1)
 
         self.hypo_figure.canvas.draw()
         self.hypo_figure.canvas.flush_events()
@@ -576,7 +624,6 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.DateTimeEdit.blockSignals(False)
         self.plot_signals()
         self.plot_hypo()
-        self.plot_start_end_line()
 
     def fill_channel_listView(self):
         """Fill channel listView with self.midata.channels"""
@@ -599,37 +646,58 @@ class main_window(QMainWindow, Ui_MiSleep):
         except TypeError:
             return
 
-        if event.button == 3:
-            # Mouse right click, cancel the exist line(s)
+        if self.StartEndRadio.isChecked():
+            if event.button == 3:
+                # Mouse right click, cancel the exist line(s)
+                if len(self.start_end) == 0:
+                    return
+                if len(self.start_end) >= 1 and sec == self.start_end[0]:
+                    self.start_end = []
+                if len(self.start_end) == 2 and sec+1 == self.start_end[1]:
+                    self.start_end.pop(1)
 
-            # Remove the start_end lime line, if right click the start line,
-            # cancel two lines
-            if len(self.start_end) == 0:
+                self.plot_start_end_line()
+
                 return
-            if len(self.start_end) >= 1 and sec == self.start_end[0]:
+            
+            if not self.start_end:
+                self.start_end.append(sec)
+            elif len(self.start_end) == 2:
+                # Clear start end label
                 self.start_end = []
-            if len(self.start_end) == 2 and sec+1 == self.start_end[1]:
-                self.start_end.pop(1)
+                self.start_end.append(sec)
+            else:
+                if sec < self.start_end[0]:
+                    QMessageBox.about(self, "Error", "End should be larger than Start!")
+                    return
+                self.start_end.append(sec + 1)
 
             self.plot_start_end_line()
 
-            return
-
-
-        if not self.start_end:
-            self.start_end.append(sec)
-        elif len(self.start_end) == 2:
-            # Clear start end label
-            self.start_end = []
-            self.start_end.append(sec)
-        else:
-            if sec < self.start_end[0]:
-                QMessageBox.about(self, "Error", "End should be larger than Start!")
+        if self.MarkerRadio.isChecked():
+            if event.button == 3:
+                for each in self.mianno.marker:
+                    if each[0] == sec:
+                        self.mianno.marker.remove(each)
+                        self.plot_signals()
+                        self.plot_hypo()
                 return
-            self.start_end.append(sec + 1)
+            
+            self.label_dialog._type = 0
+            self.label_dialog.show_contents()
+            self.label_dialog.exec()
+            if self.label_dialog.closed:
+                return
+            
+            label_name = self.label_dialog.label_name
 
-        self.plot_start_end_line()
+            # Add marker label
+            self.mianno.marker.append([sec, label_name])
 
+            self.plot_marker_line()
+        
+            self.is_saved = False
+            
     def click_hypo(self, event):
         """Click hypnogram and jump to the time"""
         current_sec = int(event.xdata)
@@ -817,6 +885,11 @@ class main_window(QMainWindow, Ui_MiSleep):
         if self.FilterTypeCombo.currentIndex() == 2:
             self.FilterHighSpin.setEnabled(True)
             self.FilterLowSpin.setDisabled(True)
+
+    def show_spec_dialog(self):
+        """Show spectrum dialog, triggered by PlotSpecBt"""
+        if len(self.start_end) == 2:
+            self.spec_dialog.exec()
 
     def set_show_duration(self, type_="Combo"):
         """Set show_duration with ShowRangeCombo or EpochNumSpin"""
