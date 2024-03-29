@@ -13,7 +13,8 @@ from queue import Queue
 
 import numpy as np
 from PyQt5.QtCore import QCoreApplication, Qt, QStringListModel, QThread, pyqtSignal
-from PyQt5.QtWidgets import QMainWindow, QFileDialog, QMessageBox, QAction
+from PyQt5.QtGui import QKeySequence
+from PyQt5.QtWidgets import QMainWindow, QFileDialog, QMessageBox, QAction, QShortcut
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 
@@ -186,6 +187,22 @@ class main_window(QMainWindow, Ui_MiSleep):
 
         # Label radio check start_end by default
         self.StartEndRadio.setChecked(True)
+
+        # Label button
+        self.NREMBt.clicked.connect(self.nrem_label)
+        self.REMBt.clicked.connect(self.rem_label)
+        self.WakeBt.clicked.connect(self.wake_label)
+        self.InitBt.clicked.connect(self.init_label)
+
+        # Label button shortcut
+        self.nremSc = QShortcut(QKeySequence('1'), self)
+        self.nremSc.activated.connect(self.nrem_label)
+        self.remSc = QShortcut(QKeySequence('2'), self)
+        self.remSc.activated.connect(self.rem_label)
+        self.wakeSc = QShortcut(QKeySequence('3'), self)
+        self.wakeSc.activated.connect(self.wake_label)
+        self.initSc = QShortcut(QKeySequence('4'), self)
+        self.initSc.activated.connect(self.init_label)
 
     def operate_all_signals(self, state=True):
         """Block or open all signals"""
@@ -378,11 +395,12 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.signal_figure.canvas.flush_events()
 
     def plot_signals(self, flush=True):
-        """Main plot function, plot signal area, once replot the signal, update all figures"""
+        """Main plot function, plot signal area, once replot the signal, 
+        update all figures, if replot_signal is False, means not update signal plots"""
+
         self.signal_figure.clf()
         self.signal_ax = self.signal_figure.subplots(
-            nrows=len(self.show_idx) + 1, ncols=1
-        )
+            nrows=len(self.show_idx) + 1, ncols=1)
         # plot the spectrogram
         self.plot_spectrogram()
 
@@ -393,6 +411,8 @@ class main_window(QMainWindow, Ui_MiSleep):
         sleep_state = lst2group([i, each] for i, each in enumerate(sleep_state))
 
         for i, each in enumerate(self.show_idx):
+            y_lim = self.y_lims[each]
+            y_shift = self.y_shift[each]
             self.signal_ax[i + 1].plot(
                 self.midata.signals[each][
                     int(self.current_sec * self.midata.sf[each]) : int(
@@ -402,8 +422,6 @@ class main_window(QMainWindow, Ui_MiSleep):
                 color="black",
                 linewidth=0.5,
             )
-            y_lim = self.y_lims[each]
-            y_shift = self.y_shift[each]
             self.signal_ax[i + 1].set_ylim(ymin=-y_lim + y_shift, ymax=y_lim + y_shift)
             self.signal_ax[i + 1].set_xlim(
                 xmin=0, xmax=self.show_duration * self.midata.sf[each]
@@ -448,6 +466,44 @@ class main_window(QMainWindow, Ui_MiSleep):
         if flush:
             self.signal_figure.canvas.draw()
             self.signal_figure.canvas.flush_events()
+
+    def replot_sleep_state_bg(self, state):
+        """Replot the sleep state if confirmed by using start_end area"""
+        # Check the start_end and current_sec overlap area
+        replot_start = 0 if \
+            self.current_sec >= self.start_end[0] else \
+            (self.start_end[0] - self.current_sec)
+        replot_end = self.show_duration if (
+            self.current_sec + self.show_duration
+            <= self.start_end[1]
+        ) else (self.start_end[1] - self.current_sec)
+                       
+        for i, each in enumerate(self.show_idx):
+            y_lim = self.y_lims[each]
+            y_shift = self.y_shift[each]
+            self.signal_ax[i + 1].fill_between(
+                    range(
+                        int(replot_start * self.midata.sf[each]),
+                        int(replot_end * self.midata.sf[each]),
+                    ),
+                    -y_lim + y_shift,
+                    y_lim + y_shift,
+                    facecolor="white",
+                    alpha=1,
+                )
+            self.signal_ax[i + 1].fill_between(
+                    range(
+                        int(replot_start * self.midata.sf[each]),
+                        int(replot_end * self.midata.sf[each]),
+                    ),
+                    -y_lim + y_shift,
+                    y_lim + y_shift,
+                    facecolor=self.state_color_dict[state],
+                    alpha=0.1,
+                )
+        self.signal_figure.canvas.draw()
+        self.signal_figure.canvas.flush_events()
+    
 
     def spec_percentile_change(self):
         """Triggered by spectrogramPercentile change"""
@@ -508,38 +564,43 @@ class main_window(QMainWindow, Ui_MiSleep):
                 axvline.remove()
             except:
                 pass
+        self.signal_start_end_axvline = []
         for i, each in enumerate(self.start_end):
             if self.current_sec <= each <= self.current_sec + self.show_duration:
-                for idx in self.show_idx:
-                    y_lim = self.y_lims[idx]
-                    y_shift = self.y_shift[idx]
+                for idx, show_ in enumerate(self.show_idx):
+                    y_lim = self.y_lims[show_]
+                    y_shift = self.y_shift[show_]
                     if i == 0:
                         self.signal_start_end_axvline.append(
                             self.signal_ax[idx + 1].axvline(
-                                int((each - self.current_sec) * self.midata.sf[idx]),
+                                int((each - self.current_sec) * self.midata.sf[show_]),
                                 color="lime",
                                 alpha=1,
                             )
                         )
+                        
+                    if i == 1:
                         self.signal_start_end_axvline.append(
-                            self.signal_ax[-1].text(
-                                x=int((each - self.current_sec) * self.midata.sf[idx]),
+                            self.signal_ax[idx + 1].axvline(
+                                int((each - self.current_sec) * self.midata.sf[show_]),
+                                color="lime",
+                                alpha=1,
+                            )
+                        )
+                        
+                if i == 0:
+                    self.signal_start_end_axvline.append(
+                            self.signal_ax[idx+1].text(
+                                x=int((each - self.current_sec) * self.midata.sf[show_]),
                                 y=-y_lim + y_shift,
                                 s="S",
                                 color="lime",
                             )
                         )
-                    if i == 1:
-                        self.signal_start_end_axvline.append(
-                            self.signal_ax[idx + 1].axvline(
-                                int((each - self.current_sec) * self.midata.sf[idx]),
-                                color="lime",
-                                alpha=1,
-                            )
-                        )
-                        self.signal_start_end_axvline.append(
-                            self.signal_ax[-1].text(
-                                x=int((each - self.current_sec) * self.midata.sf[idx]),
+                if i == 1:
+                    self.signal_start_end_axvline.append(
+                            self.signal_ax[idx+1].text(
+                                x=int((each - self.current_sec) * self.midata.sf[show_]),
                                 y=-y_lim + y_shift,
                                 horizontalalignment="right",
                                 s="E",
@@ -557,15 +618,15 @@ class main_window(QMainWindow, Ui_MiSleep):
         """Plot marker line in the signal area with clicking"""
         for each in self.mianno.marker:
             if self.current_sec <= each[0] <= self.current_sec + self.show_duration:
-                for idx in self.show_idx:
+                for idx, show_ in enumerate(self.show_idx):
                     self.signal_ax[idx + 1].axvline(
-                        int((each[0] - self.current_sec) * self.midata.sf[idx]),
+                        int((each[0] - self.current_sec) * self.midata.sf[show_]),
                         color="Red",
                         alpha=1,
                     )
                 self.signal_ax[1].text(
-                    x=int((each[0] - self.current_sec) * self.midata.sf[idx]),
-                    y=self.y_lims[0] + self.y_shift[0],
+                    x=int((each[0] - self.current_sec) * self.midata.sf[show_]),
+                    y=self.y_lims[self.show_idx[0]] + self.y_shift[self.show_idx[1]],
                     s=each[1],
                     verticalalignment="top",
                     color="Red",
@@ -705,10 +766,10 @@ class main_window(QMainWindow, Ui_MiSleep):
 
     def scroller_change(self):
         """ScrollerBar value changed"""
-        # self.ScrollerBar.setDisabled(True)
+        self.ScrollerBar.setDisabled(True)
         current_sec = self.ScrollerBar.value()
         self.redraw_all(second=current_sec)
-        # self.ScrollerBar.setEnabled(True)
+        self.ScrollerBar.setEnabled(True)
 
     def SecondSpin_change(self):
         """SecondSpin changed"""
@@ -935,6 +996,37 @@ class main_window(QMainWindow, Ui_MiSleep):
     def EpochNumSpin_changed(self):
         """Triggered by EpochNumSpin value change"""
         self.set_show_duration(type_="Spin")
+
+
+    def nrem_label(self):
+        """label start_end as nrem laebl, triggered by NREMBt"""
+        self.append_sleep_state(sleep_type=1)
+
+    def rem_label(self):
+        """label start_end label as rem label, triggered by REMBt"""
+        self.append_sleep_state(sleep_type=2)
+    
+    def wake_label(self):
+        """label start_end label as wake label, triggered by WakeBt"""
+        self.append_sleep_state(sleep_type=3)
+    
+    def init_label(self):
+        """label start_end label as init label, triggered by InitBt"""
+        self.append_sleep_state(sleep_type=4)
+
+    def append_sleep_state(self, sleep_type=None):
+        """Append sleep state to self.mianno.sleep_state"""
+        if len(self.start_end) != 2:
+            QMessageBox.about(self, "Info", "Please select a start end area")
+            return
+        
+        if len(self.start_end) == 2:
+            self.mianno.sleep_state[self.start_end[0]: self.start_end[1]] = \
+                [sleep_type] * (self.start_end[1] - self.start_end[0])
+        
+        self.is_saved = False
+        self.replot_sleep_state_bg(state=sleep_type)
+        self.plot_hypo()
 
     def about_bar_dispatcher(self, signal):
         """Triggered by AboutBar action, show About dialog"""
