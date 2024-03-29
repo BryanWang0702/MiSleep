@@ -9,7 +9,6 @@
 """
 import copy
 import datetime
-from queue import Queue
 
 import numpy as np
 from PyQt5.QtCore import QCoreApplication, Qt, QStringListModel, QThread, pyqtSignal
@@ -28,21 +27,6 @@ from misleep.gui.about import about_dialog
 from misleep.gui.label_dialog import label_dialog
 from misleep.gui.spec_dialog import spec_dialog
 from misleep.gui.uis.main_window_ui import Ui_MiSleep
-
-
-class EventProcessThread(QThread):
-    slot_func = pyqtSignal(object)
-
-    def __init__(self, parent=None):
-        super().__init__(parent=parent)
-        self.queue = Queue()
-
-    def run(self):
-        event = self.queue.get()
-        self.slot_func.emit(event)
-
-    def put(self, event):
-        self.queue.put(event)
 
 
 class main_window(QMainWindow, Ui_MiSleep):
@@ -124,20 +108,12 @@ class main_window(QMainWindow, Ui_MiSleep):
 
         # Check wheher operation done and saved or not
         self.is_saved = True
-        
 
         self.init_qt()
-
-        self.TEST_COUNT = 0
 
     def init_qt(self):
         """Initial actions for qt widgets"""
         # Set triggers for toolBars
-        # self.AboutBar.actionTriggered[QAction].connect(self.about_bar_dispatcher)
-        # self.LoadBar.actionTriggered[QAction].connect(self.load_bar_dispatcher)
-        # self.SaveBar.actionTriggered[QAction].connect(self.save_bar_dispatcher)
-
-        # Use lambda to pass param for queue
         self.AboutBar.actionTriggered[QAction].connect(self.about_bar_dispatcher)
         self.LoadBar.actionTriggered[QAction].connect(self.load_bar_dispatcher)
         self.SaveBar.actionTriggered[QAction].connect(self.save_bar_dispatcher)
@@ -193,6 +169,7 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.REMBt.clicked.connect(self.rem_label)
         self.WakeBt.clicked.connect(self.wake_label)
         self.InitBt.clicked.connect(self.init_label)
+        self.LabelBt.clicked.connect(self.append_start_end)
 
         # Label button shortcut
         self.nremSc = QShortcut(QKeySequence('1'), self)
@@ -234,24 +211,6 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.EpochNumSpin.blockSignals(state)
         self.ShowRangeCombo.blockSignals(state)
         self.CustomSecondsCheck.blockSignals(state)
-
-    def event_collector(self, event, args=None):
-        """Collect event"""
-        self.event_processor.put(event)
-        self.event_processor.slot_func.connect(self.test_ptqtSignal_connect)
-        self.event_processor.start()
-        # self.queue.put(event)
-        # event = self.queue.get()
-        # try:
-        #     event()
-        # except:
-        #     pass
-
-    def test_ptqtSignal_connect(self, event):
-        try:
-            event()
-        except:
-            pass
 
     def load_data(self):
         """Triggered by actionLoad_Data, get MiData"""
@@ -481,6 +440,7 @@ class main_window(QMainWindow, Ui_MiSleep):
 
         self.plot_start_end_line(flush=False)
         self.plot_marker_line(flush=False)
+        self.plot_start_end_label_line(flush=False)
 
         if flush:
             self.signal_figure.canvas.draw()
@@ -655,6 +615,43 @@ class main_window(QMainWindow, Ui_MiSleep):
             self.signal_figure.canvas.draw()
             self.signal_figure.canvas.flush_events()
             self.plot_hypo()
+
+    def plot_start_end_label_line(self, flush=True):
+        """Plot miannotation's start_end label line"""
+        for each in self.mianno.start_end:
+            if self.current_sec <= each[0] <= self.current_sec + self.show_duration:
+                for idx, show_ in enumerate(self.show_idx):
+                    self.signal_ax[idx + 1].axvline(
+                        int((each[0] - self.current_sec) * self.midata.sf[show_]),
+                        color="blue",
+                        alpha=1,
+                    )
+                self.signal_ax[1].text(
+                    x=int((each[0] - self.current_sec) * self.midata.sf[show_]),
+                    y=self.y_lims[self.show_idx[0]] + self.y_shift[self.show_idx[1]],
+                    s=each[2]+'-S',
+                    verticalalignment="top",
+                    color="blue",
+                )
+
+            if self.current_sec <= each[1] <= self.current_sec + self.show_duration:
+                for idx, show_ in enumerate(self.show_idx):
+                    self.signal_ax[idx + 1].axvline(
+                        int((each[1] - self.current_sec) * self.midata.sf[show_]),
+                        color="blue",
+                        alpha=1,
+                    )
+                self.signal_ax[1].text(
+                    x=int((each[1] - self.current_sec) * self.midata.sf[show_]),
+                    y=self.y_lims[self.show_idx[0]] + self.y_shift[self.show_idx[1]],
+                    s=each[2]+'-E',
+                    verticalalignment="top",
+                    color="blue",
+                )
+
+        if flush:
+            self.signal_figure.canvas.draw()
+            self.signal_figure.canvas.flush_events()
 
     def plot_hypo(self):
         """Plot hypnogram area"""
@@ -1047,6 +1044,34 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.replot_sleep_state_bg(state=sleep_type)
         self.plot_hypo()
 
+    def append_start_end(self):
+        """Append start end label to self.mianno.start_end
+        Triggered by self.AnnotateBt
+        """
+
+        if not self.StartEndRadio.isChecked():
+            QMessageBox.about(self, "Info", "Use annotation in Start-End mode")
+            return
+        if len(self.start_end) != 2:
+            QMessageBox.about(self, "Info", "Please select a start end area")
+            return
+        
+        self.label_dialog._type = 1
+        self.label_dialog.show_contents()
+        self.label_dialog.exec()
+        if self.label_dialog.closed:
+            return
+        
+        label_name = self.label_dialog.label_name
+
+        # Add start_end label to self.mianno.start_end
+        self.mianno.start_end.append(
+            [self.start_end[0], self.start_end[1], label_name])
+
+        self.plot_start_end_label_line()
+    
+        self.is_saved = False
+
     def about_bar_dispatcher(self, signal):
         """Triggered by AboutBar action, show About dialog"""
         if signal.text() == "About":
@@ -1060,13 +1085,6 @@ class main_window(QMainWindow, Ui_MiSleep):
             self.load_anno()
         if signal.text() == "Show":
             self.check_show()
-
-        # if signal.text() == 'Load Data':
-        #     self.event_collector(self.load_data)
-        # if signal.text() == 'Load Annotation':
-        #     self.event_collector(self.load_anno)
-        # if signal.text() == 'Show':
-        #     self.event_collector(self.check_show)
 
     def save_bar_dispatcher(self, signal):
         """Triggered by SaveBar action, save data, save annotation"""
