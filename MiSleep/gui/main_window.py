@@ -394,15 +394,27 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.signal_figure.canvas.draw()
         self.signal_figure.canvas.flush_events()
 
-    def plot_signals(self, flush=True):
+    def plot_signals(self, flush=True, clf=True, replot_axes=None):
         """Main plot function, plot signal area, once replot the signal, 
-        update all figures, if replot_signal is False, means not update signal plots"""
+        update all figures
+        
+        Parameters
+        ----------
+        flush : bool, optional
+            Whether to flush the signal area
+        clf : bool, optional
+            Clear the figure or not. If not, clear the axes
+        replot_axes : list of int, optional
+            Only replot specifed axes (channels), when shift up/down, 
+            scalar up/down and so on
+        """
 
-        self.signal_figure.clf()
-        self.signal_ax = self.signal_figure.subplots(
-            nrows=len(self.show_idx) + 1, ncols=1)
-        # plot the spectrogram
-        self.plot_spectrogram()
+        if clf:
+            self.signal_figure.clf()
+            self.signal_ax = self.signal_figure.subplots(
+                nrows=len(self.show_idx) + 1, ncols=1)
+            # plot the spectrogram
+            self.plot_spectrogram()
 
         # Get label
         sleep_state = self.mianno.sleep_state[
@@ -411,8 +423,15 @@ class main_window(QMainWindow, Ui_MiSleep):
         sleep_state = lst2group([i, each] for i, each in enumerate(sleep_state))
 
         for i, each in enumerate(self.show_idx):
+            if replot_axes is not None and each not in replot_axes:
+                continue
             y_lim = self.y_lims[each]
             y_shift = self.y_shift[each]
+
+            # if didn't clear the figure, clear the axes
+            if not clf:
+                self.signal_ax[i + 1].clear()
+
             self.signal_ax[i + 1].plot(
                 self.midata.signals[each][
                     int(self.current_sec * self.midata.sf[each]) : int(
@@ -864,7 +883,7 @@ class main_window(QMainWindow, Ui_MiSleep):
             lim * 0.9 if idx in selected_channel else lim
             for idx, lim in enumerate(self.y_lims)
         ]
-        self.plot_signals()
+        self.plot_signals(clf=False, replot_axes=selected_channel)
 
     def scaler_down(self):
         """Scaler down, triggered by ScalerDownBt"""
@@ -876,7 +895,7 @@ class main_window(QMainWindow, Ui_MiSleep):
             lim * 1.1 if idx in selected_channel else lim
             for idx, lim in enumerate(self.y_lims)
         ]
-        self.plot_signals()
+        self.plot_signals(clf=False, replot_axes=selected_channel)
 
     def shift_up(self):
         """Shift up selected channel"""
@@ -887,7 +906,7 @@ class main_window(QMainWindow, Ui_MiSleep):
             shift - self.y_lims[idx] * 0.05 if idx in selected_channel else shift
             for idx, shift in enumerate(self.y_shift)
         ]
-        self.plot_signals()
+        self.plot_signals(clf=False, replot_axes=selected_channel)
 
     def shift_down(self):
         """Shift down selected channel"""
@@ -898,7 +917,7 @@ class main_window(QMainWindow, Ui_MiSleep):
             shift + self.y_lims[idx] * 0.05 if idx in selected_channel else shift
             for idx, shift in enumerate(self.y_shift)
         ]
-        self.plot_signals()
+        self.plot_signals(clf=False, replot_axes=selected_channel)
 
     def filter_confirm(self):
         """Filter operations, triggered by FilterConfirmBt"""
