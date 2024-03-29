@@ -726,16 +726,25 @@ class main_window(QMainWindow, Ui_MiSleep):
         if self.StartEndRadio.isChecked():
             if event.button == 3:
                 # Mouse right click, cancel the exist line(s)
+                for each in self.mianno.start_end:
+                    if each[0] == sec or each[1] == sec:
+                        self.mianno.start_end.remove(each)
+                        self.plot_signals()
+                        return
                 if len(self.start_end) == 0:
                     return
                 if len(self.start_end) >= 1 and sec == self.start_end[0]:
                     self.start_end = []
+                    self.plot_start_end_line()
+                    return
                 if len(self.start_end) == 2 and sec+1 == self.start_end[1]:
                     self.start_end.pop(1)
-
-                self.plot_start_end_line()
+                    self.plot_start_end_line()
+                    return
 
                 return
+                
+
             
             if not self.start_end:
                 self.start_end.append(sec)
@@ -965,8 +974,15 @@ class main_window(QMainWindow, Ui_MiSleep):
 
     def show_spec_dialog(self):
         """Show spectrum dialog, triggered by PlotSpecBt"""
-        if len(self.start_end) == 2:
-            self.spec_dialog.exec()
+        if len(self.start_end) != 2 or self.start_end[1] - self.start_end[0] < 10:
+            QMessageBox.about(
+                self,
+                "Error",
+                "Please select a start-end larger than 10 seconds.",
+            )
+            return
+
+        self.spec_dialog.exec()
 
     def set_show_duration(self, type_="Combo"):
         """Set show_duration with ShowRangeCombo or EpochNumSpin"""

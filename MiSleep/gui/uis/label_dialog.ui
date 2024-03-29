@@ -29,7 +29,11 @@
     </widget>
    </item>
    <item row="0" column="0" colspan="2">
-    <widget class="QListView" name="LabelListView"/>
+    <widget class="QListView" name="LabelListView">
+     <property name="editTriggers">
+      <set>QAbstractItemView::DoubleClicked</set>
+     </property>
+    </widget>
    </item>
   </layout>
  </widget>

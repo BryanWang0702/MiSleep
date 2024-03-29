@@ -38,6 +38,8 @@ class label_dialog(QDialog, Ui_Dialog):
         self.OKBt.clicked.connect(self.submit_label)
         self.CancelBt.clicked.connect(self.cancel_event)
 
+        self.slm.dataChanged.connect(self.update_label_list)
+
 
     def show_contents(self):
         """Show label contents"""
@@ -68,6 +70,15 @@ class label_dialog(QDialog, Ui_Dialog):
             ]
 
         self.hide()
+
+    def update_label_list(self):
+        """Update label list when edited"""
+        string_list = self.slm.stringList()
+
+        if self._type == 0:
+            self.marker_label = string_list
+        if self._type == 1:
+            self.start_end_label = string_list
     
     def cancel_event(self):
         """Triggered by the `cancel` button"""
