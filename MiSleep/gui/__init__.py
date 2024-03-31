@@ -9,4 +9,4 @@
 
 from .about import *
 from .main_window import *
-from .spec_dialog import *
+from .spec_window import *

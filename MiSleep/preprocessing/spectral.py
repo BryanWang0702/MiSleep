@@ -128,3 +128,49 @@ def spectrogram(signal, sf, band=None, step=0.2, window=2, norm=False):
         np.divide(Sxx, sum_power, out=Sxx)
 
     return f, t, Sxx
+
+
+def band_power(psd, freq, bands=None, relative=False):
+    """Compute the band power
+
+    Parameters
+    ----------
+    psd : np.array
+        Array of power spectrum density
+    freq : np.array
+        Array of frequncy for psd
+    bands : list, optional
+        Multiple or one frequency band. e.g.
+        [[0.5, 4, 'delta], [4, 9, 'theta']]
+
+    Returns
+    -------
+    band_dict : dict
+        e.g.
+        {
+        'delta': value of delta band power,
+        'theta': value of theta band power
+        }
+
+    Note
+    ----
+    Use the composite Simpson's rule. 
+    Inspired by https://raphaelvallat.com/bandpower.html
+    """
+
+    freq_res = freq[1] - freq[0]
+    band_dict = {}
+    for each in bands:
+        idx_band = np.logical_and(freq >= each[0], freq <= each[1])
+        bp = simps(psd[idx_band], dx=freq_res)
+
+        if relative:
+            bp /= simps(psd, dx=freq_res)
+        
+        band_dict[each[2]] = bp
+
+    return band_dict
+
+    
+
+    

@@ -11,7 +11,7 @@ import copy
 import datetime
 
 import numpy as np
-from PyQt5.QtCore import QCoreApplication, Qt, QStringListModel, QThread, pyqtSignal
+from PyQt5.QtCore import QCoreApplication, Qt, QStringListModel
 from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import QMainWindow, QFileDialog, QMessageBox, QAction, QShortcut
 from matplotlib import pyplot as plt
@@ -25,8 +25,9 @@ from misleep.gui.utils import create_new_mianno
 from misleep.utils.annotation import lst2group
 from misleep.gui.about import about_dialog
 from misleep.gui.label_dialog import label_dialog
-from misleep.gui.spec_dialog import spec_dialog
+from misleep.gui.spec_window import SpecWindow
 from misleep.gui.uis.main_window_ui import Ui_MiSleep
+from misleep.preprocessing.spectral import spectrogram, spectrum, band_power
 
 
 class main_window(QMainWindow, Ui_MiSleep):
@@ -101,7 +102,7 @@ class main_window(QMainWindow, Ui_MiSleep):
 
         # Initial about dialog and spec window
         self.about_dialog = about_dialog()
-        self.spec_dialog = spec_dialog()
+        self.spec_window = SpecWindow()
         # Initial label dialog
         self.label_dialog = label_dialog(marker_label=self.marker_label,
                                          start_end_label=self.start_end_label)
@@ -150,7 +151,7 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.FilterConfirmBt.clicked.connect(self.filter_confirm)
 
         # PlotSpecBt
-        self.PlotSpecBt.clicked.connect(self.show_spec_dialog)
+        self.PlotSpecBt.clicked.connect(self.show_spec_window)
 
         # Custom second spin edit and ShowRangeCombo
         self.ShowRangeCombo.setEnabled(True)
@@ -972,7 +973,7 @@ class main_window(QMainWindow, Ui_MiSleep):
             self.FilterHighSpin.setEnabled(True)
             self.FilterLowSpin.setDisabled(True)
 
-    def show_spec_dialog(self):
+    def show_spec_window(self):
         """Show spectrum dialog, triggered by PlotSpecBt"""
         if len(self.start_end) != 2 or self.start_end[1] - self.start_end[0] < 10:
             QMessageBox.about(
@@ -981,8 +982,46 @@ class main_window(QMainWindow, Ui_MiSleep):
                 "Please select a start-end larger than 10 seconds.",
             )
             return
+        
+        selected_channel = [each.row() for each in self.ChListView.selectedIndexes()]
 
-        self.spec_dialog.exec()
+        if not selected_channel or len(selected_channel) > 1:
+            QMessageBox.about(
+                self,
+                "Error",
+                "Select one channel to show spectral analysis",
+            )
+            return
+
+        channel = selected_channel[0]
+        
+        signal_data = self.midata.signals[channel][
+            int(self.start_end[0]*self.midata.sf[channel]) : 
+            int(self.start_end[1]*self.midata.sf[channel])
+        ]
+        
+        freq, psd = spectrum(signal=signal_data,
+                             sf=self.midata.sf[channel],
+                             relative=False)
+        
+        f, t, Sxx = spectrogram(signal=signal_data,
+                                sf=self.midata.sf[channel],
+                                step=1, window=5, norm=True)
+
+        bandPower = band_power(psd=psd, freq=freq, 
+                               bands=[[0.5, 4, 'delta'], [4, 9, 'theta']])
+        
+        ratio = bandPower['delta'] / bandPower['theta']
+        
+        self.spec_window.show_(spectrum=[psd, freq], 
+                               spectrogram=[f, t, Sxx],
+                               percentile_=self.spectrogram_percentile,
+                               ratio=ratio)
+        
+        self.spec_window.activateWindow()
+        self.spec_window.setWindowState(
+                self.spec_window.windowState() & ~Qt.WindowMinimized | Qt.WindowActive)
+        self.spec_window.showNormal()
 
     def set_show_duration(self, type_="Combo"):
         """Set show_duration with ShowRangeCombo or EpochNumSpin"""
@@ -1028,7 +1067,6 @@ class main_window(QMainWindow, Ui_MiSleep):
     def EpochNumSpin_changed(self):
         """Triggered by EpochNumSpin value change"""
         self.set_show_duration(type_="Spin")
-
 
     def nrem_label(self):
         """label start_end as nrem laebl, triggered by NREMBt"""
