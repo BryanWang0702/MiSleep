@@ -9,6 +9,8 @@
 """
 import copy
 import datetime
+import configparser
+import json
 
 import numpy as np
 from PyQt5.QtCore import QCoreApplication, Qt, QStringListModel
@@ -41,6 +43,10 @@ class main_window(QMainWindow, Ui_MiSleep):
         QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
         self.setupUi(self)
 
+        # Load configuration
+        self.config = configparser.ConfigParser()
+        self.config.read('./misleep/config.ini')
+
         self.midata = None
         self.mianno = None
 
@@ -54,8 +60,10 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.y_lims = None  # list of y lim for each channel
         self.y_shift = None  # list of y shift for each channel
         self.show_idx = None  # Channels to show in plot area
-        self.state_map_dict = {1: "NREM", 2: "REM", 3: "Wake", 4: "INIT"}
-        self.state_color_dict = {1: "orange", 2: "skyblue", 3: "red", 4: "white"}
+        self.state_map_dict = {int(key): value for key, value 
+                               in json.loads(self.config['gui']['statemap']).items()}
+        self.state_color_dict = {int(key): value for key, value 
+                               in json.loads(self.config['gui']['statecolor']).items()}
         self.ShowRangeCombo_dict = {0: 30, 1: 60, 2: 300, 3: 1800, 4: 3600}
         self.FilterTypeCombo_dict = {
             0: "bandpass",
@@ -70,8 +78,10 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.ac_time = None
 
         # Default marker label and start_end label for label dialog
-        self.marker_label = ['Injection', 'Pat', 'Add water', 'label', 'label']
-        self.start_end_label = ['Spindle', 'Slow wave activity', 'start_end_label']
+        # self.marker_label = ['Injection', 'Pat', 'Add water', 'label', 'label']
+        # self.start_end_label = ['Spindle', 'Slow wave activity', 'start_end_label']
+        # self.marker_label = json.loads(self.config['gui']['MARKERS'])
+        # self.start_end_label = json.loads(self.config['gui']['STARTEND'])
 
         # Signal area figure
         self.signal_figure = plt.figure()
@@ -84,6 +94,7 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.signal_canvas.mpl_connect("button_release_event", self.click_signal)
         # start and end axvline, only two lines
         self.signal_start_end_axvline = []
+        self.signal_marker_axvline = []
 
         # Start-end for labels
         self.start_end = []
@@ -101,11 +112,11 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.channel_slm = QStringListModel()
 
         # Initial about dialog and spec window
-        self.about_dialog = about_dialog()
+        self.about_dialog = about_dialog(version=json.loads(self.config['gui']['version']),
+                                         update_time=json.loads(self.config['gui']['updatetime']))
         self.spec_window = SpecWindow()
         # Initial label dialog
-        self.label_dialog = label_dialog(marker_label=self.marker_label,
-                                         start_end_label=self.start_end_label)
+        self.label_dialog = label_dialog(config=self.config)
 
         # Check wheher operation done and saved or not
         self.is_saved = True
@@ -163,7 +174,7 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.CustomSecondsCheck.clicked.connect(self.CustomSecondCheck_clicked)
 
         # Label radio check start_end by default
-        self.StartEndRadio.setChecked(True)
+        self.SleepStateRadio.setChecked(True)
 
         # Label button
         self.NREMBt.clicked.connect(self.nrem_label)
@@ -596,21 +607,29 @@ class main_window(QMainWindow, Ui_MiSleep):
 
     def plot_marker_line(self, flush=True):
         """Plot marker line in the signal area with clicking"""
+        for axvline in self.signal_marker_axvline:
+            try:
+                axvline.remove()
+            except:
+                pass
+        self.signal_marker_axvline = []
         for each in self.mianno.marker:
             if self.current_sec <= each[0] <= self.current_sec + self.show_duration:
                 for idx, show_ in enumerate(self.show_idx):
-                    self.signal_ax[idx + 1].axvline(
+                    self.signal_marker_axvline.append(
+                        self.signal_ax[idx + 1].axvline(
                         int((each[0] - self.current_sec) * self.midata.sf[show_]),
                         color="Red",
                         alpha=1,
-                    )
-                self.signal_ax[1].text(
+                    ))
+                self.signal_marker_axvline.append(
+                    self.signal_ax[1].text(
                     x=int((each[0] - self.current_sec) * self.midata.sf[show_]),
                     y=self.y_lims[self.show_idx[0]] + self.y_shift[self.show_idx[1]],
                     s=each[1],
                     verticalalignment="top",
                     color="Red",
-                )
+                ))
         
         if flush:
             self.signal_figure.canvas.draw()
@@ -724,7 +743,7 @@ class main_window(QMainWindow, Ui_MiSleep):
         except TypeError:
             return
 
-        if self.StartEndRadio.isChecked():
+        if self.SleepStateRadio.isChecked():
             if event.button == 3:
                 # Mouse right click, cancel the exist line(s)
                 for each in self.mianno.start_end:
@@ -772,7 +791,7 @@ class main_window(QMainWindow, Ui_MiSleep):
             
             self.label_dialog._type = 0
             self.label_dialog.show_contents()
-            self.label_dialog.exec()
+            self.label_dialog.exec_()
             if self.label_dialog.closed:
                 return
             
@@ -1103,8 +1122,8 @@ class main_window(QMainWindow, Ui_MiSleep):
         Triggered by self.AnnotateBt
         """
 
-        if not self.StartEndRadio.isChecked():
-            QMessageBox.about(self, "Info", "Use annotation in Start-End mode")
+        if not self.SleepStateRadio.isChecked():
+            QMessageBox.about(self, "Info", "Use annotation in sleep state mode")
             return
         if len(self.start_end) != 2:
             QMessageBox.about(self, "Info", "Please select a start end area")
