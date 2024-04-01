@@ -98,6 +98,8 @@ class main_window(QMainWindow, Ui_MiSleep):
 
         # Start-end for labels
         self.start_end = []
+        # Start-end for milliseconds, for start_end label
+        self.start_end_ms = []
 
         # Hypnogram area figure
         self.hypo_figure = plt.figure(layout="constrained")
@@ -175,6 +177,9 @@ class main_window(QMainWindow, Ui_MiSleep):
 
         # Label radio check start_end by default
         self.SleepStateRadio.setChecked(True)
+        self.SleepStateRadio.toggled.connect(lambda: self.radio_recheck(self.SleepStateRadio))
+        self.StartEndRadio.toggled.connect(lambda: self.radio_recheck(self.StartEndRadio))
+        # self.SleepStateRadio.toggled.connect(lambda: self.radio_recheck(self.SleepStateRadio))
 
         # Label button
         self.NREMBt.clicked.connect(self.nrem_label)
@@ -450,7 +455,10 @@ class main_window(QMainWindow, Ui_MiSleep):
             minor=True,
         )
 
-        self.plot_start_end_line(flush=False)
+        if self.StartEndRadio.isChecked():
+            self.plot_start_end_line(flush=False, ms=True)
+        if self.SleepStateRadio.isChecked():
+            self.plot_start_end_line(flush=False)
         self.plot_marker_line(flush=False)
         self.plot_start_end_label_line(flush=False)
 
@@ -546,9 +554,13 @@ class main_window(QMainWindow, Ui_MiSleep):
             self.signal_figure.canvas.draw()
             self.signal_figure.canvas.flush_events()
 
-    def plot_start_end_line(self, flush=True):
+    def plot_start_end_line(self, flush=True, ms=False):
         """Plot start_end lime line (interaction with users) in the signal area"""
 
+        if ms:
+            start_end = self.start_end_ms
+        else:
+            start_end = self.start_end
         # self.plot_signals(flush=False)
         for axvline in self.signal_start_end_axvline:
             try:
@@ -556,15 +568,20 @@ class main_window(QMainWindow, Ui_MiSleep):
             except:
                 pass
         self.signal_start_end_axvline = []
-        for i, each in enumerate(self.start_end):
+        for i, each in enumerate(start_end):
             if self.current_sec <= each <= self.current_sec + self.show_duration:
                 for idx, show_ in enumerate(self.show_idx):
                     y_lim = self.y_lims[show_]
                     y_shift = self.y_shift[show_]
+                    if ms:
+                        x = round((each - self.current_sec) * self.midata.sf[show_], 3)
+                    if not ms:
+                        x = int((each - self.current_sec) * self.midata.sf[show_])
+                        
                     if i == 0:
                         self.signal_start_end_axvline.append(
                             self.signal_ax[idx + 1].axvline(
-                                int((each - self.current_sec) * self.midata.sf[show_]),
+                                x,
                                 color="lime",
                                 alpha=1,
                             )
@@ -573,7 +590,7 @@ class main_window(QMainWindow, Ui_MiSleep):
                     if i == 1:
                         self.signal_start_end_axvline.append(
                             self.signal_ax[idx + 1].axvline(
-                                int((each - self.current_sec) * self.midata.sf[show_]),
+                                x,
                                 color="lime",
                                 alpha=1,
                             )
@@ -582,7 +599,7 @@ class main_window(QMainWindow, Ui_MiSleep):
                 if i == 0:
                     self.signal_start_end_axvline.append(
                             self.signal_ax[idx+1].text(
-                                x=int((each - self.current_sec) * self.midata.sf[show_]),
+                                x=x,
                                 y=-y_lim + y_shift,
                                 s="S",
                                 color="lime",
@@ -591,7 +608,7 @@ class main_window(QMainWindow, Ui_MiSleep):
                 if i == 1:
                     self.signal_start_end_axvline.append(
                             self.signal_ax[idx+1].text(
-                                x=int((each - self.current_sec) * self.midata.sf[show_]),
+                                x=x,
                                 y=-y_lim + y_shift,
                                 horizontalalignment="right",
                                 s="E",
@@ -666,6 +683,7 @@ class main_window(QMainWindow, Ui_MiSleep):
                     y=self.y_lims[self.show_idx[0]] + self.y_shift[self.show_idx[1]],
                     s=each[2]+'-E',
                     verticalalignment="top",
+                    horizontalalignment='right',
                     color="blue",
                 )
 
@@ -689,8 +707,13 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.hypo_ax.set_ylim(0, 4.5)
         self.hypo_ax.set_xlim(0, self.mianno.anno_length)
         self.hypo_ax.yaxis.set_ticks([1, 2, 3, 4], ["NREM", "REM", "Wake", "INIT"])
-        for each in self.start_end:
-            self.hypo_ax.axvline(each, color="lime", alpha=1)
+        if self.StartEndRadio.isChecked():
+            for each in self.start_end_ms:
+                self.hypo_ax.axvline(each, color="lime", alpha=1)
+
+        if self.SleepStateRadio.isChecked():
+            for each in self.start_end:
+                self.hypo_ax.axvline(each, color="lime", alpha=1)
 
         for each in self.mianno.marker:
             self.hypo_ax.axvline(each[0], color="Red", alpha=1)
@@ -726,6 +749,15 @@ class main_window(QMainWindow, Ui_MiSleep):
         """Fill channel listView with self.midata.channels"""
         self.channel_slm.setStringList(self.midata.channels)
         self.ChListView.setModel(self.channel_slm)
+
+    def radio_recheck(self, radioBt):
+        """Check which radio was checked in the label area"""
+        if radioBt.text() == "Sleep state":
+            self.start_end_ms = []
+            self.plot_start_end_line()
+        if radioBt.text() == "Start-End":
+            self.start_end = []
+            self.plot_start_end_line(ms=True)
 
     def click_signal(self, event):
         """Click the signal area and add marker or start_end label, triggered by button_release_event"""
@@ -763,9 +795,7 @@ class main_window(QMainWindow, Ui_MiSleep):
                     return
 
                 return
-                
-
-            
+                 
             if not self.start_end:
                 self.start_end.append(sec)
             elif len(self.start_end) == 2:
@@ -803,7 +833,47 @@ class main_window(QMainWindow, Ui_MiSleep):
             self.plot_marker_line()
         
             self.is_saved = False
-            
+
+        if self.StartEndRadio.isChecked():
+            x = round(event.xdata / self.midata.sf[
+                        self.show_idx[np.where(self.signal_ax == event.inaxes)[0][0] - 1]
+                    ]
+                , 3) + self.current_sec
+            # start end ms 
+            if event.button == 3:
+                # Mouse right click, cancel the exist line(s)
+                for each in self.mianno.start_end:
+                    if int(each[0]) == sec or int(each[1]) == sec:
+                        self.mianno.start_end.remove(each)
+                        self.plot_signals()
+                        return
+                if len(self.start_end_ms) == 0:
+                    return
+                if len(self.start_end_ms) >= 1 and sec == int(self.start_end_ms[0]):
+                    self.start_end_ms = []
+                    self.plot_start_end_line(ms=True)
+                    return
+                if len(self.start_end_ms) == 2 and sec == int(self.start_end_ms[1]):
+                    self.start_end_ms.pop(1)
+                    self.plot_start_end_line(ms=True)
+                    return
+
+                return
+                 
+            if not self.start_end_ms:
+                self.start_end_ms.append(x)
+            elif len(self.start_end_ms) == 2:
+                # Clear start end label
+                self.start_end_ms = []
+                self.start_end_ms.append(x)
+            else:
+                if x < self.start_end_ms[0]:
+                    QMessageBox.about(self, "Error", "End should be larger than Start!")
+                    return
+                self.start_end_ms.append(x)
+
+            self.plot_start_end_line(ms=True)
+
     def click_hypo(self, event):
         """Click hypnogram and jump to the time"""
         current_sec = int(event.xdata)
@@ -1106,7 +1176,8 @@ class main_window(QMainWindow, Ui_MiSleep):
     def append_sleep_state(self, sleep_type=None):
         """Append sleep state to self.mianno.sleep_state"""
         if len(self.start_end) != 2:
-            QMessageBox.about(self, "Info", "Please select a start end area")
+            QMessageBox.about(self, "Info", 
+                              "Please select a start end area in Sleep state mode")
             return
         
         if len(self.start_end) == 2:
@@ -1122,10 +1193,10 @@ class main_window(QMainWindow, Ui_MiSleep):
         Triggered by self.AnnotateBt
         """
 
-        if not self.SleepStateRadio.isChecked():
-            QMessageBox.about(self, "Info", "Use annotation in sleep state mode")
+        if not self.StartEndRadio.isChecked():
+            QMessageBox.about(self, "Info", "Use Start-End mode")
             return
-        if len(self.start_end) != 2:
+        if len(self.start_end_ms) != 2:
             QMessageBox.about(self, "Info", "Please select a start end area")
             return
         
@@ -1139,7 +1210,7 @@ class main_window(QMainWindow, Ui_MiSleep):
 
         # Add start_end label to self.mianno.start_end
         self.mianno.start_end.append(
-            [self.start_end[0], self.start_end[1], label_name])
+            [self.start_end_ms[0], self.start_end_ms[1], label_name])
 
         self.plot_start_end_label_line()
     
