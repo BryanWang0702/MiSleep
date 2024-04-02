@@ -12,15 +12,14 @@ sys.path.append(os.getcwd())
 print(os.getcwd())
 from PyQt5.QtWidgets import QApplication
 
-from misleep.gui.main_window import main_window
-    
-if __name__ == '__main__':
 
+def show():
+    from misleep.gui.main_window import main_window
     app = QApplication(sys.argv)
     main_win = main_window()
     main_win.show()
     sys.exit(app.exec_())
 
 
-
-
+if __name__ == '__main__':
+    show()

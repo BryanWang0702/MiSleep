@@ -46,8 +46,9 @@ class main_window(QMainWindow, Ui_MiSleep):
 
         # Load configuration
         self.config = configparser.ConfigParser()
-        self.config.read('./misleep/config.ini')
+        self.config.read(r'./misleep/config.ini')
 
+        # print(f'{self.config['gui']['openpath']}')
         self.midata = None
         self.mianno = None
 

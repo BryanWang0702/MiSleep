@@ -38,6 +38,18 @@ CLASSIFIERS = [
     "Operating System :: MacOS",
 ]
 
+DATA_FILES = [
+    (
+        "misleep",
+        [
+            "misleep/config.ini",
+            "misleep/gui/resources/misleep.qrc",
+            "misleep/gui/resources/logo.png",
+            "misleep/gui/resources/entire_logo.png",
+        ]
+    )
+]
+
 try:
     from setuptools import setup, find_packages
 except ImportError:
@@ -57,6 +69,7 @@ if __name__ == "__main__":
         version=VERSION,
         download_url=DOWNLOAD_URL,
         install_requires=INSTALL_REQUIRES,
+        data_files=DATA_FILES,
         include_package_data=True,
         packages=find_packages(),
         package_dir={'misleep': 'misleep'},

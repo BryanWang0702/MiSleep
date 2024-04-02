@@ -2,6 +2,8 @@ LICENSE
 README.md
 setup.py
 misleep/__init__.py
+misleep/__main__.py
+misleep/config.ini
 misleep.egg-info/PKG-INFO
 misleep.egg-info/SOURCES.txt
 misleep.egg-info/dependency_links.txt
@@ -15,6 +17,11 @@ misleep/gui/show.py
 misleep/gui/spec_window.py
 misleep/gui/thread.py
 misleep/gui/utils.py
+misleep/gui/resources/__init__.py
+misleep/gui/resources/entire_logo.png
+misleep/gui/resources/logo.png
+misleep/gui/resources/misleep.py
+misleep/gui/resources/misleep.qrc
 misleep/gui/uis/__init__.py
 misleep/gui/uis/about_ui.py
 misleep/gui/uis/label_dialog_ui.py
