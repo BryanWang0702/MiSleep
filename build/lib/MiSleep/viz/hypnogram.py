@@ -8,6 +8,7 @@
 """
 
 import matplotlib.pyplot as plt
+import matplotlib
 
 
 def plot_hypno(sleep_state, state_map=None):

@@ -69,3 +69,5 @@ def signal_filter(data, sf=256., btype='lowpass', low=0.5, high=30.):
     filtered_data = signal.filtfilt(b=b, a=a, x=data)
 
     return filtered_data, fname
+
+

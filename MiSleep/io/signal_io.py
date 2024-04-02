@@ -49,16 +49,14 @@ def load_mat(data_path):
             sf = list(raw_data['sf'][0, 0][0].astype(float))
             signals = [raw_data[each][0, 0][0] for each in channels]
             time = raw_data['time'][0, 0][0]
+            return MiData(signals=signals, channels=channels, sf=sf, time=time)
         except Exception:
             # If matlab data is not a struct, or have no channel field, will arise this
             signals = raw_data
             channels = [f'ch{each + 1}' for each in range(raw_data.shape[0])]
-            sf = [305.1758 for _ in range(raw_data.shape[0])]
-            time = datetime.datetime.now().strftime("%y%m%d-%H:%M:%S")
-
-            raise Warning("We recommend to save data in new MiSleep data format.")
-
-        return MiData(signals=signals, channels=channels, sf=sf, time=time)
+            sf = [305. for _ in range(raw_data.shape[0])]
+            time = datetime.datetime.now().strftime("%Y%m%d-%H:%M:%S")
+            return MiData(signals=signals, channels=channels, sf=sf, time=time)       
 
 
 def write_mat(signals, channels, sf, time, mat_file=None):

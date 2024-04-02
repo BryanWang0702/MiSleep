@@ -6,3 +6,7 @@
 @Date: 2024/2/22
 @Description:  
 """
+
+from .about import *
+from .main_window import *
+from .spec_window import *

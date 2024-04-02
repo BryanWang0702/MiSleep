@@ -8,6 +8,18 @@ misleep.egg-info/dependency_links.txt
 misleep.egg-info/requires.txt
 misleep.egg-info/top_level.txt
 misleep/gui/__init__.py
+misleep/gui/about.py
+misleep/gui/label_dialog.py
+misleep/gui/main_window.py
+misleep/gui/show.py
+misleep/gui/spec_window.py
+misleep/gui/thread.py
+misleep/gui/utils.py
+misleep/gui/uis/__init__.py
+misleep/gui/uis/about_ui.py
+misleep/gui/uis/label_dialog_ui.py
+misleep/gui/uis/main_window_ui.py
+misleep/gui/uis/spec_window_ui.py
 misleep/io/__init__.py
 misleep/io/annotation_io.py
 misleep/io/base.py
@@ -17,6 +29,8 @@ misleep/preprocessing/channel.py
 misleep/preprocessing/spectral.py
 misleep/utils/__init__.py
 misleep/utils/annotation.py
+misleep/utils/only4gui.py
+misleep/utils/others.py
 misleep/utils/signals.py
 misleep/viz/__init__.py
 misleep/viz/hypnogram.py
@@ -24,6 +38,7 @@ misleep/viz/signals.py
 misleep/viz/spectral.py
 test/test_annotation_io.py
 test/test_midata.py
+test/test_show.py
 test/test_signal_io.py
 test/test_signals_viz.py
 test/test_spectral_viz.py

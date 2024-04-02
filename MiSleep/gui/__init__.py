@@ -10,3 +10,4 @@
 from .about import *
 from .main_window import *
 from .spec_window import *
+from .show import *

@@ -58,10 +58,10 @@ class MiData:
                 raise ValueError(
                     f"Length of sample frequency {len(sf)} don't match the length of signals ({len(signals)})")
             for each in sf:
-                if not isinstance(each, float):
-                    raise TypeError(f"Sample frequency should be a list of float, got {type(each)}")
+                if not isinstance(each, (int, float)):
+                    raise TypeError(f"Sample frequency should be a list of int or float, got {type(each)}")
         else:
-            raise TypeError(f"Sample frequency should be a list of float, got {type(sf)}")
+            raise TypeError(f"Sample frequency should be a list of int or float, got {type(sf)}")
 
         if describe is None:
             self._describe = ''
