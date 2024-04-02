@@ -30,6 +30,7 @@ from misleep.gui.label_dialog import label_dialog
 from misleep.gui.spec_window import SpecWindow
 from misleep.gui.uis.main_window_ui import Ui_MiSleep
 from misleep.preprocessing.spectral import spectrogram, spectrum, band_power
+from misleep.gui.thread import SaveThread
 
 
 class main_window(QMainWindow, Ui_MiSleep):
@@ -57,6 +58,7 @@ class main_window(QMainWindow, Ui_MiSleep):
         # Set initial params
         self.current_sec = 0
         self.show_duration = 30  # Seconds of duration to plot
+        self.total_seconds = 0  # Total seconds for plot
         self.y_lims = None  # list of y lim for each channel
         self.y_shift = None  # list of y shift for each channel
         self.show_idx = None  # Channels to show in plot area
@@ -198,36 +200,8 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.initSc = QShortcut(QKeySequence('4'), self)
         self.initSc.activated.connect(self.init_label)
 
-    def operate_all_signals(self, state=True):
-        """Block or open all signals"""
-        self.PercentileSpin.blockSignals(state)
-        self.DefaultCh4SpecBt.blockSignals(state)
-
-        self.ScrollerBar.blockSignals(state)
-
-        self.SecondSpin.blockSignals(state)
-        self.DateTimeEdit.blockSignals(state)
-
-        # Channel operations
-        self.ShowChBt.blockSignals(state)
-        self.HideChBt.blockSignals(state)
-        self.DeleteChBt.blockSignals(state)
-        self.ScalerUpBt.blockSignals(state)
-        self.ScalerDownBt.blockSignals(state)
-        self.ShiftUpBt.blockSignals(state)
-        self.ShiftDownBt.blockSignals(state)
-        # Channel name change
-        self.channel_slm.blockSignals(state)
-
-        # Filter
-        self.FilterTypeCombo.blockSignals(state)
-        self.FilterConfirmBt.blockSignals(state)
-
-        # Custom second spin edit and ShowRangeCombo
-        self.ShowRangeCombo.blockSignals(state)
-        self.EpochNumSpin.blockSignals(state)
-        self.ShowRangeCombo.blockSignals(state)
-        self.CustomSecondsCheck.blockSignals(state)
+        # save labels
+        self.SaveLabelBt.clicked.connect(self.save_anno)
 
     def load_data(self):
         """Triggered by actionLoad_Data, get MiData"""
@@ -329,26 +303,13 @@ class main_window(QMainWindow, Ui_MiSleep):
             )
             return
 
-        # if self.midata.duration != self.mianno.anno_length:
-        #     QMessageBox.about(self, "Error",
-        #                       r"Seems that annotation length is different with data duration.")
-        #     return
-
         self.show_idx = list(range(self.midata.n_channels))
         self.y_lims = [max(each[:1000]) for each in self.midata.signals]
         self.y_lims = [1e-3 if each == 0.0 else each for each in self.y_lims]
         self.y_shift = [0 for _ in range(self.midata.n_channels)]
 
-        self.ScrollerBar.setRange(0, self.mianno.anno_length)
-        self.SecondSpin.setRange(0, self.mianno.anno_length)
-
-        # Prevent DateTimeEdit change
-        self.DateTimeEdit.blockSignals(True)
-        self.DateTimeEdit.setDateTimeRange(
-            self.ac_time,
-            self.ac_time + datetime.timedelta(seconds=self.mianno.anno_length),
-        )
-        self.DateTimeEdit.blockSignals(False)
+        self.total_seconds = self.midata.duration if self.midata.duration < self.mianno.anno_length else self.mianno.anno_length
+        self.reset_sec_limit()
 
         self.hypo_ax = self.hypo_figure.subplots(nrows=1, ncols=1)
 
@@ -358,6 +319,21 @@ class main_window(QMainWindow, Ui_MiSleep):
 
         self.redraw_all(second=0)
         self.clear_refresh(clf=False)
+
+    def reset_sec_limit(self):
+        """When show duration changes, change the limitation of 
+        ScrollerBar, DateTimeEdit, SecondSpin
+        """
+        self.ScrollerBar.setRange(0, self.total_seconds-self.show_duration)
+        self.SecondSpin.setRange(0, self.total_seconds-self.show_duration)
+
+        # Prevent DateTimeEdit change
+        self.DateTimeEdit.blockSignals(True)
+        self.DateTimeEdit.setDateTimeRange(
+            self.ac_time,
+            self.ac_time + datetime.timedelta(seconds=self.total_seconds-self.show_duration),
+        )
+        self.DateTimeEdit.blockSignals(False)
 
     def clear_refresh(self, clf=False):
         """Clear all plot area and refresh the canvas, clf to specify whether clear the figure"""
@@ -705,7 +681,7 @@ class main_window(QMainWindow, Ui_MiSleep):
             linewidth=1,
         )
         self.hypo_ax.set_ylim(0, 4.5)
-        self.hypo_ax.set_xlim(0, self.mianno.anno_length)
+        self.hypo_ax.set_xlim(0, self.total_seconds)
         self.hypo_ax.yaxis.set_ticks([1, 2, 3, 4], ["NREM", "REM", "Wake", "INIT"])
         if self.StartEndRadio.isChecked():
             for each in self.start_end_ms:
@@ -723,8 +699,8 @@ class main_window(QMainWindow, Ui_MiSleep):
 
     def redraw_all(self, second=0):
         """Second validation and Redraw all"""
-        if second + self.show_duration >= self.mianno.anno_length:
-            self.current_sec = self.mianno.anno_length - self.show_duration
+        if second + self.show_duration >= self.total_seconds:
+            self.current_sec = self.total_seconds - self.show_duration
         elif second <= 0:
             self.current_sec = 0
         else:
@@ -1119,7 +1095,7 @@ class main_window(QMainWindow, Ui_MiSleep):
             selected_idx = self.ShowRangeCombo.currentIndex()
             if (
                 self.ShowRangeCombo_dict[selected_idx] + self.current_sec
-                >= self.mianno.anno_length
+                >= self.total_seconds
             ):
                 self.show_duration = 30
                 self.current_sec = 0
@@ -1128,13 +1104,14 @@ class main_window(QMainWindow, Ui_MiSleep):
                 self.show_duration = self.ShowRangeCombo_dict[selected_idx]
         if type_ == "Spin":
             show_duration = self.EpochNumSpin.value() * self.epoch_length
-            if show_duration + self.current_sec >= self.mianno.anno_length:
+            if show_duration + self.current_sec >= self.total_seconds:
                 self.show_duration = 30
                 self.current_sec = 0
                 self.EpochNumSpin.setValue(6)
             else:
                 self.show_duration = show_duration
 
+        self.reset_sec_limit()
         self.redraw_all(second=self.current_sec)
         self.ScrollerBar.setPageStep(self.show_duration)
 
@@ -1232,4 +1209,35 @@ class main_window(QMainWindow, Ui_MiSleep):
 
     def save_bar_dispatcher(self, signal):
         """Triggered by SaveBar action, save data, save annotation"""
-        pass
+        if signal.text() == "Save Data":
+            self.save_data()
+        if signal.text() == "Save Annotation":
+            self.save_anno()
+
+    def save_anno(self):
+        """Save annotation into file"""
+        save_thread = SaveThread(file=[self.mianno, self.midata], 
+                                 file_path=self.anno_path)
+        saved = save_thread.save_anno()
+        if saved:
+            self.is_saved = True
+            QMessageBox.about(self, "Info", "Annotation saved")
+        save_thread.quit()
+
+    def closeEvent(self, event):
+        """Check if saved and quit"""
+        if not self.is_saved:
+            box = QMessageBox.question(self, 'Warning',
+                                       'Your labels haven\'t been saved, discard?\n'
+                                       'Yes: Save and quit\nNo: Discard\nCancel: Back to sleep window',
+                                       QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel, QMessageBox.Yes)
+
+            if box == QMessageBox.Yes:
+                self.save_anno()
+
+                event.accept()
+            elif box == QMessageBox.No:
+
+                event.accept()
+            else:
+                event.ignore()

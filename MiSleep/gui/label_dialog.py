@@ -128,8 +128,7 @@ class label_dialog(QDialog, Ui_Dialog):
         self.config.set('gui', 'MARKER', str(self.marker_label))
         self.config.set('gui', 'STARTEND', str(self.start_end_label))
         save_thread = SaveThread(file=self.config, 
-                                 file_path='./misleep/config.ini',
-                                 file_type='config')
+                                 file_path='./misleep/config.ini')
         save_thread.save_config()
         save_thread.quit()
     

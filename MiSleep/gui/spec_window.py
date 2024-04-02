@@ -30,12 +30,15 @@ class SpecWindow(QMainWindow, Ui_spec_window):
         # initialize the figures for spectrum, and spectrogram
         self.spectrum_figure = plt.figure()
         self.spectrum_ax = self.spectrum_figure.subplots(nrows=1, ncols=1)
+        
+        self.spectrum_figure.set_tight_layout(True)
         self.spectrum_canvas = FigureCanvas(self.spectrum_figure)
         self.SpectrumScrollArea.setWidget(self.spectrum_canvas)
         self.SpectrumSaveBt.clicked.connect(self.spectrum_save)
 
         self.spectrogram_figure = plt.figure()
         self.spectrogram_ax = self.spectrogram_figure.subplots(nrows=1, ncols=1)
+        self.spectrogram_figure.set_tight_layout(True)
         self.spectrogram_canvas = FigureCanvas(self.spectrogram_figure)
         self.SpectrogramScrollArea.setWidget(self.spectrogram_canvas)
         self.SpectrogramSaveBt.clicked.connect(self.spectrogram_save)
@@ -86,11 +89,14 @@ class SpecWindow(QMainWindow, Ui_spec_window):
         """Refresh all the figures"""
         self.spectrum_figure = plt.figure()
         self.spectrum_ax = self.spectrum_figure.subplots(nrows=1, ncols=1)
+        self.spectrum_figure.set_tight_layout(True)
         self.spectrum_canvas = FigureCanvas(self.spectrum_figure)
         self.SpectrumScrollArea.setWidget(self.spectrum_canvas)
 
         self.spectrogram_figure = plt.figure()
         self.spectrogram_ax = self.spectrogram_figure.subplots(nrows=1, ncols=1)
+        
+        self.spectrogram_figure.set_tight_layout(True)
         self.spectrogram_canvas = FigureCanvas(self.spectrogram_figure)
         self.SpectrogramScrollArea.setWidget(self.spectrogram_canvas)
 
