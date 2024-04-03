@@ -10,7 +10,7 @@
                 20240228: Use MiData format for the final output
 """
 
-from hdf5storage import loadmat, savemat
+from hdf5storage import savemat
 import pyedflib
 import datetime
 from misleep.io.base import MiData

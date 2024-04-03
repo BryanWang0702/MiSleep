@@ -11,7 +11,7 @@ MAINTAINER_EMAIL = "swang@gmail.com"
 URL = "https://github.com/BryanWang0702/MiSleep/"
 LICENSE = "BSD (3-clause)"
 DOWNLOAD_URL = "https://github.com/BryanWang0702/MiSleep/"
-VERSION = "0.1.0 Beta"
+VERSION = "0.1.1 Beta"
 
 INSTALL_REQUIRES = [
     "numpy>=1.18.1",
@@ -19,7 +19,8 @@ INSTALL_REQUIRES = [
     "scipy",
     "pyedflib",
     "hdf5storage",
-    "pyqt5"
+    "pyqt5",
+    "mat73"
 ]
 
 PACKAGES = [

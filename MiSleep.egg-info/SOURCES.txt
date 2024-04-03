@@ -44,6 +44,7 @@ misleep/viz/hypnogram.py
 misleep/viz/signals.py
 misleep/viz/spectral.py
 test/test_annotation_io.py
+test/test_loadmat73.py
 test/test_midata.py
 test/test_show.py
 test/test_signal_io.py

@@ -81,11 +81,11 @@ class MiData:
         channels = temp_channel
 
         # Verify the duration of each signal channel, and modify to a same integer duration in second
-        temp_duration = set([math.floor(len(signals[idx]) / each) for idx, each in enumerate(sf)])
-        if len(temp_duration) != 1:
-            raise ValueError(f"The duration of all signal channels are different.")
+        temp_duration = [math.floor(len(signals[idx]) / each) for idx, each in enumerate(sf)]
+        # Use the minimum duration for data duration
+        self._duration = min(temp_duration)
 
-        self._duration = list(temp_duration)[0]
+        # self._duration = list(temp_duration)[0]
         self._signals = [signals[idx][:int(self._duration * each)] for idx, each in enumerate(sf)]
         self._channels = channels
         self._n_channels = len(self._channels)
