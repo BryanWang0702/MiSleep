@@ -200,9 +200,44 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.wakeSc.activated.connect(self.wake_label)
         self.initSc = QShortcut(QKeySequence('4'), self)
         self.initSc.activated.connect(self.init_label)
+        self.labelSc = QShortcut(QKeySequence('a'), self)
+        self.labelSc.activated.connect(self.append_start_end)
 
         # save labels
         self.SaveLabelBt.clicked.connect(self.save_anno)
+        self.saveSc = QShortcut(QKeySequence('CTRL+s'), self)
+        self.saveSc.activated.connect(self.save_anno)
+
+        self.change_Bts_status(True)
+
+    def change_Bts_status(self, status=True):
+        """Change some buttons' status"""
+        self.MetaDock.setDisabled(status)
+        self.AcTimeEdit.setDisabled(status)
+        self.DeleteChBt.setDisabled(status)
+        self.HideChBt.setDisabled(status)
+        self.ScalerDownBt.setDisabled(status)
+        self.ShiftDownBt.setDisabled(status)
+        self.ShowChBt.setDisabled(status)
+        self.ScalerUpBt.setDisabled(status)
+        self.ShiftUpBt.setDisabled(status)
+        self.FilterConfirmBt.setDisabled(status)
+        self.DefaultCh4SpecBt.setDisabled(status)
+        self.FilterTypeCombo.setDisabled(status)
+        self.PlotSpecBt.setDisabled(status)
+        self.WakeBt.setDisabled(status)
+        self.REMBt.setDisabled(status)
+        self.InitBt.setDisabled(status)
+        self.LabelBt.setDisabled(status)
+        self.StartEndRadio.setDisabled(status)
+        self.SleepStateRadio.setDisabled(status)
+        self.SaveLabelBt.setDisabled(status)
+        self.MarkerRadio.setDisabled(status)
+        self.NREMBt.setDisabled(status)
+        self.DateTimeEdit.setDisabled(status)
+        self.ShowRangeCombo.setDisabled(status)
+        self.SaveBar.setDisabled(status)
+        self.AboutBar.setDisabled(status)
 
     def load_data(self):
         """Triggered by actionLoad_Data, get MiData"""
@@ -226,6 +261,7 @@ class main_window(QMainWindow, Ui_MiSleep):
                     r"<a href='https://github.com/BryanWang0702/MiSleep'>MiSleep</a> for detail.",
                 )
                 self.data_path = ""
+                self.change_Bts_status(True)
                 return
 
         if self.data_path.endswith((".edf", ".EDF")):
@@ -239,6 +275,7 @@ class main_window(QMainWindow, Ui_MiSleep):
                     r"<a href='https://github.com/BryanWang0702/MiSleep'>MiSleep</a> for detail.",
                 )
                 self.data_path = ""
+                self.change_Bts_status(True)
                 return
 
         # Save config
@@ -282,6 +319,7 @@ class main_window(QMainWindow, Ui_MiSleep):
                             "To create a new annotation file, load a data file first.",
                         )
                         self.anno_path = ""
+                        self.change_Bts_status(True)
                         return
 
                 if e.args[0] == "Invalid":
@@ -291,7 +329,8 @@ class main_window(QMainWindow, Ui_MiSleep):
                         r"Annotation file invalid, check "
                         r"<a href='https://github.com/BryanWang0702/MiSleep'>MiSleep</a> for detail.",
                     )
-                    self.data_path = ""
+                    self.anno_path = ""
+                    self.change_Bts_status(True)
                     return
                 
         # Save config
@@ -317,6 +356,11 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.y_lims = [1e-3 if each == 0.0 else each for each in self.y_lims]
         self.y_shift = [0 for _ in range(self.midata.n_channels)]
 
+        if abs(self.midata.duration - self.mianno.anno_length) >= 600:
+            QMessageBox.about(
+                self, "Error", r"Data and annotation do not match!"
+            )
+            return
         self.total_seconds = self.midata.duration if self.midata.duration < self.mianno.anno_length else self.mianno.anno_length
         self.reset_sec_limit()
 
@@ -328,6 +372,7 @@ class main_window(QMainWindow, Ui_MiSleep):
 
         self.redraw_all(second=0)
         self.clear_refresh(clf=False)
+        self.change_Bts_status(False)
 
     def reset_sec_limit(self):
         """When show duration changes, change the limitation of 
@@ -626,8 +671,8 @@ class main_window(QMainWindow, Ui_MiSleep):
                     ))
                 self.signal_marker_axvline.append(
                     self.signal_ax[1].text(
-                    x=int((each[0] - self.current_sec) * self.midata.sf[show_]),
-                    y=self.y_lims[self.show_idx[0]] + self.y_shift[self.show_idx[1]],
+                    x=int((each[0] - self.current_sec) * self.midata.sf[self.show_idx[0]]),
+                    y=self.y_lims[self.show_idx[0]] + self.y_shift[self.show_idx[0]],
                     s=each[1],
                     verticalalignment="top",
                     color="Red",
@@ -649,8 +694,8 @@ class main_window(QMainWindow, Ui_MiSleep):
                         alpha=1,
                     )
                 self.signal_ax[1].text(
-                    x=int((each[0] - self.current_sec) * self.midata.sf[show_]),
-                    y=self.y_lims[self.show_idx[0]] + self.y_shift[self.show_idx[1]],
+                    x=int((each[0] - self.current_sec) * self.midata.sf[self.show_idx[0]]),
+                    y=self.y_lims[self.show_idx[0]] + self.y_shift[self.show_idx[0]],
                     s=each[2]+'-S',
                     verticalalignment="top",
                     color="blue",
@@ -664,8 +709,8 @@ class main_window(QMainWindow, Ui_MiSleep):
                         alpha=1,
                     )
                 self.signal_ax[1].text(
-                    x=int((each[1] - self.current_sec) * self.midata.sf[show_]),
-                    y=self.y_lims[self.show_idx[0]] + self.y_shift[self.show_idx[1]],
+                    x=int((each[1] - self.current_sec) * self.midata.sf[self.show_idx[0]]),
+                    y=self.y_lims[self.show_idx[0]] + self.y_shift[self.show_idx[0]],
                     s=each[2]+'-E',
                     verticalalignment="top",
                     horizontalalignment='right',
@@ -1219,7 +1264,7 @@ class main_window(QMainWindow, Ui_MiSleep):
     def save_bar_dispatcher(self, signal):
         """Triggered by SaveBar action, save data, save annotation"""
         if signal.text() == "Save Data":
-            self.save_data()
+            pass
         if signal.text() == "Save Annotation":
             self.save_anno()
 

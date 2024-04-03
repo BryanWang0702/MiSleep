@@ -20,6 +20,12 @@ def load_mat(data_path):
     """
     Load data from a .mat file
 
+    Mat file got three version, v5.7 and v7.3 from matlab and python saved file, 
+    when the mat file is larger than 2 GB, Matlab will suggest to store as v7.3, 
+    while ``scipy.io.loadmat`` can't load v7.3 mat file, 
+    use mat73 for v7.3 matfile load. When matfile was saved by python, there is
+    no ``cell`  type, so use `save` argument to identify
+
     Parameters
     ----------
     data_path : str
@@ -31,32 +37,87 @@ def load_mat(data_path):
         MiSleep data format data
     """
 
-    raw_data = list(loadmat(data_path).values())[-1]
-    try:
-        # Whether save with python, because python has no 'cell' type
-        _ = raw_data['save']
-        channels = list(raw_data['channels'][0, 0])
-        channels = [each.strip() for each in channels]
-        sf = list(raw_data['sf'][0, 0][0].astype(float))
-        signals = [raw_data[each][0, 0][0] for each in channels]
-        time = raw_data['time'][0, 0][0]
+    from scipy.io import loadmat as scipy_loadmat
+    from mat73 import loadmat as mat73_loadmat
 
-        return MiData(signals=signals, channels=channels, sf=sf, time=time)
-    except Exception:
-        try:
-            channels = [item for each in raw_data['channels'][0][0][0] for item in each]
-            channels = [each.strip() for each in channels]
-            sf = list(raw_data['sf'][0, 0][0].astype(float))
-            signals = [raw_data[each][0, 0][0] for each in channels]
-            time = raw_data['time'][0, 0][0]
-            return MiData(signals=signals, channels=channels, sf=sf, time=time)
-        except Exception:
-            # If matlab data is not a struct, or have no channel field, will arise this
+    try:
+        # Use scipy to load
+        raw_data = list(scipy_loadmat(data_path).values())[-1]
+        names = raw_data.dtype.names
+
+        # If old version misleep data
+        if names is None:
             signals = raw_data
             channels = [f'ch{each + 1}' for each in range(raw_data.shape[0])]
             sf = [305. for _ in range(raw_data.shape[0])]
             time = datetime.datetime.now().strftime("%Y%m%d-%H:%M:%S")
-            return MiData(signals=signals, channels=channels, sf=sf, time=time)       
+            return MiData(signals=signals, channels=channels, sf=sf, time=time)
+
+        raw_data = raw_data[0][0]
+        # Whether saved by python
+        if 'save' in names:
+            pass
+
+        # Saved by matlab
+        channels = [each for item in raw_data['channels'][0] for each in item]
+        sf = [float(each[0]) for item in raw_data['sf'][0] for each in item]
+        signals = [raw_data[each][0] for each in channels]
+        time = raw_data['time'][0]
+        
+        return MiData(signals=signals, channels=channels, sf=sf, time=time)
+    
+    except NotImplementedError:
+        # The mat file is v7.3, use mat73 to load
+        raw_data = list(mat73_loadmat(data_path).values())[-1]
+
+        try:
+            _ = raw_data['channels']
+            if 'save' in raw_data.keys():
+                # Saved by python
+                pass
+
+            channels = raw_data['channels']
+            sf = [float(each) for each in raw_data['sf']]
+            signals = [raw_data[each] for each in channels]
+            time = raw_data['time'][0]
+            return MiData(signals=signals, channels=channels, sf=sf, time=time)
+    
+        except Exception:
+            # If old version misleep data
+            signals = raw_data
+            channels = [f'ch{each + 1}' for each in range(raw_data.shape[0])]
+            sf = [305. for _ in range(raw_data.shape[0])]
+            time = datetime.datetime.now().strftime("%Y%m%d-%H:%M:%S")
+            return MiData(signals=signals, channels=channels, sf=sf, time=time)
+
+        
+    
+    # raw_data = list(loadmat(data_path).values())[-1]
+    # try:
+    #     # Whether save with python, because python has no 'cell' type
+    #     _ = raw_data['save']
+    #     channels = list(raw_data['channels'][0, 0])
+    #     channels = [each.strip() for each in channels]
+    #     sf = list(raw_data['sf'][0, 0][0].astype(float))
+    #     signals = [raw_data[each][0, 0][0] for each in channels]
+    #     time = raw_data['time'][0, 0][0]
+
+    #     return MiData(signals=signals, channels=channels, sf=sf, time=time)
+    # except Exception:
+    #     try:
+    #         channels = [item for each in raw_data['channels'][0][0][0] for item in each]
+    #         channels = [each.strip() for each in channels]
+    #         sf = list(raw_data['sf'][0, 0][0].astype(float))
+    #         signals = [raw_data[each][0, 0][0] for each in channels]
+    #         time = raw_data['time'][0, 0][0]
+    #         return MiData(signals=signals, channels=channels, sf=sf, time=time)
+    #     except Exception:
+    #         # If matlab data is not a struct, or have no channel field, will arise this
+    #         signals = raw_data
+    #         channels = [f'ch{each + 1}' for each in range(raw_data.shape[0])]
+    #         sf = [305. for _ in range(raw_data.shape[0])]
+    #         time = datetime.datetime.now().strftime("%Y%m%d-%H:%M:%S")
+    #         return MiData(signals=signals, channels=channels, sf=sf, time=time)       
 
 
 def write_mat(signals, channels, sf, time, mat_file=None):

@@ -1,6 +1,7 @@
 from PyQt5.QtCore import QObject, QThread
 from misleep.gui.utils import second2time
 from misleep.utils.annotation import lst2group
+from misleep.io.signal_io import load_mat
 import datetime
 
 class SaveThread(QThread):
@@ -68,4 +69,23 @@ class SaveThread(QThread):
         with open(self.file_path, 'w') as f:
             f.write('\n'.join(annos))
         return True
+
+class LoadThread(QThread):
+
+    def __init__(self, parent=None, file_path=None):
+        """Load data
+
+        Parameters
+        ----------
+        parent : optional
+        file_path : str, optional
+            File path to load 
+        """
+        super().__init__(parent)
+        self.file_path = file_path
+
+    def load_mat_data(self):
+        """Load data from a.mat file"""
+        return load_mat(data_path=self.file_path)
+
 
