@@ -116,12 +116,6 @@
      <height>112</height>
     </size>
    </property>
-   <property name="maximumSize">
-    <size>
-     <width>540</width>
-     <height>400</height>
-    </size>
-   </property>
    <property name="features">
     <set>QDockWidget::DockWidgetFloatable|QDockWidget::DockWidgetMovable</set>
    </property>
@@ -198,12 +192,6 @@
     <size>
      <width>315</width>
      <height>450</height>
-    </size>
-   </property>
-   <property name="maximumSize">
-    <size>
-     <width>540</width>
-     <height>600</height>
     </size>
    </property>
    <property name="layoutDirection">
@@ -439,12 +427,6 @@
      <height>200</height>
     </size>
    </property>
-   <property name="maximumSize">
-    <size>
-     <width>540</width>
-     <height>200</height>
-    </size>
-   </property>
    <property name="features">
     <set>QDockWidget::DockWidgetFloatable|QDockWidget::DockWidgetMovable</set>
    </property>
@@ -541,12 +523,6 @@
     <size>
      <width>167</width>
      <height>148</height>
-    </size>
-   </property>
-   <property name="maximumSize">
-    <size>
-     <width>540</width>
-     <height>200</height>
     </size>
    </property>
    <property name="acceptDrops">
