@@ -13,7 +13,7 @@ import configparser
 import json
 
 import numpy as np
-from PyQt5.QtCore import QCoreApplication, Qt, QStringListModel
+from PyQt5.QtCore import QCoreApplication, Qt, QStringListModel, QTimer
 from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import QMainWindow, QFileDialog, QMessageBox, QAction, QShortcut
 from matplotlib import pyplot as plt
@@ -80,12 +80,6 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.epoch_length = 5
         self.ac_time = None
 
-        # Default marker label and start_end label for label dialog
-        # self.marker_label = ['Injection', 'Pat', 'Add water', 'label', 'label']
-        # self.start_end_label = ['Spindle', 'Slow wave activity', 'start_end_label']
-        # self.marker_label = json.loads(self.config['gui']['MARKERS'])
-        # self.start_end_label = json.loads(self.config['gui']['STARTEND'])
-
         # Signal area figure
         self.signal_figure = plt.figure()
         self.signal_ax = self.signal_figure.subplots()
@@ -117,14 +111,18 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.channel_slm = QStringListModel()
 
         # Initial about dialog and spec window
-        self.about_dialog = about_dialog(version=json.loads(self.config['gui']['version']),
-                                         update_time=json.loads(self.config['gui']['updatetime']))
+        self.about_dialog = about_dialog(version=self.config['gui']['version'],
+                                         update_time=self.config['gui']['updatetime'])
         self.spec_window = SpecWindow()
         # Initial label dialog
         self.label_dialog = label_dialog(config=self.config)
 
         # Check wheher operation done and saved or not
         self.is_saved = True
+
+        # Timer to auto save annotations
+        self.save_timer = QTimer()
+        self.save_timer.timeout.connect(self.auto_save)
 
         self.init_qt()
 
@@ -374,6 +372,9 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.clear_refresh(clf=False)
         self.change_Bts_status(False)
 
+        # save timer start, 5 mins
+        self.save_timer.start(60*5*1000)
+
     def reset_sec_limit(self):
         """When show duration changes, change the limitation of 
         ScrollerBar, DateTimeEdit, SecondSpin
@@ -566,7 +567,7 @@ class main_window(QMainWindow, Ui_MiSleep):
             ],
             sf=self.midata.sf[self.current_spectrogram_idx],
             step=1,
-            window=1,
+            window=5,
             norm=True,
         )
         cmap = plt.cm.get_cmap("jet")
@@ -1121,7 +1122,7 @@ class main_window(QMainWindow, Ui_MiSleep):
         
         freq, psd = spectrum(signal=signal_data,
                              sf=self.midata.sf[channel],
-                             relative=False)
+                             relative=True)
         
         f, t, Sxx = spectrogram(signal=signal_data,
                                 sf=self.midata.sf[channel],
@@ -1135,7 +1136,7 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.spec_window.show_(spectrum=[psd, freq], 
                                spectrogram=[f, t, Sxx],
                                percentile_=self.spectrogram_percentile,
-                               ratio=ratio)
+                               ratio=ratio, start_end=self.start_end)
         
         self.spec_window.activateWindow()
         self.spec_window.setWindowState(
@@ -1277,6 +1278,12 @@ class main_window(QMainWindow, Ui_MiSleep):
             self.is_saved = True
             QMessageBox.about(self, "Info", "Annotation saved")
         save_thread.quit()
+    
+    def auto_save(self):
+        """Auto save every 5 mins"""
+        if not self.is_saved:
+            self.save_anno()
+        self.save_timer.start(5*60*1000)
 
     def save_config(self, config_dict):
         """Save config"""

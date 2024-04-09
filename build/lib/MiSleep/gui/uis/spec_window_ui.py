@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file './misleep/gui/uis/spec_window.ui'
+# Form implementation generated from reading ui file 'misleep/gui/uis/spec_window.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.10
 #
@@ -14,8 +14,8 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_spec_window(object):
     def setupUi(self, spec_window):
         spec_window.setObjectName("spec_window")
-        spec_window.resize(860, 600)
-        spec_window.setMinimumSize(QtCore.QSize(860, 600))
+        spec_window.resize(932, 900)
+        spec_window.setMinimumSize(QtCore.QSize(860, 800))
         icon = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap(":/logo/logo.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         spec_window.setWindowIcon(icon)
@@ -37,7 +37,7 @@ class Ui_spec_window(object):
         self.SpectrumScrollArea.setWidgetResizable(True)
         self.SpectrumScrollArea.setObjectName("SpectrumScrollArea")
         self.scrollAreaWidgetContents = QtWidgets.QWidget()
-        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 820, 214))
+        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 892, 364))
         self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
         self.SpectrumScrollArea.setWidget(self.scrollAreaWidgetContents)
         self.formLayout.setWidget(0, QtWidgets.QFormLayout.SpanningRole, self.SpectrumScrollArea)
@@ -50,7 +50,7 @@ class Ui_spec_window(object):
         self.SpectrogramScrollArea.setWidgetResizable(True)
         self.SpectrogramScrollArea.setObjectName("SpectrogramScrollArea")
         self.scrollAreaWidgetContents_2 = QtWidgets.QWidget()
-        self.scrollAreaWidgetContents_2.setGeometry(QtCore.QRect(0, 0, 820, 214))
+        self.scrollAreaWidgetContents_2.setGeometry(QtCore.QRect(0, 0, 892, 364))
         self.scrollAreaWidgetContents_2.setObjectName("scrollAreaWidgetContents_2")
         self.SpectrogramScrollArea.setWidget(self.scrollAreaWidgetContents_2)
         self.formLayout_2.setWidget(0, QtWidgets.QFormLayout.SpanningRole, self.SpectrogramScrollArea)
