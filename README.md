@@ -1,5 +1,6 @@
 # MiSleep
 MiSleep is for EEG/EMG signal processing and visualization
+
 ![logo](resources/entire_logo.png)
 
 ## Get start
@@ -27,4 +28,5 @@ data.sf = {305.1758 305.1758 305.1758 305.1758 305.1758 305.1758 305.1758}
 data.time = {'20240409-18:00:00'}
 ```
 And an example of result data:
+
 ![Alt text](resources/matdata.png)
