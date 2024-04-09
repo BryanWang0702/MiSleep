@@ -567,7 +567,7 @@ class main_window(QMainWindow, Ui_MiSleep):
             ],
             sf=self.midata.sf[self.current_spectrogram_idx],
             step=1,
-            window=1,
+            window=5,
             norm=True,
         )
         cmap = plt.cm.get_cmap("jet")
