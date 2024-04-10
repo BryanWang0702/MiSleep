@@ -458,6 +458,16 @@ class main_window(QMainWindow, Ui_MiSleep):
                 f"{self.midata.channels[each]}\n\n{y_lim:.2e}"
             )
 
+            if self.show_duration < 300:
+                for pos_ in range(0, self.show_duration, 5):
+                    self.signal_ax[i + 1].axvline(
+                        pos_ * self.midata.sf[each],
+                        color="green",
+                        linestyle="--",
+                        linewidth=1,
+                        alpha=0.5
+                    )
+
             # plot label
             for state in sleep_state:
                 self.signal_ax[i + 1].fill_between(
