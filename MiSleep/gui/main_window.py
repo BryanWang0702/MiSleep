@@ -67,6 +67,7 @@ class main_window(QMainWindow, Ui_MiSleep):
                                in json.loads(self.config['gui']['statemap']).items()}
         self.state_color_dict = {int(key): value for key, value 
                                in json.loads(self.config['gui']['statecolor']).items()}
+
         self.ShowRangeCombo_dict = {0: 30, 1: 60, 2: 300, 3: 1800, 4: 3600}
         self.FilterTypeCombo_dict = {
             0: "bandpass",
@@ -180,7 +181,6 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.SleepStateRadio.setChecked(True)
         self.SleepStateRadio.toggled.connect(lambda: self.radio_recheck(self.SleepStateRadio))
         self.StartEndRadio.toggled.connect(lambda: self.radio_recheck(self.StartEndRadio))
-        # self.SleepStateRadio.toggled.connect(lambda: self.radio_recheck(self.SleepStateRadio))
 
         # Label button
         self.NREMBt.clicked.connect(self.nrem_label)
@@ -200,11 +200,26 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.initSc.activated.connect(self.init_label)
         self.labelSc = QShortcut(QKeySequence('a'), self)
         self.labelSc.activated.connect(self.append_start_end)
+        self.specSc = QShortcut(QKeySequence('s'), self)
+        self.specSc.activated.connect(self.show_spec_window)
+
+        # next page and previous page triggered by keyborad 
+        self.next_pageSc = QShortcut(QKeySequence('right'), self)
+        self.next_pageSc.activated.connect(self.next_page)
+        self.previous_pageSc = QShortcut(QKeySequence('left'), self)
+        self.previous_pageSc.activated.connect(self.previous_page)
 
         # save labels
         self.SaveLabelBt.clicked.connect(self.save_anno)
         self.saveSc = QShortcut(QKeySequence('CTRL+s'), self)
         self.saveSc.activated.connect(self.save_anno)
+
+        
+        # Button color
+        self.NREMBt.setStyleSheet(f"background-color:{self.state_color_dict[1]}")
+        self.REMBt.setStyleSheet(f"background-color:{self.state_color_dict[2]}")
+        self.WakeBt.setStyleSheet(f"background-color:{self.state_color_dict[3]}")
+        self.InitBt.setStyleSheet(f"background-color:{self.state_color_dict[4]}")
 
         self.change_Bts_status(True)
 
@@ -926,6 +941,16 @@ class main_window(QMainWindow, Ui_MiSleep):
         current_sec = self.ScrollerBar.value()
         self.redraw_all(second=current_sec)
         self.ScrollerBar.setEnabled(True)
+
+    def next_page(self):
+        """With -> button press, scroll to next page"""
+        current_sec = self.current_sec + self.show_duration
+        self.redraw_all(second=current_sec)
+
+    def previous_page(self):
+        """<- button"""
+        current_sec = self.current_sec - self.show_duration
+        self.redraw_all(second=current_sec)
 
     def SecondSpin_change(self):
         """SecondSpin changed"""
