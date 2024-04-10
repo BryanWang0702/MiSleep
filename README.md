@@ -5,8 +5,40 @@ MiSleep is for EEG/EMG signal processing and visualization
 
 ## Get start
 ```shell
-pip install misleep==0.1.2b
+pip install misleep==0.1.3b
 ```
+
+### New features
+1. New data structure
+
+You can save the original data as a new data structure (See `Data save protocol`).
+Where you can add the channels' name, sampling rate and the acquisition time into 
+the original data.
+
+2. Annotate more details
+
+Here we provide the start_end mode as a more precise way to annotate the event such
+as Slow Wave Activities or Spindle, e.t. You can select the `Start-End` mode in
+the Annotation tool dock and click wherever in the signal area to annotate the 
+event.
+
+2. Tool bar dock
+
+![dock](resources/dockoperation.gif)
+
+Now you can move the toolbar to wherever you want.
+
+3. Color for state
+
+![statecolor](resources/statecolor.gif)
+
+Different color background for different sleep states. Now the color map is:
+
+Init: White; NREM: Orange; REM: Blue; Wake: Red.
+
+**Future**: you can self-define the color for each sleep state.
+
+
 
 ## Data save protocol
 You need to use matlab for data saving, the final data should be a structure.
