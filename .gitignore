@@ -13,3 +13,4 @@ datasets
 
 #ignore files
 *.pyc
+config.ini
