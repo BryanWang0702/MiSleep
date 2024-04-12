@@ -7,13 +7,8 @@
     <x>0</x>
     <y>0</y>
     <width>1445</width>
-    <height>959</height>
+    <height>964</height>
    </rect>
-  </property>
-  <property name="font">
-   <font>
-    <stylestrategy>PreferAntialias</stylestrategy>
-   </font>
   </property>
   <property name="focusPolicy">
    <enum>Qt::WheelFocus</enum>
@@ -91,7 +86,7 @@
          <x>0</x>
          <y>0</y>
          <width>1106</width>
-         <height>753</height>
+         <height>758</height>
         </rect>
        </property>
       </widget>
@@ -112,8 +107,8 @@
   <widget class="QDockWidget" name="MetaDock">
    <property name="minimumSize">
     <size>
-     <width>264</width>
-     <height>112</height>
+     <width>288</width>
+     <height>124</height>
     </size>
    </property>
    <property name="features">
@@ -521,7 +516,7 @@
   <widget class="QDockWidget" name="TimeDock">
    <property name="minimumSize">
     <size>
-     <width>167</width>
+     <width>197</width>
      <height>148</height>
     </size>
    </property>
@@ -688,6 +683,28 @@
    </attribute>
    <addaction name="actionAbout"/>
   </widget>
+  <widget class="QToolBar" name="ToolBar">
+   <property name="font">
+    <font>
+     <family>Arial</family>
+     <pointsize>11</pointsize>
+     <stylestrategy>PreferAntialias</stylestrategy>
+    </font>
+   </property>
+   <property name="windowTitle">
+    <string>toolBar</string>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+   <addaction name="actionMerge_Data"/>
+   <addaction name="separator"/>
+   <addaction name="actionTransfer_Result"/>
+   <addaction name="separator"/>
+  </widget>
   <action name="actionLoad_Data">
    <property name="text">
     <string>Load Data</string>
@@ -716,6 +733,19 @@
   <action name="actionAbout">
    <property name="text">
     <string>About</string>
+   </property>
+  </action>
+  <action name="actionMerge_Data">
+   <property name="text">
+    <string>Merge Data</string>
+   </property>
+  </action>
+  <action name="actionTransfer_Result">
+   <property name="text">
+    <string>Transfer Result</string>
+   </property>
+   <property name="toolTip">
+    <string>Transfer Result</string>
    </property>
   </action>
  </widget>

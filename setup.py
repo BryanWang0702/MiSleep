@@ -20,7 +20,9 @@ INSTALL_REQUIRES = [
     "pyedflib",
     "hdf5storage",
     "pyqt5",
-    "mat73"
+    "mat73",
+    "pandas",
+    "openpyxl"
 ]
 
 PACKAGES = [
