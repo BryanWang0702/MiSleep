@@ -212,9 +212,9 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.next_pageSc.activated.connect(self.next_page)
         self.previous_pageSc = QShortcut(QKeySequence('left'), self)
         self.previous_pageSc.activated.connect(self.previous_page)
-        self.next_epochSc = QShortcut(QKeySequence('up'), self)
+        self.next_epochSc = QShortcut(QKeySequence('down'), self)
         self.next_epochSc.activated.connect(self.next_epoch)
-        self.previous_epochSc = QShortcut(QKeySequence('down'), self)
+        self.previous_epochSc = QShortcut(QKeySequence('up'), self)
         self.previous_epochSc.activated.connect(self.previous_epoch)
 
         # save labels

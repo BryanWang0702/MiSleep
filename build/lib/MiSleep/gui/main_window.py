@@ -26,7 +26,7 @@ from misleep.io.annotation_io import load_misleep_anno
 from misleep.gui.utils import create_new_mianno
 from misleep.utils.annotation import lst2group
 from misleep.gui.about import about_dialog
-from misleep.gui.dialog import label_dialog
+from misleep.gui.dialog import label_dialog, transferResult_dialog
 from misleep.gui.spec_window import SpecWindow
 from misleep.gui.uis.main_window_ui import Ui_MiSleep
 from misleep.preprocessing.spectral import spectrogram, spectrum, band_power
@@ -118,6 +118,9 @@ class main_window(QMainWindow, Ui_MiSleep):
         # Initial label dialog
         self.label_dialog = label_dialog(config=self.config)
 
+        # Initial transfer result dialog
+        self.transfer_result_dialog = transferResult_dialog()
+
         # Check wheher operation done and saved or not
         self.is_saved = True
 
@@ -133,6 +136,7 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.AboutBar.actionTriggered[QAction].connect(self.about_bar_dispatcher)
         self.LoadBar.actionTriggered[QAction].connect(self.load_bar_dispatcher)
         self.SaveBar.actionTriggered[QAction].connect(self.save_bar_dispatcher)
+        self.ToolBar.actionTriggered[QAction].connect(self.tool_bar_dispatcher)
 
         # Spectrogram percentile change
         self.PercentileSpin.setValue(self.spectrogram_percentile)
@@ -208,6 +212,10 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.next_pageSc.activated.connect(self.next_page)
         self.previous_pageSc = QShortcut(QKeySequence('left'), self)
         self.previous_pageSc.activated.connect(self.previous_page)
+        self.next_epochSc = QShortcut(QKeySequence('down'), self)
+        self.next_epochSc.activated.connect(self.next_epoch)
+        self.previous_epochSc = QShortcut(QKeySequence('up'), self)
+        self.previous_epochSc.activated.connect(self.previous_epoch)
 
         # save labels
         self.SaveLabelBt.clicked.connect(self.save_anno)
@@ -251,6 +259,19 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.ShowRangeCombo.setDisabled(status)
         self.SaveBar.setDisabled(status)
         self.AboutBar.setDisabled(status)
+        self.ToolBar.setDisabled(status)
+        self.ScrollerBar.setDisabled(status)
+        self.nremSc.setEnabled(not status)
+        self.remSc.setEnabled(not status)
+        self.wakeSc.setEnabled(not status)
+        self.initSc.setEnabled(not status)
+        self.labelSc.setEnabled(not status)
+        self.specSc.setEnabled(not status)
+        self.next_pageSc.setEnabled(not status)
+        self.previous_pageSc.setEnabled(not status)
+        self.next_epochSc.setEnabled(not status)
+        self.previous_epochSc.setEnabled(not status)
+        # self.setShortcutEnabled(not status)
 
     def load_data(self):
         """Triggered by actionLoad_Data, get MiData"""
@@ -493,7 +514,7 @@ class main_window(QMainWindow, Ui_MiSleep):
                     -y_lim + y_shift,
                     y_lim + y_shift,
                     facecolor=self.state_color_dict[state[2]],
-                    alpha=0.1,
+                    alpha=float(self.config['gui']['statecolorbgalpha']),
                 )
         self.signal_ax[-1].xaxis.set_ticks(
             [
@@ -554,7 +575,7 @@ class main_window(QMainWindow, Ui_MiSleep):
                     -y_lim + y_shift,
                     y_lim + y_shift,
                     facecolor=self.state_color_dict[state],
-                    alpha=0.1,
+                    alpha=float(self.config['gui']['statecolorbgalpha']),
                 )
         self.signal_figure.canvas.draw()
         self.signal_figure.canvas.flush_events()
@@ -760,9 +781,11 @@ class main_window(QMainWindow, Ui_MiSleep):
             where="mid",
             linewidth=1,
         )
-        self.hypo_ax.set_ylim(0, 4.5)
+
+        self.hypo_ax.set_ylim(0, len(list(self.state_map_dict.keys())))
         self.hypo_ax.set_xlim(0, self.total_seconds)
-        self.hypo_ax.yaxis.set_ticks([1, 2, 3, 4], ["NREM", "REM", "Wake", "INIT"])
+        self.hypo_ax.yaxis.set_ticks(list(self.state_map_dict.keys()), 
+                                     list(self.state_map_dict.values()))
         if self.StartEndRadio.isChecked():
             for each in self.start_end_ms:
                 self.hypo_ax.axvline(each, color="lime", alpha=1)
@@ -941,6 +964,16 @@ class main_window(QMainWindow, Ui_MiSleep):
         current_sec = self.ScrollerBar.value()
         self.redraw_all(second=current_sec)
         self.ScrollerBar.setEnabled(True)
+
+    def next_epoch(self):
+        """With down button, scroll to next epoch"""
+        current_sec = self.current_sec + 5
+        self.redraw_all(second=current_sec)
+
+    def previous_epoch(self):
+        """With up button, scroll to previous epoch"""
+        current_sec = self.current_sec - 5
+        self.redraw_all(second=current_sec)
 
     def next_page(self):
         """With -> button press, scroll to next page"""
@@ -1303,6 +1336,20 @@ class main_window(QMainWindow, Ui_MiSleep):
             pass
         if signal.text() == "Save Annotation":
             self.save_anno()
+
+    def tool_bar_dispatcher(self, signal):
+        """Triggered by ToolBar action, transfer result"""
+        if signal.text() == "Transfer Result":
+            self.transfer_result()
+
+    def transfer_result(self):
+        """Transfer result into file"""
+        self.transfer_result_dialog.exec_()
+        if self.label_dialog.closed:
+            return
+        self.transfer_result_dialog.transfer(config=self.config,
+                                             mianno=self.mianno,
+                                             ac_time=self.midata.time)
 
     def save_anno(self):
         """Save annotation into file"""

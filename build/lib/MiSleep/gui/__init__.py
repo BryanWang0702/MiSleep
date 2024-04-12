@@ -14,4 +14,4 @@ from .show import *
 from .resources.misleep import *
 from .utils import *
 from .thread import *
-from .label_dialog import *
+from .dialog import *

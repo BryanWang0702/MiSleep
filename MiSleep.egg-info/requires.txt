@@ -5,3 +5,5 @@ pyedflib
 hdf5storage
 pyqt5
 mat73
+pandas
+openpyxl
