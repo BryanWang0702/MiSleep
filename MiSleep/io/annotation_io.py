@@ -47,6 +47,25 @@ def load_misleep_anno(file_path):
 
     return MiAnnotation(sleep_state=sleep_state, start_end=start_end, marker=marker)
 
+def load_bio_anno(file_path):
+    """Load BIO-SIGNAL label file"""
+    file = open(file_path, 'r').readlines()
+    file = file[2:]
+    state_list = [each.split('\t')[1] for each in file]
+    state_list = [[each]*4 for each in state_list]
+    state_list = [item for each in state_list for item in each]
+    state_map = {
+        'AW': 3,
+        'QW': 3,
+        'NREM': 1,
+        'REMS': 2
+    }   
+
+    state_list = [state_map[each] for each in state_list]
+    return MiAnnotation(sleep_state=state_list, marker=[], start_end=[])
+
+
+
 def transfer_result(mianno, ac_time):
     marker = [[
         transfer_time(ac_time, each[0], '%Y-%m-%d %H:%M:%S'), 

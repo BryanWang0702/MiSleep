@@ -22,7 +22,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from misleep.preprocessing.spectral import spectrogram
 from misleep.io.base import MiData, MiAnnotation
 from misleep.io.signal_io import load_mat, load_edf
-from misleep.io.annotation_io import load_misleep_anno
+from misleep.io.annotation_io import load_misleep_anno, load_bio_anno
 from misleep.gui.utils import create_new_mianno
 from misleep.utils.annotation import lst2group
 from misleep.gui.about import about_dialog
@@ -279,7 +279,7 @@ class main_window(QMainWindow, Ui_MiSleep):
             self,
             "Select data file",
             f"{self.config['gui']['openpath']}",
-            "Matlab Files (*.mat *.MAT);EDF Files (*.edf *.EDF)",
+            "Matlab Files (*.mat *.MAT);;EDF Files (*.edf *.EDF)",
         )
 
         if data_path == "":
@@ -341,7 +341,11 @@ class main_window(QMainWindow, Ui_MiSleep):
 
         if self.anno_path.endswith((".txt", ".TXT")):
             try:
-                self.mianno = load_misleep_anno(self.anno_path)
+                file = open(self.anno_path, 'r').read()
+                if file[:5] == 'Start':
+                    self.mianno = load_bio_anno(self.anno_path)
+                else:
+                    self.mianno = load_misleep_anno(self.anno_path)
             except AssertionError as e:
                 if e.args[0] == "Empty":
                     if isinstance(self.midata, MiData):
