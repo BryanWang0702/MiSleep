@@ -7,22 +7,23 @@
 @Description:
 """
 
-import unittest
+import pytest
 from misleep.io.signal_io import load_mat, load_edf, write_mat
 from time import time
 
 
-class TestSignalIO(unittest.TestCase):
+class TestSignalIO():
     def test_load_mat_write_mat(self):
         """Test load_mat and write_mat"""
-        mat_path = r'../datasets/mat_from_mat_.mat'
+        mat_path = r'E:\workplace\EEGProcessing\00_DATA\20231117_test+vid_6pin\data_mini_saved_python.mat'
         s = time()
         midata = load_mat(data_path=mat_path)
         e = time()
         print(f"Load data from .mat file, cost {e-s} seconds\n"
               f"Signals shape {len(midata.signals)}, channels: {midata.channels}, sampling frequency: {midata.sf}")
 
-        write_mat(midata.signals, midata.channels, midata.sf, midata.time, r'../datasets/mat_from_mat.mat')
+        write_mat(midata.signals, midata.channels, midata.sf, midata.time, 
+                  r'E:\workplace\EEGProcessing\00_DATA\20231117_test+vid_6pin\data_mini_saved_python.mat')
         print('Saved to .mat successfully')
 
     def test_load_edf_write_mat(self):

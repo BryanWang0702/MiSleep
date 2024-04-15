@@ -279,7 +279,7 @@ class main_window(QMainWindow, Ui_MiSleep):
             self,
             "Select data file",
             f"{self.config['gui']['openpath']}",
-            "Matlab Files (*.mat *.MAT);;EDF Files (*.edf *.EDF)",
+            "Matlab Files (*.mat *.MAT);EDF Files (*.edf *.EDF)",
         )
 
         if data_path == "":
@@ -782,7 +782,7 @@ class main_window(QMainWindow, Ui_MiSleep):
             linewidth=1,
         )
 
-        self.hypo_ax.set_ylim(0, len(list(self.state_map_dict.keys())))
+        self.hypo_ax.set_ylim(0, len(list(self.state_map_dict.keys()))+0.5)
         self.hypo_ax.set_xlim(0, self.total_seconds)
         self.hypo_ax.yaxis.set_ticks(list(self.state_map_dict.keys()), 
                                      list(self.state_map_dict.values()))
@@ -1333,7 +1333,7 @@ class main_window(QMainWindow, Ui_MiSleep):
     def save_bar_dispatcher(self, signal):
         """Triggered by SaveBar action, save data, save annotation"""
         if signal.text() == "Save Data":
-            pass
+            self.save_data()
         if signal.text() == "Save Annotation":
             self.save_anno()
 
@@ -1360,6 +1360,10 @@ class main_window(QMainWindow, Ui_MiSleep):
             self.is_saved = True
             QMessageBox.about(self, "Info", "Annotation saved")
         save_thread.quit()
+
+    def save_data(self):
+        """Save data into file"""
+        
     
     def auto_save(self):
         """Auto save every 5 mins"""
