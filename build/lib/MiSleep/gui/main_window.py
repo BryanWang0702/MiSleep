@@ -22,7 +22,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from misleep.preprocessing.spectral import spectrogram
 from misleep.io.base import MiData, MiAnnotation
 from misleep.io.signal_io import load_mat, load_edf
-from misleep.io.annotation_io import load_misleep_anno
+from misleep.io.annotation_io import load_misleep_anno, load_bio_anno
 from misleep.gui.utils import create_new_mianno
 from misleep.utils.annotation import lst2group
 from misleep.gui.about import about_dialog
@@ -341,7 +341,11 @@ class main_window(QMainWindow, Ui_MiSleep):
 
         if self.anno_path.endswith((".txt", ".TXT")):
             try:
-                self.mianno = load_misleep_anno(self.anno_path)
+                file = open(self.anno_path, 'r').read()
+                if file[:5] == 'Start':
+                    self.mianno = load_bio_anno(self.anno_path)
+                else:
+                    self.mianno = load_misleep_anno(self.anno_path)
             except AssertionError as e:
                 if e.args[0] == "Empty":
                     if isinstance(self.midata, MiData):
@@ -782,7 +786,7 @@ class main_window(QMainWindow, Ui_MiSleep):
             linewidth=1,
         )
 
-        self.hypo_ax.set_ylim(0, len(list(self.state_map_dict.keys())))
+        self.hypo_ax.set_ylim(0, len(list(self.state_map_dict.keys()))+0.5)
         self.hypo_ax.set_xlim(0, self.total_seconds)
         self.hypo_ax.yaxis.set_ticks(list(self.state_map_dict.keys()), 
                                      list(self.state_map_dict.values()))
@@ -1333,7 +1337,7 @@ class main_window(QMainWindow, Ui_MiSleep):
     def save_bar_dispatcher(self, signal):
         """Triggered by SaveBar action, save data, save annotation"""
         if signal.text() == "Save Data":
-            pass
+            self.save_data()
         if signal.text() == "Save Annotation":
             self.save_anno()
 
@@ -1360,6 +1364,10 @@ class main_window(QMainWindow, Ui_MiSleep):
             self.is_saved = True
             QMessageBox.about(self, "Info", "Annotation saved")
         save_thread.quit()
+
+    def save_data(self):
+        """Save data into file"""
+        
     
     def auto_save(self):
         """Auto save every 5 mins"""
