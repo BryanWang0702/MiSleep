@@ -166,8 +166,6 @@ class transferResult_dialog(QDialog, Ui_TransferResultDialog):
     def transfer(self, config, mianno, ac_time):
         """Transfer result to dataframe, triggered by okay button"""
 
-        self.ACTimeEditor.setDateTime(ac_time.strptime("%Y%m%d-%H:%M:%S"))
-
         if self.ResetTimeCheckBox.isChecked():
             ac_time = self.ACTimeEditor.dateTime().toPyDateTime()
         else:

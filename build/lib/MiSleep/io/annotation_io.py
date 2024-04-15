@@ -7,8 +7,7 @@
 @Description:  Annotation io, default is for MiSleep annotation, `NAME.txt`
 """
 from misleep.io.base import MiAnnotation
-from misleep.utils.annotation import marker2mianno, start_end2mianno, lst2group, sleep_state2mianno, \
-    transfer_time, insert_row, temp_loop4below_row
+from misleep.utils.annotation import marker2mianno, start_end2mianno, lst2group, sleep_state2mianno, transfer_time, insert_row, temp_loop4below_row
 import pandas as pd
 
 
