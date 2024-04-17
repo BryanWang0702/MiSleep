@@ -158,10 +158,15 @@ class transferResult_dialog(QDialog, Ui_TransferResultDialog):
         self.setupUi(self)
 
         self.ACTimeEditor.setDisabled(True)
-        self.ResetTimeCheckBox.clicked.connect(self.enable_time_editor)
+        self.TransferStartTimeEdit.setDisabled(True)
+        self.ResetTimeCheckBox.clicked.connect(self.enable_ac_time_editor)
+        self.ResetTransferStartTimeCheckBox.clicked.connect(self.enable_start_time_editor)
         
-    def enable_time_editor(self):
+    def enable_ac_time_editor(self):
         self.ACTimeEditor.setEnabled(True)
+
+    def enable_start_time_editor(self):
+        self.TransferStartTimeEdit.setEnabled(True)
 
     def transfer(self, config, mianno, ac_time):
         """Transfer result to dataframe, triggered by okay button"""
@@ -170,6 +175,15 @@ class transferResult_dialog(QDialog, Ui_TransferResultDialog):
             ac_time = self.ACTimeEditor.dateTime().toPyDateTime()
         else:
             ac_time = datetime.datetime.strptime(ac_time, "%Y%m%d-%H:%M:%S")
+        
+        if self.ResetTransferStartTimeCheckBox.isChecked():
+            start_time = self.TransferStartTimeEdit.dateTime().toPyDateTime()
+            if start_time > ac_time:
+                delay_seconds = (start_time - ac_time).seconds
+                mianno._marker = mianno.marker[delay_seconds:]
+                mianno._start_end = mianno.start_end[delay_seconds:]
+                mianno._sleep_state = mianno.sleep_state[delay_seconds:]
+                ac_time = start_time
         
         
         fd, _ = QFileDialog.getSaveFileName(self, "Save transfered result",

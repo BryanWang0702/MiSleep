@@ -5,7 +5,7 @@ MiSleep is for EEG/EMG signal processing and visualization
 
 ## Get start
 ```shell
-pip install misleep==0.1.3b
+pip install misleep==0.2.2b0
 ```
 
 ### New features
