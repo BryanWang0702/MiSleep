@@ -916,6 +916,7 @@ class main_window(QMainWindow, Ui_MiSleep):
             self.plot_marker_line()
         
             self.is_saved = False
+            self.AnnotationPathLabel.setText('*Annotation path:')
 
         if self.StartEndRadio.isChecked():
             x = round(event.xdata / self.midata.sf[
@@ -1289,6 +1290,7 @@ class main_window(QMainWindow, Ui_MiSleep):
                 [sleep_type] * (self.start_end[1] - self.start_end[0])
         
         self.is_saved = False
+        self.AnnotationPathLabel.setText('*Annotation path:')
         self.replot_sleep_state_bg(state=sleep_type)
         self.plot_hypo()
 
@@ -1319,6 +1321,7 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.plot_start_end_label_line()
     
         self.is_saved = False
+        self.AnnotationPathLabel.setText('*Annotation path:')
 
     def about_bar_dispatcher(self, signal):
         """Triggered by AboutBar action, show About dialog"""
@@ -1363,7 +1366,8 @@ class main_window(QMainWindow, Ui_MiSleep):
         saved = save_thread.save_anno()
         if saved:
             self.is_saved = True
-            QMessageBox.about(self, "Info", "Annotation saved")
+            
+            self.AnnotationPathLabel.setText('Annotation path:')
         save_thread.quit()
 
     def save_data(self):

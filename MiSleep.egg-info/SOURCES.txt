@@ -39,8 +39,6 @@ misleep/preprocessing/signals.py
 misleep/preprocessing/spectral.py
 misleep/utils/__init__.py
 misleep/utils/annotation.py
-misleep/utils/only4gui.py
-misleep/utils/others.py
 misleep/utils/signals.py
 misleep/viz/__init__.py
 misleep/viz/hypnogram.py

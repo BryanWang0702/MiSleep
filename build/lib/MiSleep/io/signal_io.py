@@ -56,7 +56,11 @@ def load_mat(data_path):
         raw_data = raw_data[0][0]
         # Whether saved by python
         if 'save' in names:
-            pass
+            channels = list(raw_data['channels'])
+            sf = [float(each) for each in raw_data['sf'][0]]
+            signals = [raw_data[each][0] for each in channels]
+            time = raw_data['time'][0]
+            return MiData(signals=signals, channels=channels, sf=sf, time=time)
 
         # Saved by matlab
         channels = [each for item in raw_data['channels'][0] for each in item]
@@ -136,8 +140,9 @@ def load_edf(data_path):
         MiSleep data format data
     """
 
-    signals, signal_headers, _ = pyedflib.highlevel.read_edf(edf_file=data_path)
+    signals, signal_headers, meta = pyedflib.highlevel.read_edf(edf_file=data_path)
 
     return MiData(signals=signals,
                   channels=[each['label'] for each in signal_headers],
-                  sf=[each['sample_frequency'] for each in signal_headers])
+                  sf=[each['sample_frequency'] for each in signal_headers],
+                  time=meta['startdate'].strftime('%Y%m%d-%H:%M:%S'))
