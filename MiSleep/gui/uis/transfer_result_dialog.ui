@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>313</width>
-    <height>197</height>
+    <width>278</width>
+    <height>290</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -20,7 +20,14 @@
       <string>Transfer result options</string>
      </property>
      <layout class="QGridLayout" name="gridLayout">
-      <item row="5" column="0">
+      <item row="5" column="0" colspan="2">
+       <widget class="Line" name="line">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="0">
        <widget class="QCheckBox" name="RejectArtifactCheckBox">
         <property name="text">
          <string>Reject artifact</string>
@@ -28,16 +35,23 @@
        </widget>
       </item>
       <item row="4" column="0">
+       <widget class="QCheckBox" name="ContainEventsCheckBox">
+        <property name="text">
+         <string>Contain Start-End events</string>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="0">
        <widget class="QCheckBox" name="StateSpecAnalysisCheckBox">
         <property name="text">
          <string>State spectral analysis</string>
         </property>
        </widget>
       </item>
-      <item row="2" column="0">
-       <widget class="QCheckBox" name="ContainEventsCheckBox">
-        <property name="text">
-         <string>Contain Start-End events</string>
+      <item row="1" column="0">
+       <widget class="QDateTimeEdit" name="ACTimeEditor">
+        <property name="displayFormat">
+         <string>yyyy/MM/dd HH:mm:ss</string>
         </property>
        </widget>
       </item>
@@ -48,10 +62,10 @@
         </property>
        </widget>
       </item>
-      <item row="1" column="0">
-       <widget class="QDateTimeEdit" name="ACTimeEditor">
-        <property name="displayFormat">
-         <string>yyyy/MM/dd HH:mm:ss</string>
+      <item row="2" column="0">
+       <widget class="QCheckBox" name="ResetTransferStartTimeCheckBox">
+        <property name="text">
+         <string>Reset transfer start time</string>
         </property>
        </widget>
       </item>
@@ -68,12 +82,25 @@
         </property>
        </spacer>
       </item>
-      <item row="3" column="0" colspan="2">
-       <widget class="Line" name="line">
+      <item row="3" column="0">
+       <widget class="QDateTimeEdit" name="TransferStartTimeEdit">
+        <property name="displayFormat">
+         <string>yyyy/MM/dd HH:mm:ss</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <spacer name="horizontalSpacer_2">
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
         </property>
-       </widget>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
       </item>
      </layout>
     </widget>
