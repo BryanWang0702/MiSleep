@@ -15,6 +15,7 @@ from misleep.gui.uis.transfer_result_dialog_ui import Ui_TransferResultDialog
 from misleep.gui.thread import SaveThread
 from misleep.io.annotation_io import transfer_result
 import pandas as pd
+from copy import deepcopy
 
 
 class label_dialog(QDialog, Ui_Dialog):
@@ -170,6 +171,8 @@ class transferResult_dialog(QDialog, Ui_TransferResultDialog):
 
     def transfer(self, config, mianno, ac_time):
         """Transfer result to dataframe, triggered by okay button"""
+        mianno = deepcopy(mianno)
+        ac_time = deepcopy(ac_time)
 
         if self.ResetTimeCheckBox.isChecked():
             ac_time = self.ACTimeEditor.dateTime().toPyDateTime()
