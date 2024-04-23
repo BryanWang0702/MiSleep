@@ -1353,8 +1353,8 @@ class main_window(QMainWindow, Ui_MiSleep):
         """Transfer result into file"""
         self.transfer_result_dialog.ACTimeEditor.setDateTime(self.ac_time)
         self.transfer_result_dialog.TransferStartTimeEdit.setDateTime(self.ac_time)
-        self.transfer_result_dialog.exec_()
-        if self.label_dialog.closed:
+        self.transfer_result_dialog.exec()
+        if self.transfer_result_dialog.closed:
             return
         self.transfer_result_dialog.transfer(config=self.config,
                                              mianno=self.mianno,

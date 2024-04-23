@@ -15,8 +15,8 @@ class Ui_TransferResultDialog(object):
     def setupUi(self, TransferResultDialog):
         TransferResultDialog.setObjectName("TransferResultDialog")
         TransferResultDialog.resize(278, 290)
-        self.verticalLayout = QtWidgets.QVBoxLayout(TransferResultDialog)
-        self.verticalLayout.setObjectName("verticalLayout")
+        self.gridLayout_2 = QtWidgets.QGridLayout(TransferResultDialog)
+        self.gridLayout_2.setObjectName("gridLayout_2")
         self.groupBox = QtWidgets.QGroupBox(TransferResultDialog)
         self.groupBox.setObjectName("groupBox")
         self.gridLayout = QtWidgets.QGridLayout(self.groupBox)
@@ -51,16 +51,15 @@ class Ui_TransferResultDialog(object):
         self.gridLayout.addWidget(self.TransferStartTimeEdit, 3, 0, 1, 1)
         spacerItem1 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.gridLayout.addItem(spacerItem1, 3, 1, 1, 1)
-        self.verticalLayout.addWidget(self.groupBox)
-        self.buttonBox = QtWidgets.QDialogButtonBox(TransferResultDialog)
-        self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
-        self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel|QtWidgets.QDialogButtonBox.Ok)
-        self.buttonBox.setObjectName("buttonBox")
-        self.verticalLayout.addWidget(self.buttonBox)
+        self.gridLayout_2.addWidget(self.groupBox, 0, 0, 1, 2)
+        self.OKBt = QtWidgets.QPushButton(TransferResultDialog)
+        self.OKBt.setObjectName("OKBt")
+        self.gridLayout_2.addWidget(self.OKBt, 1, 0, 1, 1)
+        self.CancelBt = QtWidgets.QPushButton(TransferResultDialog)
+        self.CancelBt.setObjectName("CancelBt")
+        self.gridLayout_2.addWidget(self.CancelBt, 1, 1, 1, 1)
 
         self.retranslateUi(TransferResultDialog)
-        self.buttonBox.accepted.connect(TransferResultDialog.accept) # type: ignore
-        self.buttonBox.rejected.connect(TransferResultDialog.reject) # type: ignore
         QtCore.QMetaObject.connectSlotsByName(TransferResultDialog)
 
     def retranslateUi(self, TransferResultDialog):
@@ -74,3 +73,5 @@ class Ui_TransferResultDialog(object):
         self.ResetTimeCheckBox.setText(_translate("TransferResultDialog", "Reset acquisition time"))
         self.ResetTransferStartTimeCheckBox.setText(_translate("TransferResultDialog", "Reset transfer start time"))
         self.TransferStartTimeEdit.setDisplayFormat(_translate("TransferResultDialog", "yyyy/MM/dd HH:mm:ss"))
+        self.OKBt.setText(_translate("TransferResultDialog", "OK"))
+        self.CancelBt.setText(_translate("TransferResultDialog", "Cancel"))

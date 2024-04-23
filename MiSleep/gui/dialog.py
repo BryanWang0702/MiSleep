@@ -7,7 +7,7 @@
 @Description:  Dialog file, label dialog, transfer result dialog
 """
 from PyQt5.QtCore import QCoreApplication, Qt, QStringListModel
-from PyQt5.QtWidgets import QDialog, QMessageBox, QFileDialog
+from PyQt5.QtWidgets import QDialog, QMessageBox, QFileDialog, QDialogButtonBox
 import datetime
 
 from misleep.gui.uis.label_dialog_ui import Ui_Dialog
@@ -162,6 +162,9 @@ class transferResult_dialog(QDialog, Ui_TransferResultDialog):
         self.TransferStartTimeEdit.setDisabled(True)
         self.ResetTimeCheckBox.clicked.connect(self.enable_ac_time_editor)
         self.ResetTransferStartTimeCheckBox.clicked.connect(self.enable_start_time_editor)
+        self.OKBt.clicked.connect(self.okEvent)
+        self.CancelBt.clicked.connect(self.cancelEvent)
+        self.closed = True
         
     def enable_ac_time_editor(self):
         self.ACTimeEditor.setEnabled(True)
@@ -205,7 +208,11 @@ class transferResult_dialog(QDialog, Ui_TransferResultDialog):
 
         QMessageBox.about(self, "Info", "Transfered result saved")
 
-    def cancel_event(self):
+    def okEvent(self):
+        self.closed = False
+        self.hide()
+
+    def cancelEvent(self):
         """Triggered by the `cancel` button"""
         self.closed = True
         self.hide()
