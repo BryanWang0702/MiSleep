@@ -22,7 +22,8 @@ INSTALL_REQUIRES = [
     "pyqt5",
     "mat73",
     "pandas",
-    "openpyxl"
+    "openpyxl",
+    "yasa"
 ]
 
 PACKAGES = [
