@@ -247,8 +247,9 @@ class stateSpectral_dialog(QDialog, Ui_StateSpectralDialog):
 
         self.BPFilterCheckBox.clicked.connect(self.BP_filter_check_changed)
         self.BPFilterCheckBox.setChecked(True)
-        self.RejectArtifactCheckBox.clicked.connect(self.reject_artifact_artifacts_changed)
         self.RejectArtifactCheckBox.setChecked(False)
+        self.ArtThresholdSpinBox.setDisabled(True)
+        self.RejectArtifactCheckBox.clicked.connect(self.reject_artifact_artifacts_changed)
         
         self.OKBt.clicked.connect(self.okEvent)
         self.CancelBt.clicked.connect(self.cancelEvent)
@@ -270,6 +271,7 @@ class stateSpectral_dialog(QDialog, Ui_StateSpectralDialog):
 
     def dialog_show(self, channels):
         """Show state spectral dialog, fill params"""
+        self.ChannelSelector.clear()
         self.ChannelSelector.addItems(channels)
         self.ChannelSelector.setCurrentIndex(0)
 
@@ -314,9 +316,16 @@ class stateSpectral_dialog(QDialog, Ui_StateSpectralDialog):
             Init_data = reject_artifact(Init_data, sf=sf, threshold=threshold)
 
         nperseg = 10*sf
-        NREM_spec, NREM_figure = cal_draw_spectrum(data=NREM_data, sf=sf, nperseg=nperseg)
-        REM_spec, REM_figure = cal_draw_spectrum(data=REM_data, sf=sf, nperseg=nperseg)
-        Wake_spec, Wake_figure = cal_draw_spectrum(data=Wake_data, sf=sf, nperseg=nperseg)
+        if self.RelativeCheckBox.isChecked():
+            relative = True
+        else:
+            relative = False
+        NREM_spec, NREM_figure = cal_draw_spectrum(data=NREM_data, sf=sf, 
+                                                   nperseg=nperseg, relative=relative)
+        REM_spec, REM_figure = cal_draw_spectrum(data=REM_data, sf=sf, 
+                                                   nperseg=nperseg, relative=relative)
+        Wake_spec, Wake_figure = cal_draw_spectrum(data=Wake_data, sf=sf,
+                                                   nperseg=nperseg, relative=relative)
 
         name_map = {
             1: 'NREM',
@@ -342,7 +351,8 @@ class stateSpectral_dialog(QDialog, Ui_StateSpectralDialog):
             _df = pd.DataFrame(data=spec.T, columns=['frequency', 'power'])
             _df.to_excel(excel_writer=writer, sheet_name=name_map[idx+1], index=False)
         if len(Init_data) > sf*10:
-            Init_spec, Init_figure = cal_draw_spectrum(data=Init_data, sf=sf, nperseg=nperseg)
+            Init_spec, Init_figure = cal_draw_spectrum(data=Init_data, sf=sf,
+                                                   nperseg=nperseg, relative=relative)
             _df = pd.DataFrame(data=Init_spec.T, columns=['frequency', 'power'])
             _df.to_excel(excel_writer=writer, sheet_name=name_map[4], index=False)
             Init_figure.savefig(fd + '/Init_spectrum.pdf')

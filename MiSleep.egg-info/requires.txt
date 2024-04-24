@@ -7,3 +7,4 @@ pyqt5
 mat73
 pandas
 openpyxl
+yasa

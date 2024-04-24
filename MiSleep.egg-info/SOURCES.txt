@@ -28,6 +28,7 @@ misleep/gui/uis/label_dialog_ui.py
 misleep/gui/uis/main_window_ui.py
 misleep/gui/uis/save_data_dialog_ui.py
 misleep/gui/uis/spec_window_ui.py
+misleep/gui/uis/state_spectral_dialog_ui.py
 misleep/gui/uis/transfer_result_dialog_ui.py
 misleep/io/__init__.py
 misleep/io/annotation_io.py

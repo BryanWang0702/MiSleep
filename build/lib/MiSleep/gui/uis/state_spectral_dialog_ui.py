@@ -56,7 +56,6 @@ class Ui_StateSpectralDialog(object):
         self.gridLayout.addWidget(self.MergeDataCheckBox, 8, 0, 1, 1)
         self.ArtThresholdSpinBox = QtWidgets.QDoubleSpinBox(self.groupBox)
         self.ArtThresholdSpinBox.setDecimals(1)
-        self.ArtThresholdSpinBox.setProperty("value", 2.0)
         self.ArtThresholdSpinBox.setObjectName("ArtThresholdSpinBox")
         self.gridLayout.addWidget(self.ArtThresholdSpinBox, 7, 1, 1, 1)
         self.gridLayout_2.addWidget(self.groupBox, 0, 0, 1, 2)

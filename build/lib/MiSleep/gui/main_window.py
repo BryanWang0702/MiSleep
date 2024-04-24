@@ -26,7 +26,7 @@ from misleep.io.annotation_io import load_misleep_anno, load_bio_anno
 from misleep.gui.utils import create_new_mianno
 from misleep.utils.annotation import lst2group
 from misleep.gui.about import about_dialog
-from misleep.gui.dialog import label_dialog, transferResult_dialog
+from misleep.gui.dialog import label_dialog, transferResult_dialog, stateSpectral_dialog
 from misleep.gui.spec_window import SpecWindow
 from misleep.gui.uis.main_window_ui import Ui_MiSleep
 from misleep.preprocessing.spectral import spectrogram, spectrum, band_power
@@ -120,6 +120,9 @@ class main_window(QMainWindow, Ui_MiSleep):
 
         # Initial transfer result dialog
         self.transfer_result_dialog = transferResult_dialog()
+
+        # Initial state spectral dialog
+        self.state_spectral_dialog = stateSpectral_dialog()
 
         # Check wheher operation done and saved or not
         self.is_saved = True
@@ -1346,6 +1349,8 @@ class main_window(QMainWindow, Ui_MiSleep):
 
     def tool_bar_dispatcher(self, signal):
         """Triggered by ToolBar action, transfer result"""
+        if signal.text() == "State Spectral":
+            self.state_spectral()
         if signal.text() == "Transfer Result":
             self.transfer_result()
 
@@ -1353,12 +1358,23 @@ class main_window(QMainWindow, Ui_MiSleep):
         """Transfer result into file"""
         self.transfer_result_dialog.ACTimeEditor.setDateTime(self.ac_time)
         self.transfer_result_dialog.TransferStartTimeEdit.setDateTime(self.ac_time)
-        self.transfer_result_dialog.exec_()
-        if self.label_dialog.closed:
+        self.transfer_result_dialog.exec()
+        if self.transfer_result_dialog.closed:
             return
         self.transfer_result_dialog.transfer(config=self.config,
                                              mianno=self.mianno,
                                              ac_time=self.midata.time)
+        
+    def state_spectral(self):
+        """Analyze state spectral"""
+        self.state_spectral_dialog.dialog_show(channels=self.midata.channels)
+        self.state_spectral_dialog.exec()
+        if self.state_spectral_dialog.closed:
+            return
+        self.state_spectral_dialog.spectral_analysis(midata=self.midata,
+                                            mianno=self.mianno,
+                                            config=self.config)
+
 
     def save_anno(self):
         """Save annotation into file"""

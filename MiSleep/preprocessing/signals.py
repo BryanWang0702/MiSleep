@@ -44,10 +44,10 @@ def reject_artifact(signal, sf=None, threshold=2):
     reject artfact with signal channel standard deviation
     """
     
-    signal = z_score(signal)
+    signal_z_score = z_score(signal)
     # get epoch data
-    signal = [signal[int(each): int((each+5*sf))] for each in range(0, signal.shape[0], int(5*sf))]
-    signal_SD_lst = [np.std(each) for each in signal]
+    signal_z_score = [signal_z_score[int(each): int((each+5*sf))] for each in range(0, signal_z_score.shape[0], int(5*sf))]
+    signal_SD_lst = [np.std(each) for each in signal_z_score]
     ave_siganal_sd = np.mean(signal_SD_lst)
     artifacts_idx = []
 
@@ -59,7 +59,6 @@ def reject_artifact(signal, sf=None, threshold=2):
     
     artifacts_idx = np.array(artifacts_idx).astype(bool)
     artifacts_idx = np.repeat(artifacts_idx, int(5*sf))
-    signal = [item for each in signal for item in each]
     slice_length = artifacts_idx.shape[0] if artifacts_idx.shape[0] < len(signal) else len(signal)
     signal = np.array(signal[:slice_length])[artifacts_idx[:slice_length]]
     
