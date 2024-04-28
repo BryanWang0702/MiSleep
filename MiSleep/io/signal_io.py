@@ -69,7 +69,7 @@ def load_mat(data_path):
         channels = [each for item in raw_data['channels'][0] for each in item]
         sf = [float(each[0]) for item in raw_data['sf'][0] for each in item]
         signals = [raw_data[each][0] for each in channels]
-        time = raw_data['time'][0]
+        time = raw_data['time'][0][0][0]
         
         return MiData(signals=signals, channels=channels, sf=sf, time=time)
     

@@ -116,7 +116,7 @@ def spectrogram(signal, sf, band=None, step=0.2, window=2, norm=False):
     nperseg = int(window * sf)
     noverlap = int(nperseg - (step * sf))
 
-    f, t, Sxx = stft(signal, sf, nperseg=nperseg, noverlap=noverlap, padded=False)
+    f, t, Sxx = stft(signal, sf, nperseg=nperseg, noverlap=noverlap, padded=False, boundary='zeros')
 
     idx_f = np.logical_and(f >= band[0], f <= band[1])
     f = f[idx_f]
