@@ -10,14 +10,14 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "justMyCode": true
+            "justMyCode": false
         },
         {
             "name": "misleep_GUI_debug",
             "type": "python",
             "request": "launch",
             "module": "misleep",
-            "justMyCode": true
+            "justMyCode": false
         }
     ]
 }

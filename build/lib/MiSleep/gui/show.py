@@ -18,7 +18,7 @@ def show():
     app = QApplication(sys.argv)
     main_win = main_window()
     main_win.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec_())   
 
 
 if __name__ == '__main__':

@@ -7,6 +7,8 @@
 @Description:  
 """
 from itertools import groupby
+import datetime 
+import pandas as pd
 
 
 def lst2group(pre_lst):
@@ -49,3 +51,95 @@ def sleep_state2mianno(sleep_state):
     start_end = [each.split(', ') for each in sleep_state]
 
     return [item for each in start_end for item in [int(each[6])] * (int(each[4]) - int(each[1]) + 1)]
+
+
+def transfer_time(date_time, seconds, date_time_format='%d:%H:%M:%S', ms=False):
+    """
+    Add seconds to the date time and transfer to the target format
+
+    Parameters
+    ----------
+    date_time : datetime object
+        The date time we want to start with, here is the reset acquisition time
+    seconds : int
+        Seconds going to add to the date_time
+    date_time_format : str
+        Final format of date_time. Defaults is '%d:%M:%H:%S'
+    ms : bool
+        Whether keep ms
+
+    Returns
+    -------
+    target_time : str
+        Final date time in string format
+
+    Examples
+    --------
+    Add seconds to the datetime
+
+    >>> import datetime
+    >>> original_time = datetime.datetime(2024, 1, 30, 10, 50, 0)
+    >>> seconds = 40
+    >>> format_ = '%d-%M:%H:%S'
+    >>> transfer_time(original_time, seconds, format_)
+    '30-10:50:40'
+    """
+
+    temp_time = date_time + datetime.timedelta(seconds=seconds)
+    if ms:
+        return f"{temp_time.strftime(format=date_time_format)}.{str(seconds).split('.')[1]}"
+    return temp_time.strftime(format=date_time_format)
+
+
+def insert_row(df, idx, row):
+    """
+    Insert a row to a dataframe in a specific position
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        dataframe for operation
+    idx : int
+        index to insert the row, insert below the row
+    row : series
+        Row to insert
+
+    Returns
+    -------
+    result_df : pandas.DataFrame
+    """
+    if isinstance(row, pd.Series):
+        row = pd.DataFrame(row).T
+    df = pd.concat([df[:idx], row, df[idx:]], axis=0).reset_index(drop=True)
+    return df
+
+
+def temp_loop4below_row(row, acquisition_time, columns):
+    """
+    Just for below row repetition
+    Returns
+    -------
+
+    """
+
+    seconds_ = (int(row['start_time_sec'] / 3600) + 1) * 3600
+    previous_row = pd.Series([
+        row['start_time'], row['start_time_sec'], '1',
+        transfer_time(acquisition_time, seconds_, '%Y-%m-%d %H:%M:%S'),
+        seconds_, '0', row['state_code'], row['state']
+    ], index=columns)
+
+    new_row = pd.Series([
+        transfer_time(acquisition_time, seconds_, '%Y-%m-%d %H:%M:%S'),
+        seconds_, ' ',
+        transfer_time(acquisition_time, seconds_, '%Y-%m-%d %H:%M:%S'),
+        seconds_, ' ', '5', 'MARKER'
+    ], index=columns)
+
+    below_row = pd.Series([
+        transfer_time(acquisition_time, seconds_ + 1, '%Y-%m-%d %H:%M:%S'),
+        seconds_ + 1, '1', row['end_time'], row['end_time_sec'],
+        '0', row['state_code'], row['state']
+    ], index=columns)
+
+    return previous_row, new_row, below_row

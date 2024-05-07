@@ -115,3 +115,63 @@ def temp_loop4below_row(row, acquisition_time, columns):
     ], index=columns)
 
     return previous_row, new_row, below_row
+
+def cal_draw_spectrum(data, sf, nperseg, freq_band=None, relative=None):
+    """
+    Calculate the relative power spectrum of data, and plot
+
+    Parameters
+    ----------
+    data : 1-D array
+        data for calculation
+    sf : int
+        sampling frequency of data
+    nperseg : int
+        for welch fourier transform
+    freq_band : list
+        frequency band low and high frequency
+    relative : bool
+
+    Returns
+    -------
+    spectrum : 2-D array
+        spectrum frequency and power
+    figure : matplotlib.figure()
+        spectrum figure
+    """
+    from scipy.signal import welch
+    import numpy as np
+    import matplotlib.pyplot as plt
+
+    if freq_band is None:
+        freq_band = [0.5, 30]
+    F, P = welch(data, sf, nperseg=nperseg)
+
+    # find frequency band
+    if freq_band is not None:
+        idx_band = np.logical_and(F >= freq_band[0], F <= freq_band[1])
+        F = F[idx_band]
+        P = P[idx_band]
+
+    # Get relative power
+    if relative:
+        P = [each/sum(P) for each in P]
+
+    major_ticks_top = np.linspace(0, 50, 26)
+    minor_ticks_top = np.linspace(0, 50, 51)
+
+    figure = plt.figure(figsize=(10, 7))
+    ax = figure.subplots(nrows=1, ncols=1)
+    plt.subplots_adjust(top=0.95, left=0.15, bottom=0.15, right=0.95)
+
+    ax.xaxis.set_ticks(major_ticks_top)
+    ax.xaxis.set_ticks(minor_ticks_top, minor=True)
+    ax.grid(which="major", alpha=0.6)
+    ax.grid(which="minor", alpha=0.3)
+
+    ax.set_xlim(freq_band[0], freq_band[1])
+    ax.plot(F, P)
+    ax.set_xlabel("Frequency (Hz)")
+    ax.set_ylabel("Power spectral density (Power/Hz)")
+
+    return np.array([F, P]), figure

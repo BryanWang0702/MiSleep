@@ -26,7 +26,9 @@ misleep/gui/uis/__init__.py
 misleep/gui/uis/about_ui.py
 misleep/gui/uis/label_dialog_ui.py
 misleep/gui/uis/main_window_ui.py
+misleep/gui/uis/save_data_dialog_ui.py
 misleep/gui/uis/spec_window_ui.py
+misleep/gui/uis/state_spectral_dialog_ui.py
 misleep/gui/uis/transfer_result_dialog_ui.py
 misleep/io/__init__.py
 misleep/io/annotation_io.py
@@ -34,11 +36,10 @@ misleep/io/base.py
 misleep/io/signal_io.py
 misleep/preprocessing/__init__.py
 misleep/preprocessing/channel.py
+misleep/preprocessing/signals.py
 misleep/preprocessing/spectral.py
 misleep/utils/__init__.py
 misleep/utils/annotation.py
-misleep/utils/only4gui.py
-misleep/utils/others.py
 misleep/utils/signals.py
 misleep/viz/__init__.py
 misleep/viz/hypnogram.py

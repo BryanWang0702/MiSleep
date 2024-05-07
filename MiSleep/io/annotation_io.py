@@ -7,8 +7,7 @@
 @Description:  Annotation io, default is for MiSleep annotation, `NAME.txt`
 """
 from misleep.io.base import MiAnnotation
-from misleep.utils.annotation import marker2mianno, start_end2mianno, lst2group, sleep_state2mianno, \
-    transfer_time, insert_row, temp_loop4below_row
+from misleep.utils.annotation import marker2mianno, start_end2mianno, lst2group, sleep_state2mianno, transfer_time
 import pandas as pd
 
 
@@ -77,55 +76,83 @@ def transfer_result(mianno, ac_time):
         each[2]
     ] for each in mianno.start_end]
 
-    sleep_state = lst2group([[idx+1, each] 
-                                for idx, each in enumerate(mianno.sleep_state)])
-    sleep_state = [[
-        transfer_time(ac_time, each[0], '%Y-%m-%d %H:%M:%S'), each[0], 1,
-        transfer_time(ac_time, each[1], '%Y-%m-%d %H:%M:%S'), each[1], 0,
-        each[2], mianno.state_map[each[2]]
-    ] for each in sleep_state]
+    # Add marker first
+    sleep_state = []
+    for each in range(int(len(mianno.sleep_state)/3600)+1):
+        temp_hour_label = mianno.sleep_state[each*3600: (each+1)*3600]
+        if temp_hour_label != []:
+            sleep_state.append(temp_hour_label)
 
+    marker_sleep_state = []
+    for hour, label in enumerate(sleep_state):
+        hour_sleep_state = lst2group(
+            [idx+1+hour*3600, each] for idx, each in enumerate(label))
+        marker_sleep_state += [[
+            transfer_time(ac_time, each[0], '%Y-%m-%d %H:%M:%S'), each[0], 1,
+            transfer_time(ac_time, each[1], '%Y-%m-%d %H:%M:%S'), each[1], 0,
+            each[2], mianno.state_map[each[2]], each[1]-each[0]+1, hour
+        ] for each in hour_sleep_state]
+
+        marker_sleep_state += [[
+            transfer_time(ac_time, (hour+1)*3600, '%Y-%m-%d %H:%M:%S'), (hour+1)*3600, 1,
+            transfer_time(ac_time, (hour+1)*3600, '%Y-%m-%d %H:%M:%S'), (hour+1)*3600, 0,
+            5, 'MARKER', '', '']]
+        
     columns=['start_time', 'start_time_sec', 'start_code',
-                'end_time', 'end_time_sec', 'end_code',
-                'state_code', 'state']
+            'end_time', 'end_time_sec', 'end_code',
+            'state_code', 'state', 'bout_duration', 'hour']
 
-    df = pd.DataFrame(data=sleep_state, columns=columns)
+    df = pd.DataFrame(data=marker_sleep_state, columns=columns)
+
+    # sleep_state = lst2group([[idx+1, each] 
+    #                             for idx, each in enumerate(mianno.sleep_state)])
+    # sleep_state = [[
+    #     transfer_time(ac_time, each[0], '%Y-%m-%d %H:%M:%S'), each[0], 1,
+    #     transfer_time(ac_time, each[1], '%Y-%m-%d %H:%M:%S'), each[1], 0,
+    #     each[2], mianno.state_map[each[2]]
+    # ] for each in sleep_state]
+
+    # columns=['start_time', 'start_time_sec', 'start_code',
+    #             'end_time', 'end_time_sec', 'end_code',
+    #             'state_code', 'state']
+
+    # df = pd.DataFrame(data=sleep_state, columns=columns)
     
-    new_df = pd.DataFrame(columns=columns)
-    for idx, row in df.iterrows():
-        if row['end_time_sec'] % 3600 == 0:
-            new_df = insert_row(new_df, idx, row)
-            # Just add a row and nothing else
-            new_row = pd.Series([
-                row['end_time'], row['end_time_sec'], ' ',
-                row['end_time'], row['end_time_sec'], '5',
-                ' ', 'MARKER'
-            ], index=columns)
-            new_df = insert_row(new_df, new_df.shape[0], new_row)
-            continue
+    # new_df = pd.DataFrame(columns=columns)
+    # for idx, row in df.iterrows():
+    #     if row['end_time_sec'] % 3600 == 0:
+    #         new_df = insert_row(new_df, idx, row)
+    #         # Just add a row and nothing else
+    #         new_row = pd.Series([
+    #             row['end_time'], row['end_time_sec'], ' ',
+    #             row['end_time'], row['end_time_sec'], '5',
+    #             ' ', 'MARKER'
+    #         ], index=columns)
+    #         new_df = insert_row(new_df, new_df.shape[0], new_row)
+    #         continue
 
-        if int(row['end_time_sec'] / 3600) > int(row['start_time_sec'] / 3600):
+    #     if int(row['end_time_sec'] / 3600) > int(row['start_time_sec'] / 3600):
 
-            previous_row, new_row, below_row = temp_loop4below_row(row, ac_time, columns)
+    #         previous_row, new_row, below_row = temp_loop4below_row(row, ac_time, columns)
 
-            new_df = insert_row(new_df, new_df.shape[0], previous_row)
-            new_df = insert_row(new_df, new_df.shape[0], new_row)
-            while int(below_row['end_time_sec'] / 3600) > int(below_row['start_time_sec'] / 3600):
-                row = below_row
-                previous_row, new_row, below_row = temp_loop4below_row(row, ac_time, columns)
-                new_df = insert_row(new_df, new_df.shape[0], previous_row)
-                new_df = insert_row(new_df, new_df.shape[0], new_row)
+    #         new_df = insert_row(new_df, new_df.shape[0], previous_row)
+    #         new_df = insert_row(new_df, new_df.shape[0], new_row)
+    #         while int(below_row['end_time_sec'] / 3600) > int(below_row['start_time_sec'] / 3600):
+    #             row = below_row
+    #             previous_row, new_row, below_row = temp_loop4below_row(row, ac_time, columns)
+    #             new_df = insert_row(new_df, new_df.shape[0], previous_row)
+    #             new_df = insert_row(new_df, new_df.shape[0], new_row)
 
-            new_df = insert_row(new_df, new_df.shape[0], below_row)
-            continue
+    #         new_df = insert_row(new_df, new_df.shape[0], below_row)
+    #         continue
 
-        new_df = insert_row(new_df, new_df.shape[0], row)
+    #     new_df = insert_row(new_df, new_df.shape[0], row)
 
-    df = new_df
-    del new_df
+    # df = new_df
+    # del new_df
 
-    df['bout_duration'] = df.apply(
-        lambda x: x[4] - x[1] + 1 if x[7] != 'MARKER' else '', axis=1)
+    # df['bout_duration'] = df.apply(
+    #     lambda x: x[4] - x[1] + 1 if x[7] != 'MARKER' else '', axis=1)
     
     df['hour'] = df['start_time_sec'].apply(lambda x: int(x / 3600) if x % 3600 != 0 else '')
     analyse_df = pd.DataFrame()

@@ -137,7 +137,7 @@
       </widget>
      </item>
      <item row="1" column="0">
-      <widget class="QLabel" name="label_5">
+      <widget class="QLabel" name="AnnotationPathLabel">
        <property name="text">
         <string>Annotation path:</string>
        </property>
@@ -700,7 +700,7 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
-   <addaction name="actionMerge_Data"/>
+   <addaction name="actionState_Spectral"/>
    <addaction name="separator"/>
    <addaction name="actionTransfer_Result"/>
    <addaction name="separator"/>
@@ -735,9 +735,12 @@
     <string>About</string>
    </property>
   </action>
-  <action name="actionMerge_Data">
+  <action name="actionState_Spectral">
    <property name="text">
-    <string>Merge Data</string>
+    <string>State Spectral</string>
+   </property>
+   <property name="toolTip">
+    <string>State Spectral</string>
    </property>
   </action>
   <action name="actionTransfer_Result">

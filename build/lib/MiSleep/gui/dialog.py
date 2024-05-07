@@ -1,5 +1,5 @@
 # -*- coding: UTF-8 -*-
-"""
+"""art_detection
 @Project: MiSleep_v2 
 @File: label_dialog.py
 @Author: Xueqiang Wang
@@ -12,10 +12,15 @@ import datetime
 
 from misleep.gui.uis.label_dialog_ui import Ui_Dialog
 from misleep.gui.uis.transfer_result_dialog_ui import Ui_TransferResultDialog
+from misleep.gui.uis.state_spectral_dialog_ui import Ui_StateSpectralDialog
 from misleep.gui.thread import SaveThread
-from misleep.gui.utils import transfer_time, insert_row, temp_loop4below_row
+from misleep.io.annotation_io import transfer_result
+from misleep.utils.signals import signal_filter
 from misleep.utils.annotation import lst2group
+from misleep.gui.utils import cal_draw_spectrum
+from misleep.preprocessing.signals import reject_artifact
 import pandas as pd
+from copy import deepcopy
 
 
 class label_dialog(QDialog, Ui_Dialog):
@@ -159,115 +164,52 @@ class transferResult_dialog(QDialog, Ui_TransferResultDialog):
         self.setupUi(self)
 
         self.ACTimeEditor.setDisabled(True)
-        self.ResetTimeCheckBox.clicked.connect(self.enable_time_editor)
+        self.TransferStartTimeEdit.setDisabled(True)
+        self.ResetTimeCheckBox.clicked.connect(self.ac_time_editor_changed)
+        self.ResetTransferStartTimeCheckBox.clicked.connect(self.start_time_editor_changed)
+        self.OKBt.clicked.connect(self.okEvent)
+        self.CancelBt.clicked.connect(self.cancelEvent)
+        self.closed = True
         
-    def enable_time_editor(self):
-        self.ACTimeEditor.setEnabled(True)
+    def ac_time_editor_changed(self):
+        if self.ResetTimeCheckBox.isChecked():
+            self.ACTimeEditor.setEnabled(True)
+        if not self.ResetTimeCheckBox.isChecked():
+            self.ACTimeEditor.setDisabled(True)
+
+    def start_time_editor_changed(self):
+        if self.ResetTransferStartTimeCheckBox.isChecked():
+            self.TransferStartTimeEdit.setEnabled(True)
+        if not self.ResetTransferStartTimeCheckBox.isChecked():
+            self.TransferStartTimeEdit.setDisabled(True)
 
     def transfer(self, config, mianno, ac_time):
         """Transfer result to dataframe, triggered by okay button"""
+        mianno = deepcopy(mianno)
+        ac_time = deepcopy(ac_time)
 
         if self.ResetTimeCheckBox.isChecked():
             ac_time = self.ACTimeEditor.dateTime().toPyDateTime()
         else:
             ac_time = datetime.datetime.strptime(ac_time, "%Y%m%d-%H:%M:%S")
-        marker = [[
-            transfer_time(ac_time, each[0], '%Y-%m-%d %H:%M:%S'), 
-            each[0], each[1]] for each in mianno.marker]
-
-        start_end_label = [[
-            transfer_time(ac_time, each[0], '%Y-%m-%d %H:%M:%S', ms=True), each[0], 1,
-            transfer_time(ac_time, each[1], '%Y-%m-%d %H:%M:%S', ms=True), each[1], 0,
-            each[2]
-        ] for each in mianno.start_end]
-
-        sleep_state = lst2group([[idx+1, each] 
-                                 for idx, each in enumerate(mianno.sleep_state)])
-        sleep_state = [[
-            transfer_time(ac_time, each[0], '%Y-%m-%d %H:%M:%S'), each[0], 1,
-            transfer_time(ac_time, each[1], '%Y-%m-%d %H:%M:%S'), each[1], 0,
-            each[2], mianno.state_map[each[2]]
-        ] for each in sleep_state]
-
-        columns=['start_time', 'start_time_sec', 'start_code',
-                 'end_time', 'end_time_sec', 'end_code',
-                 'state_code', 'state']
-
-        df = pd.DataFrame(data=sleep_state, columns=columns)
         
-        new_df = pd.DataFrame(columns=columns)
-        for idx, row in df.iterrows():
-            if row['end_time_sec'] % 3600 == 0:
-                new_df = insert_row(new_df, idx, row)
-                # Just add a row and nothing else
-                new_row = pd.Series([
-                    row['end_time'], row['end_time_sec'], ' ',
-                    row['end_time'], row['end_time_sec'], '5',
-                    ' ', 'MARKER'
-                ], index=columns)
-                new_df = insert_row(new_df, new_df.shape[0], new_row)
-                continue
-
-            if int(row['end_time_sec'] / 3600) > int(row['start_time_sec'] / 3600):
-
-                previous_row, new_row, below_row = temp_loop4below_row(row, ac_time, columns)
-
-                new_df = insert_row(new_df, new_df.shape[0], previous_row)
-                new_df = insert_row(new_df, new_df.shape[0], new_row)
-                while int(below_row['end_time_sec'] / 3600) > int(below_row['start_time_sec'] / 3600):
-                    row = below_row
-                    previous_row, new_row, below_row = temp_loop4below_row(row, ac_time, columns)
-                    new_df = insert_row(new_df, new_df.shape[0], previous_row)
-                    new_df = insert_row(new_df, new_df.shape[0], new_row)
-
-                new_df = insert_row(new_df, new_df.shape[0], below_row)
-                continue
-
-            new_df = insert_row(new_df, new_df.shape[0], row)
-
-        df = new_df
-        del new_df
-
-        df['bout_duration'] = df.apply(
-            lambda x: x[4] - x[1] + 1 if x[7] != 'MARKER' else '', axis=1)
+        if self.ResetTransferStartTimeCheckBox.isChecked():
+            start_time = self.TransferStartTimeEdit.dateTime().toPyDateTime()
+            if start_time > ac_time:
+                delay_seconds = (start_time - ac_time).seconds
+                mianno._marker = mianno.marker[delay_seconds:]
+                mianno._start_end = mianno.start_end[delay_seconds:]
+                mianno._sleep_state = mianno.sleep_state[delay_seconds:]
+                ac_time = start_time
         
-        df['hour'] = df['start_time_sec'].apply(lambda x: int(x / 3600) if x % 3600 != 0 else '')
-        analyse_df = pd.DataFrame()
-
-        temp_hour = list(set(list(df['hour'])))
-        temp_hour.remove('')
-        temp_hour = sorted(temp_hour)
-        analyse_df['date_time'] = [transfer_time(ac_time, each*3600, "%Y-%m-%d %M:%H:%S")
-                                for each in temp_hour]
-
-        features = []
-        for each in temp_hour:
-            df_ = df[df['hour'] == each]
-            temp_lst = []
-            for phase in ["NREM", "REM", "Wake", "INIT"]:
-                _duration = df_[df_["state"] == phase]["bout_duration"].sum()
-                _bout = df_[df_["state"] == phase]["bout_duration"].count()
-                temp_lst += [_duration, _bout, round(_duration / _bout, 2) if _bout != 0 else 0, round(_duration / 3600, 2)]
-            features.append(temp_lst)
-
-        analyse_df[['NREM_duration', 'NREM_bout', "NREM_ave", "NREM_percentage",
-                    'REM_duration', 'REM_bout', "REM_ave", "REM_percentage",
-                    'WAKE_duration', 'WAKE_bout', "WAKE_ave", "WAKE_percentage",
-                    'INIT_duration', 'INIT_bout', "INIT_ave", "INIT_percentage"]] = features
-
-
-        analyse_df[
-            ['NREM_duration', 'NREM_bout', 'REM_duration', 'REM_bout', 'WAKE_duration',
-            'WAKE_bout', 'INIT_duration', 'INIT_bout']
-        ] = analyse_df[
-            ['NREM_duration', 'NREM_bout', 'REM_duration', 'REM_bout', 'WAKE_duration',
-            'WAKE_bout', 'INIT_duration', 'INIT_bout']].astype(int)
         
         fd, _ = QFileDialog.getSaveFileName(self, "Save transfered result",
                                                 f"{config['gui']['openpath'].split('/')[0]}/transfer_result.xlsx", 
                                                 "*.xlsx;;")
         if fd == '':
             return
+        
+        df, analyse_df = transfer_result(mianno=mianno, ac_time=ac_time)
 
         writer = pd.ExcelWriter(fd, datetime_format='yyyy-mm-dd hh:mm:ss')
         pd.concat([df, analyse_df], axis=1).to_excel(
@@ -277,7 +219,11 @@ class transferResult_dialog(QDialog, Ui_TransferResultDialog):
 
         QMessageBox.about(self, "Info", "Transfered result saved")
 
-    def cancel_event(self):
+    def okEvent(self):
+        self.closed = False
+        self.hide()
+
+    def cancelEvent(self):
         """Triggered by the `cancel` button"""
         self.closed = True
         self.hide()
@@ -287,6 +233,152 @@ class transferResult_dialog(QDialog, Ui_TransferResultDialog):
         self.closed = True
         self.hide()
 
+
+class stateSpectral_dialog(QDialog, Ui_StateSpectralDialog):
+    def __init__(self, parent=None):
+        """
+        Initialize the state spectral dialog of MiSleep
+        """
+        super().__init__(parent)
+
+        # Enable high dpi devices
+        QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
+        self.setupUi(self)
+
+        self.BPFilterCheckBox.clicked.connect(self.BP_filter_check_changed)
+        self.BPFilterCheckBox.setChecked(True)
+        self.RejectArtifactCheckBox.setChecked(False)
+        self.ArtThresholdSpinBox.setDisabled(True)
+        self.RejectArtifactCheckBox.clicked.connect(self.reject_artifact_artifacts_changed)
+        
+        self.OKBt.clicked.connect(self.okEvent)
+        self.CancelBt.clicked.connect(self.cancelEvent)
+        self.closed = True
+
+    def BP_filter_check_changed(self):
+        if self.BPFilterCheckBox.isChecked():
+            self.BPLow.setEnabled(True)
+            self.BPHigh.setEnabled(True)
+        if not self.BPFilterCheckBox.isChecked():
+            self.BPLow.setDisabled(True)
+            self.BPHigh.setDisabled(True)
+
+    def reject_artifact_artifacts_changed(self):
+        if self.RejectArtifactCheckBox.isChecked():
+            self.ArtThresholdSpinBox.setEnabled(True)
+        if not self.RejectArtifactCheckBox.isChecked():
+            self.ArtThresholdSpinBox.setDisabled(True)
+
+    def dialog_show(self, channels):
+        """Show state spectral dialog, fill params"""
+        self.ChannelSelector.clear()
+        self.ChannelSelector.addItems(channels)
+        self.ChannelSelector.setCurrentIndex(0)
+
+    def spectral_analysis(self, midata, mianno, config):
+        """Do spectral analysis"""
+
+        channel_idx = self.ChannelSelector.currentIndex()
+        channel_data = midata.signals[channel_idx]
+        sleep_state = lst2group([[idx, each] for idx, each in enumerate(mianno.sleep_state)])
+        sf = midata.sf[channel_idx]
+
+        # Do filter if checked
+        if self.BPFilterCheckBox.isChecked():
+            low = self.BPLow.value()
+            high = self.BPHigh.value()
+            channel_data, _ = signal_filter(channel_data, sf=sf, btype='bandpass',
+                                         low=low, high=high)
+            
+        # Merge 4 states' data
+        NREM_data = [channel_data[int(each[0]*sf): int(each[1]*sf)] 
+                     for each in sleep_state if each[2] == 1]
+        NREM_data = [element for sublist in NREM_data for element in sublist]
+        REM_data = [channel_data[int(each[0]*sf): int(each[1]*sf)] 
+                     for each in sleep_state if each[2] == 2]
+        REM_data = [element for sublist in REM_data for element in sublist]
+        Wake_data = [channel_data[int(each[0]*sf): int(each[1]*sf)] 
+                     for each in sleep_state if each[2] == 3]
+        Wake_data = [element for sublist in Wake_data for element in sublist]
+        Init_data = [channel_data[int(each[0]*sf): int(each[1]*sf)] 
+                     for each in sleep_state if each[2] == 4]
+        Init_data = [element for sublist in Init_data for element in sublist]
+
+        # Reject artifact if checked
+        if self.RejectArtifactCheckBox.isChecked():
+            threshold = self.ArtThresholdSpinBox.value()
+        else:
+            threshold = 1.5
+        if self.RejectArtifactCheckBox.isChecked():
+            NREM_data = reject_artifact(NREM_data, sf=sf, threshold=threshold)
+            REM_data = reject_artifact(REM_data, sf=sf, threshold=threshold)
+            Wake_data = reject_artifact(Wake_data, sf=sf, threshold=threshold)
+            Init_data = reject_artifact(Init_data, sf=sf, threshold=threshold)
+
+        nperseg = 10*sf
+        if self.RelativeCheckBox.isChecked():
+            relative = True
+        else:
+            relative = False
+        NREM_spec, NREM_figure = cal_draw_spectrum(data=NREM_data, sf=sf, 
+                                                   nperseg=nperseg, relative=relative)
+        REM_spec, REM_figure = cal_draw_spectrum(data=REM_data, sf=sf, 
+                                                   nperseg=nperseg, relative=relative)
+        Wake_spec, Wake_figure = cal_draw_spectrum(data=Wake_data, sf=sf,
+                                                   nperseg=nperseg, relative=relative)
+
+        name_map = {
+            1: 'NREM',
+            2: 'REM',
+            3: 'Wake',
+            4: 'Init'
+        }
+
+        fd = QFileDialog.getExistingDirectory(self, 
+                                              "Select a folder to save 4 stages' data", 
+                                              f"{config['gui']['openpath']}")
+        if fd == '':
+            return
+
+        # Save figure
+        NREM_figure.savefig(fd+'/NREM_spectrum.pdf')
+        REM_figure.savefig(fd+'/REM_spectrum.pdf')
+        Wake_figure.savefig(fd+'/Wake_spectrum.pdf')
+        writer = pd.ExcelWriter(fd+'/power_results.xlsx')
+
+        # Write to excel file
+        for idx, spec in enumerate([NREM_spec, REM_spec, Wake_spec]):
+            _df = pd.DataFrame(data=spec.T, columns=['frequency', 'power'])
+            _df.to_excel(excel_writer=writer, sheet_name=name_map[idx+1], index=False)
+        if len(Init_data) > sf*10:
+            Init_spec, Init_figure = cal_draw_spectrum(data=Init_data, sf=sf,
+                                                   nperseg=nperseg, relative=relative)
+            _df = pd.DataFrame(data=Init_spec.T, columns=['frequency', 'power'])
+            _df.to_excel(excel_writer=writer, sheet_name=name_map[4], index=False)
+            Init_figure.savefig(fd + '/Init_spectrum.pdf')
+
+        writer.close()
+
+    def okEvent(self):
+        self.closed = False
+        self.hide()
+
+    def cancelEvent(self):
+        """Triggered by the `cancel` button"""
+        self.closed = True
+        self.hide()
     
+    def closeEvent(self, event):
+        event.ignore()
+        self.closed = True
+        self.hide()
+
+        
+
+
+
+
+
+
 
 
