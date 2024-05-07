@@ -1,15 +1,19 @@
 #ignore directories
-*/__pycache__
-misleep/__pycache__
-misleep/io/__pycache__
-misleep/io/test/__pycache__
-misleep/utils/__pycache__
-misleep/viz/__pycache__
-misleep/preprocessing/__pycache__
-MiSleep/viz/__pycache__/
-MiSleep/gui/__pycache__
-.idea
-datasets
+/*/__pycache__
+/misleep/__pycache__
+/misleep/io/__pycache__
+/misleep/io/test/__pycache__
+/misleep/utils/__pycache__
+/misleep/viz/__pycache__
+/misleep/preprocessing/__pycache__
+/MiSleep/viz/__pycache__/
+/MiSleep/gui/__pycache__
+/.idea
+/datasets
+/dist
+/build
+/misleep.egg-info
+/.vscode
 
 #ignore files
 *.pyc
