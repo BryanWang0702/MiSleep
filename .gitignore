@@ -18,3 +18,4 @@
 #ignore files
 *.pyc
 config.ini
+.gitignore
