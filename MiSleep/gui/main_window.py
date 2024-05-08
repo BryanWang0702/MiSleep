@@ -951,7 +951,7 @@ class main_window(QMainWindow, Ui_MiSleep):
                 self.start_end_ms.append(x)
             elif len(self.start_end_ms) == 2:
                 # if clicked start line is less than one second larger than last end line
-                if x - self.start_end_ms[1] <= 1:
+                if abs(x - self.start_end_ms[1]) <= 1:
                     self.start_end_ms[0] = self.start_end_ms[1]
                     self.start_end_ms.pop(1)
                 else:
