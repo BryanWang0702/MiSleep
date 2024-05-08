@@ -211,11 +211,15 @@ class transferResult_dialog(QDialog, Ui_TransferResultDialog):
         
         df, analyse_df = transfer_result(mianno=mianno, ac_time=ac_time)
 
-        writer = pd.ExcelWriter(fd, datetime_format='yyyy-mm-dd hh:mm:ss')
-        pd.concat([df, analyse_df], axis=1).to_excel(
-            excel_writer=writer, sheet_name='All', index=False)
-        
-        writer.close()
+        try:
+            writer = pd.ExcelWriter(fd, datetime_format='yyyy-mm-dd hh:mm:ss')
+            pd.concat([df, analyse_df], axis=1).to_excel(
+                excel_writer=writer, sheet_name='All', index=False)
+            
+            writer.close()
+        except PermissionError as e:
+            QMessageBox.about(self, "Error", "Close the EXCEL sheet first.")
+            return
 
         QMessageBox.about(self, "Info", "Transfered result saved")
 

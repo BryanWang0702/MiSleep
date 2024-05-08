@@ -516,7 +516,7 @@ class main_window(QMainWindow, Ui_MiSleep):
                 self.signal_ax[i + 1].fill_between(
                     range(
                         int(state[0] * self.midata.sf[each]),
-                        int((state[1] + 1) * self.midata.sf[each]),
+                        int(state[1] * self.midata.sf[each]),
                     ),
                     -y_lim + y_shift,
                     y_lim + y_shift,
@@ -1411,7 +1411,7 @@ class main_window(QMainWindow, Ui_MiSleep):
         if not self.is_saved:
             box = QMessageBox.question(self, 'Warning',
                                        'Your labels haven\'t been saved, discard?\n'
-                                       'Yes: Save and quit\nNo: Discard\nCancel: Back to sleep window',
+                                       'Yes: Save and quit\nNo: Discard\nCancel: Nothing',
                                        QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel, QMessageBox.Yes)
 
             if box == QMessageBox.Yes:

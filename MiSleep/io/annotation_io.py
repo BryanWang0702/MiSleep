@@ -86,11 +86,11 @@ def transfer_result(mianno, ac_time):
     marker_sleep_state = []
     for hour, label in enumerate(sleep_state):
         hour_sleep_state = lst2group(
-            [idx+1+hour*3600, each] for idx, each in enumerate(label))
+            [idx+hour*3600, each] for idx, each in enumerate(label))
         marker_sleep_state += [[
             transfer_time(ac_time, each[0], '%Y-%m-%d %H:%M:%S'), each[0], 1,
             transfer_time(ac_time, each[1], '%Y-%m-%d %H:%M:%S'), each[1], 0,
-            each[2], mianno.state_map[each[2]], each[1]-each[0]+1, hour
+            each[2], mianno.state_map[each[2]], each[1]-each[0], hour
         ] for each in hour_sleep_state]
 
         marker_sleep_state += [[
@@ -154,7 +154,7 @@ def transfer_result(mianno, ac_time):
     # df['bout_duration'] = df.apply(
     #     lambda x: x[4] - x[1] + 1 if x[7] != 'MARKER' else '', axis=1)
     
-    df['hour'] = df['start_time_sec'].apply(lambda x: int(x / 3600) if x % 3600 != 0 else '')
+    df['hour'] = df.apply(lambda x: '' if x['state'] == 'MARKER' else int(x['start_time_sec'] / 3600), axis=1)
     analyse_df = pd.DataFrame()
 
     temp_hour = list(set(list(df['hour'])))

@@ -44,7 +44,7 @@ class SaveThread(QThread):
             '1', each[2]
         ]) for each in mianno.start_end]
 
-        sleep_state = lst2group([[idx+1, each] 
+        sleep_state = lst2group([[idx, each] 
                                  for idx, each in enumerate(mianno.sleep_state)])
         sleep_state = [', '.join([
             second2time(each[0], ac_time=ac_time), str(each[0]), '1',

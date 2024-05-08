@@ -20,11 +20,10 @@ def lst2group(pre_lst):
     """
 
     # Convert to [[[1, 2], [2, 2], [3, 2], [4, 2], [5, 2]], [[6, 1], [7, 1], [8, 1]], [[9, 3], [10, 3]]]
-    pre_lst = [list(group) for idx, group in groupby(pre_lst, key=lambda x: x[1])]
+    pre_lst = [list(group) for _, group in groupby(pre_lst, key=lambda x: x[1])]
 
-    # Convert to [[1, 5, 2], [6, 8, 1], [9, 10, 3]]
-    return [[each[0][0], each[-1][0], each[0][1]] for each in pre_lst]
-
+    # Convert to [[1, 5, 2], [6, 8, 1], [9, 10, 3]] and then to [[1, 6, 2], [6, 9, 1], [9, 10, 3]]
+    return [[each[0][0], each[-1][0]+1, each[0][1]] for each in pre_lst]
 
 def marker2mianno(marker):
     """
@@ -50,7 +49,7 @@ def sleep_state2mianno(sleep_state):
     """Transfer sleep_state to [1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, ...]"""
     start_end = [each.split(', ') for each in sleep_state]
 
-    return [item for each in start_end for item in [int(each[6])] * (int(each[4]) - int(each[1]) + 1)]
+    return [item for each in start_end for item in [int(each[6])] * (int(each[4]) - int(each[1]))]
 
 
 def transfer_time(date_time, seconds, date_time_format='%d:%H:%M:%S', ms=False):
