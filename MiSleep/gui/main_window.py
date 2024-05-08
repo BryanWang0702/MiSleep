@@ -950,9 +950,14 @@ class main_window(QMainWindow, Ui_MiSleep):
             if not self.start_end_ms:
                 self.start_end_ms.append(x)
             elif len(self.start_end_ms) == 2:
-                # Clear start end label
-                self.start_end_ms = []
-                self.start_end_ms.append(x)
+                # if clicked start line is less than one second larger than last end line
+                if x - self.start_end_ms[1] <= 1:
+                    self.start_end_ms[0] = self.start_end_ms[1]
+                    self.start_end_ms.pop(1)
+                else:
+                    # Clear start end label
+                    self.start_end_ms = []
+                    self.start_end_ms.append(x)
             else:
                 if x < self.start_end_ms[0]:
                     QMessageBox.about(self, "Error", "End should be larger than Start!")
