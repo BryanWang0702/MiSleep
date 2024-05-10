@@ -282,7 +282,7 @@ class main_window(QMainWindow, Ui_MiSleep):
             self,
             "Select data file",
             f"{self.config['gui']['openpath']}",
-            "Matlab Files (*.mat *.MAT);;EDF Files (*.edf *.EDF)",
+            ".*(*.mat *.MAT *.edf *.EDF);;Matlab Files (*.mat *.MAT);;EDF Files (*.edf *.EDF)",
         )
 
         if data_path == "":

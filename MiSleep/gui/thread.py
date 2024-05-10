@@ -33,14 +33,14 @@ class SaveThread(QThread):
 
         ac_time = datetime.datetime.strptime(midata.time, "%Y%m%d-%H:%M:%S")
         marker = [', '.join([
-            second2time(each[0], ac_time=ac_time), str(each[0]), '1',
-            second2time(each[0], ac_time=ac_time), str(each[0]), '0', 
+            second2time(round(each[0], 3), ac_time=ac_time), str(round(each[0], 3)), '1',
+            second2time(round(each[0], 3), ac_time=ac_time), str(round(each[0], 3)), '0', 
             '1', each[1]
         ]) for each in mianno.marker]
 
         start_end_label = [', '.join([
-            second2time(each[0], ac_time=ac_time, ms=True), str(each[0]), '1',
-            second2time(each[1], ac_time=ac_time, ms=True), str(each[1]), '0', 
+            second2time(round(each[0], 3), ac_time=ac_time, ms=True), str(round(each[0], 3)), '1',
+            second2time(round(each[1], 3), ac_time=ac_time, ms=True), str(round(each[1], 3)), '0', 
             '1', each[2]
         ]) for each in mianno.start_end]
 
