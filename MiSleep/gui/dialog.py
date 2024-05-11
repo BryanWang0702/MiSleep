@@ -209,12 +209,16 @@ class transferResult_dialog(QDialog, Ui_TransferResultDialog):
         if fd == '':
             return
         
-        df, analyse_df = transfer_result(mianno=mianno, ac_time=ac_time)
+        df, analyse_df, start_end_df, marker_df = transfer_result(mianno=mianno, ac_time=ac_time)
 
         try:
             writer = pd.ExcelWriter(fd, datetime_format='yyyy-mm-dd hh:mm:ss')
             pd.concat([df, analyse_df], axis=1).to_excel(
-                excel_writer=writer, sheet_name='All', index=False)
+                excel_writer=writer, sheet_name='Sleep state', index=False)
+            
+            start_end_df.to_excel(excel_writer=writer, sheet_name='Start End', index=False)
+
+            marker_df.to_excel(excel_writer=writer, sheet_name='Marker', index=False)
             
             writer.close()
         except PermissionError as e:

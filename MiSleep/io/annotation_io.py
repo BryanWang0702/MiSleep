@@ -73,7 +73,7 @@ def transfer_result(mianno, ac_time):
     start_end_label = [[
         transfer_time(ac_time, each[0], '%Y-%m-%d %H:%M:%S', ms=True), each[0], 1,
         transfer_time(ac_time, each[1], '%Y-%m-%d %H:%M:%S', ms=True), each[1], 0,
-        each[2]
+        each[2], each[1]-each[0]
     ] for each in mianno.start_end]
 
     # Add marker first
@@ -103,56 +103,6 @@ def transfer_result(mianno, ac_time):
             'state_code', 'state', 'bout_duration', 'hour']
 
     df = pd.DataFrame(data=marker_sleep_state, columns=columns)
-
-    # sleep_state = lst2group([[idx+1, each] 
-    #                             for idx, each in enumerate(mianno.sleep_state)])
-    # sleep_state = [[
-    #     transfer_time(ac_time, each[0], '%Y-%m-%d %H:%M:%S'), each[0], 1,
-    #     transfer_time(ac_time, each[1], '%Y-%m-%d %H:%M:%S'), each[1], 0,
-    #     each[2], mianno.state_map[each[2]]
-    # ] for each in sleep_state]
-
-    # columns=['start_time', 'start_time_sec', 'start_code',
-    #             'end_time', 'end_time_sec', 'end_code',
-    #             'state_code', 'state']
-
-    # df = pd.DataFrame(data=sleep_state, columns=columns)
-    
-    # new_df = pd.DataFrame(columns=columns)
-    # for idx, row in df.iterrows():
-    #     if row['end_time_sec'] % 3600 == 0:
-    #         new_df = insert_row(new_df, idx, row)
-    #         # Just add a row and nothing else
-    #         new_row = pd.Series([
-    #             row['end_time'], row['end_time_sec'], ' ',
-    #             row['end_time'], row['end_time_sec'], '5',
-    #             ' ', 'MARKER'
-    #         ], index=columns)
-    #         new_df = insert_row(new_df, new_df.shape[0], new_row)
-    #         continue
-
-    #     if int(row['end_time_sec'] / 3600) > int(row['start_time_sec'] / 3600):
-
-    #         previous_row, new_row, below_row = temp_loop4below_row(row, ac_time, columns)
-
-    #         new_df = insert_row(new_df, new_df.shape[0], previous_row)
-    #         new_df = insert_row(new_df, new_df.shape[0], new_row)
-    #         while int(below_row['end_time_sec'] / 3600) > int(below_row['start_time_sec'] / 3600):
-    #             row = below_row
-    #             previous_row, new_row, below_row = temp_loop4below_row(row, ac_time, columns)
-    #             new_df = insert_row(new_df, new_df.shape[0], previous_row)
-    #             new_df = insert_row(new_df, new_df.shape[0], new_row)
-
-    #         new_df = insert_row(new_df, new_df.shape[0], below_row)
-    #         continue
-
-    #     new_df = insert_row(new_df, new_df.shape[0], row)
-
-    # df = new_df
-    # del new_df
-
-    # df['bout_duration'] = df.apply(
-    #     lambda x: x[4] - x[1] + 1 if x[7] != 'MARKER' else '', axis=1)
     
     df['hour'] = df.apply(lambda x: '' if x['state'] == 'MARKER' else int(x['start_time_sec'] / 3600), axis=1)
     analyse_df = pd.DataFrame()
@@ -175,7 +125,7 @@ def transfer_result(mianno, ac_time):
 
     analyse_df[['NREM_duration', 'NREM_bout', "NREM_ave", "NREM_percentage",
                 'REM_duration', 'REM_bout', "REM_ave", "REM_percentage",
-                'WAKE_duration', 'WAKE_bout', "WAKE_ave", "WAKE_percentage",
+                'WAKE_duration', 'WAKE_out', "WAKE_ave", "WAKE_percentage",
                 'INIT_duration', 'INIT_bout', "INIT_ave", "INIT_percentage"]] = features
 
 
@@ -186,5 +136,13 @@ def transfer_result(mianno, ac_time):
         ['NREM_duration', 'NREM_bout', 'REM_duration', 'REM_bout', 'WAKE_duration',
         'WAKE_bout', 'INIT_duration', 'INIT_bout']].astype(int)
     
-    return df, analyse_df
+    start_end_df = pd.DataFrame(start_end_label, 
+                                columns=['start_time', 'start_time_sec', 
+                                         'start_code', 'end_time', 
+                                         'end_time_sec', 'end_code',
+                                         'label', 'bout_duration'])
+    
+    marker_df = pd.DataFrame(marker, columns=['timestamp', 'timestamp_sec', 'label'])
+    
+    return df, analyse_df, start_end_df, marker_df
 
