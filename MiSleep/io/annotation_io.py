@@ -125,7 +125,7 @@ def transfer_result(mianno, ac_time):
 
     analyse_df[['NREM_duration', 'NREM_bout', "NREM_ave", "NREM_percentage",
                 'REM_duration', 'REM_bout', "REM_ave", "REM_percentage",
-                'WAKE_duration', 'WAKE_out', "WAKE_ave", "WAKE_percentage",
+                'WAKE_duration', 'WAKE_bout', "WAKE_ave", "WAKE_percentage",
                 'INIT_duration', 'INIT_bout', "INIT_ave", "INIT_percentage"]] = features
 
 

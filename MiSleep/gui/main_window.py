@@ -225,7 +225,6 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.saveSc = QShortcut(QKeySequence('CTRL+s'), self)
         self.saveSc.activated.connect(self.save_anno)
 
-        
         # Button color
         self.NREMBt.setStyleSheet(f"background-color:{self.state_color_dict[1]}")
         self.REMBt.setStyleSheet(f"background-color:{self.state_color_dict[2]}")
@@ -1372,6 +1371,9 @@ class main_window(QMainWindow, Ui_MiSleep):
         
     def state_spectral(self):
         """Analyze state spectral"""
+        self.state_spectral_dialog.StartTimeEditor.setDateTime(self.ac_time)
+        self.state_spectral_dialog.EndTimeEditor.setDateTime(
+            self.ac_time + datetime.timedelta(seconds=self.total_seconds))
         self.state_spectral_dialog.dialog_show(channels=self.midata.channels)
         self.state_spectral_dialog.exec()
         if self.state_spectral_dialog.closed:

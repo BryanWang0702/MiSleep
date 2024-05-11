@@ -201,15 +201,14 @@ class transferResult_dialog(QDialog, Ui_TransferResultDialog):
                 mianno._start_end = mianno.start_end[delay_seconds:]
                 mianno._sleep_state = mianno.sleep_state[delay_seconds:]
                 ac_time = start_time
-        
+
+        df, analyse_df, start_end_df, marker_df = transfer_result(mianno=mianno, ac_time=ac_time)        
         
         fd, _ = QFileDialog.getSaveFileName(self, "Save transfered result",
                                                 f"{config['gui']['openpath'].split('/')[0]}/transfer_result.xlsx", 
                                                 "*.xlsx;;")
         if fd == '':
             return
-        
-        df, analyse_df, start_end_df, marker_df = transfer_result(mianno=mianno, ac_time=ac_time)
 
         try:
             writer = pd.ExcelWriter(fd, datetime_format='yyyy-mm-dd hh:mm:ss')
@@ -258,10 +257,26 @@ class stateSpectral_dialog(QDialog, Ui_StateSpectralDialog):
         self.RejectArtifactCheckBox.setChecked(False)
         self.ArtThresholdSpinBox.setDisabled(True)
         self.RejectArtifactCheckBox.clicked.connect(self.reject_artifact_artifacts_changed)
+        self.StartTimeEditor.setDisabled(True)
+        self.EndTimeEditor.setDisabled(True)
+        self.StartTimeCheckBox.clicked.connect(self.start_time_editor_changed)
+        self.EndTimeCheckBox.clicked.connect(self.end_time_editor_changed)
         
         self.OKBt.clicked.connect(self.okEvent)
         self.CancelBt.clicked.connect(self.cancelEvent)
         self.closed = True
+
+    def start_time_editor_changed(self):
+        if self.StartTimeCheckBox.isChecked():
+            self.StartTimeEditor.setEnabled(True)
+        if not self.StartTimeCheckBox.isChecked():
+            self.StartTimeEditor.setDisabled(True)
+
+    def end_time_editor_changed(self):
+        if self.EndTimeCheckBox.isChecked():
+            self.EndTimeEditor.setEnabled(True)
+        if not self.EndTimeCheckBox.isChecked():
+            self.EndTimeEditor.setDisabled(True)
 
     def BP_filter_check_changed(self):
         if self.BPFilterCheckBox.isChecked():
@@ -286,9 +301,31 @@ class stateSpectral_dialog(QDialog, Ui_StateSpectralDialog):
     def spectral_analysis(self, midata, mianno, config):
         """Do spectral analysis"""
 
+        mianno = deepcopy(mianno)
+        midata = deepcopy(midata)
+
+        ac_time = datetime.datetime.strptime(midata.time, "%Y%m%d-%H:%M:%S")
+        start_sec = 0
+        end_sec = mianno.anno_length
+        
+        if self.StartTimeCheckBox.isChecked():
+            start_time = self.StartTimeEditor.dateTime().toPyDateTime()
+            start_sec = (start_time - ac_time).seconds
+        
+        if self.EndTimeCheckBox.isChecked():
+            end_time = self.EndTimeEditor.dateTime().toPyDateTime()
+            end_sec = (end_time - ac_time).seconds
+
+        if end_sec < start_sec:
+            start_sec = 0
+            end_sec = mianno.anno_length
+            
+        midata = midata.crop([start_sec, end_sec])
+        sleep_state = mianno.sleep_state[start_sec:end_sec+1]
+
         channel_idx = self.ChannelSelector.currentIndex()
         channel_data = midata.signals[channel_idx]
-        sleep_state = lst2group([[idx, each] for idx, each in enumerate(mianno.sleep_state)])
+        sleep_state = lst2group([[idx, each] for idx, each in enumerate(sleep_state)])
         sf = midata.sf[channel_idx]
 
         # Do filter if checked
@@ -366,6 +403,8 @@ class stateSpectral_dialog(QDialog, Ui_StateSpectralDialog):
             Init_figure.savefig(fd + '/Init_spectrum.pdf')
 
         writer.close()
+
+        QMessageBox.about(self, "Info", "Spectral analysis finished")
 
     def okEvent(self):
         self.closed = False
