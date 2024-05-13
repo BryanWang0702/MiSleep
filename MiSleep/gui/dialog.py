@@ -310,11 +310,11 @@ class stateSpectral_dialog(QDialog, Ui_StateSpectralDialog):
         
         if self.StartTimeCheckBox.isChecked():
             start_time = self.StartTimeEditor.dateTime().toPyDateTime()
-            start_sec = (start_time - ac_time).seconds
+            start_sec = int(datetime.timedelta.total_seconds(start_time - ac_time))
         
         if self.EndTimeCheckBox.isChecked():
             end_time = self.EndTimeEditor.dateTime().toPyDateTime()
-            end_sec = (end_time - ac_time).seconds
+            end_sec = int(datetime.timedelta.total_seconds(end_time - ac_time))
 
         if end_sec < start_sec:
             start_sec = 0
