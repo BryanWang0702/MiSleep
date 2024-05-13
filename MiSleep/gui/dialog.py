@@ -316,7 +316,7 @@ class stateSpectral_dialog(QDialog, Ui_StateSpectralDialog):
             end_time = self.EndTimeEditor.dateTime().toPyDateTime()
             end_sec = int(datetime.timedelta.total_seconds(end_time - ac_time))
 
-        if end_sec < start_sec:
+        if end_sec <= start_sec:
             start_sec = 0
             end_sec = mianno.anno_length
             
