@@ -323,6 +323,9 @@ class stateSpectral_dialog(QDialog, Ui_StateSpectralDialog):
         midata = midata.crop([start_sec, end_sec])
         sleep_state = mianno.sleep_state[start_sec:end_sec+1]
 
+        # if list(set(sleep_state)) == [4]:
+        #     QMessageBox.about(self, "Warning", "No state for spectral analysis")
+
         channel_idx = self.ChannelSelector.currentIndex()
         channel_data = midata.signals[channel_idx]
         sleep_state = lst2group([[idx, each] for idx, each in enumerate(sleep_state)])

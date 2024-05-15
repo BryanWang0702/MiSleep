@@ -175,3 +175,11 @@ def cal_draw_spectrum(data, sf, nperseg, freq_band=None, relative=None):
     ax.set_ylabel("Power spectral density (Power/Hz)")
 
     return np.array([F, P]), figure
+
+
+def identify_startend_color(dict_, state_name):
+    """return the color of state while state name is in the dict or return blue"""
+    if state_name in dict_.keys():
+        return dict_[state_name]
+    else:
+        return "blue"

@@ -23,7 +23,7 @@ from misleep.preprocessing.spectral import spectrogram
 from misleep.io.base import MiData, MiAnnotation
 from misleep.io.signal_io import load_mat, load_edf
 from misleep.io.annotation_io import load_misleep_anno, load_bio_anno
-from misleep.gui.utils import create_new_mianno
+from misleep.gui.utils import create_new_mianno, identify_startend_color
 from misleep.utils.annotation import lst2group
 from misleep.gui.about import about_dialog
 from misleep.gui.dialog import label_dialog, transferResult_dialog, stateSpectral_dialog
@@ -67,6 +67,8 @@ class main_window(QMainWindow, Ui_MiSleep):
                                in json.loads(self.config['gui']['statemap']).items()}
         self.state_color_dict = {int(key): value for key, value 
                                in json.loads(self.config['gui']['statecolor']).items()}
+        
+        self.start_end_color_dict = dict(json.loads(self.config['gui']['startendcolor']).items())
 
         self.ShowRangeCombo_dict = {0: 30, 1: 60, 2: 300, 3: 1800, 4: 3600}
         self.FilterTypeCombo_dict = {
@@ -743,7 +745,7 @@ class main_window(QMainWindow, Ui_MiSleep):
                 for idx, show_ in enumerate(self.show_idx):
                     self.signal_ax[idx + 1].axvline(
                         int((each[0] - self.current_sec) * self.midata.sf[show_]),
-                        color="blue",
+                        color=identify_startend_color(self.start_end_color_dict, each[2]),
                         alpha=1,
                     )
                 self.signal_ax[1].text(
@@ -751,14 +753,14 @@ class main_window(QMainWindow, Ui_MiSleep):
                     y=self.y_lims[self.show_idx[0]] + self.y_shift[self.show_idx[0]],
                     s=each[2]+'-S',
                     verticalalignment="top",
-                    color="blue",
+                    color=identify_startend_color(self.start_end_color_dict, each[2])
                 )
 
             if self.current_sec <= each[1] <= self.current_sec + self.show_duration:
                 for idx, show_ in enumerate(self.show_idx):
                     self.signal_ax[idx + 1].axvline(
                         int((each[1] - self.current_sec) * self.midata.sf[show_]),
-                        color="blue",
+                        color=identify_startend_color(self.start_end_color_dict, each[2]),
                         alpha=1,
                     )
                 self.signal_ax[1].text(
@@ -767,7 +769,7 @@ class main_window(QMainWindow, Ui_MiSleep):
                     s=each[2]+'-E',
                     verticalalignment="top",
                     horizontalalignment='right',
-                    color="blue",
+                    color=identify_startend_color(self.start_end_color_dict, each[2]),
                 )
 
         if flush:
