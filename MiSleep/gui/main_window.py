@@ -899,11 +899,18 @@ class main_window(QMainWindow, Ui_MiSleep):
         if self.MarkerRadio.isChecked():
             if event.button == 3:
                 for each in self.mianno.marker:
-                    if each[0] == sec:
+                    if abs(each[0]-sec) <= 1:
                         self.mianno.marker.remove(each)
-                        self.plot_signals()
-                        self.plot_hypo()
+
+                self.plot_signals()
+                self.plot_hypo()
                 return
+            
+            # Get decimal marker point
+            x = round(event.xdata / self.midata.sf[
+                        self.show_idx[np.where(self.signal_ax == event.inaxes)[0][0] - 1]
+                    ]
+                , 3) + self.current_sec
             
             self.label_dialog._type = 0
             self.label_dialog.show_contents()
@@ -914,7 +921,7 @@ class main_window(QMainWindow, Ui_MiSleep):
             label_name = self.label_dialog.label_name
 
             # Add marker label
-            self.mianno.marker.append([sec, label_name])
+            self.mianno.marker.append([x, label_name])
 
             self.plot_marker_line()
         

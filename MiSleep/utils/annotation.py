@@ -31,7 +31,7 @@ def marker2mianno(marker):
     """
     if marker != [] or marker is not None:
         marker = [each.split(', ') for each in marker]
-        marker = [[int(each[1]), each[7]] for each in marker]
+        marker = [[float(each[1]), each[7]] for each in marker]
         return marker
     return []
 

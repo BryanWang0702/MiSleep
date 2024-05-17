@@ -67,7 +67,7 @@ def load_bio_anno(file_path):
 
 def transfer_result(mianno, ac_time):
     marker = [[
-        transfer_time(ac_time, each[0], '%Y-%m-%d %H:%M:%S'), 
+        transfer_time(ac_time, each[0], '%Y-%m-%d %H:%M:%S', ms=True), 
         each[0], each[1]] for each in mianno.marker]
 
     start_end_label = [[
