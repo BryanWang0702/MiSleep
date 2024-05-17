@@ -384,13 +384,14 @@ class main_window(QMainWindow, Ui_MiSleep):
 
     def check_show(self):
         """Check and show all, triggered by actionShow"""
-        if not isinstance(self.midata, MiData) or not isinstance(
-            self.mianno, MiAnnotation
-        ):
+        if not isinstance(self.midata, MiData):
             QMessageBox.about(
-                self, "Error", r"Load data file and annotation file first."
+                self, "Error", r"Load data file first."
             )
             return
+        
+        if isinstance(self.midata, MiData) and not isinstance(self.mianno, MiAnnotation):
+            self.mianno = create_new_mianno(self.midata.duration)
 
         self.show_idx = list(range(self.midata.n_channels))
         self.y_lims = [max(each[:1000]) for each in self.midata.signals]
@@ -1393,6 +1394,17 @@ class main_window(QMainWindow, Ui_MiSleep):
 
     def save_anno(self):
         """Save annotation into file"""
+        if self.anno_path == "":
+            anno_path, _ = QFileDialog.getOpenFileName(
+            self, "Select annotation file", 
+            f"{self.config['gui']['openpath']}", 
+            "txt Files (*.txt *.TXT)"
+            )
+
+            if anno_path == "":
+                return
+            self.anno_path = anno_path
+
         save_thread = SaveThread(file=[self.mianno, self.midata], 
                                  file_path=self.anno_path)
         saved = save_thread.save_anno()
