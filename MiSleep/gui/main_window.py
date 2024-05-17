@@ -137,11 +137,16 @@ class main_window(QMainWindow, Ui_MiSleep):
 
     def init_qt(self):
         """Initial actions for qt widgets"""
-        # Set triggers for toolBars
-        self.AboutBar.actionTriggered[QAction].connect(self.about_bar_dispatcher)
-        self.LoadBar.actionTriggered[QAction].connect(self.load_bar_dispatcher)
-        self.SaveBar.actionTriggered[QAction].connect(self.save_bar_dispatcher)
-        self.ToolBar.actionTriggered[QAction].connect(self.tool_bar_dispatcher)
+        # Set triggers for MenuBar
+        # self.menuHelp.actionTriggered[QAction].connect(self.help_menu_dispatcher)
+        # self.menuFile.actionTriggered[QAction].connect(self.file_menu_dispatcher)
+        # self.menuResult.actionTriggered[QAction].connect(self.result_menu_dispatcher)
+        # self.menuTools.actionTriggered[QAction].connect(self.tool_menu_dispatcher)
+        self.actionAbout.triggered.connect(self.about_dialog.exec)
+        self.actionLoadData.triggered.connect(self.load_data)
+        self.actionLoadAnnotation.triggered.connect(self.load_anno)
+        self.actionStateSpectral.triggered.connect(self.state_spectral)
+        self.actionTransferResult.triggered.connect(self.transfer_result)
 
         # Spectrogram percentile change
         self.PercentileSpin.setValue(self.spectrogram_percentile)
@@ -222,6 +227,12 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.previous_epochSc = QShortcut(QKeySequence('up'), self)
         self.previous_epochSc.activated.connect(self.previous_epoch)
 
+        # Load data and annotation shortcuts
+        self.load_dataSc = QShortcut(QKeySequence('shift+d'), self)
+        self.load_dataSc.activated.connect(self.load_data)
+        self.load_annoSc = QShortcut(QKeySequence('shift+a'), self)
+        self.load_annoSc.activated.connect(self.load_anno)
+
         # save labels
         self.SaveLabelBt.clicked.connect(self.save_anno)
         self.saveSc = QShortcut(QKeySequence('CTRL+s'), self)
@@ -261,9 +272,7 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.NREMBt.setDisabled(status)
         self.DateTimeEdit.setDisabled(status)
         self.ShowRangeCombo.setDisabled(status)
-        self.SaveBar.setDisabled(status)
-        self.ToolBar.setDisabled(status)
-        self.ScrollerBar.setDisabled(status)
+        self.SecondSpin.setDisabled(status)
         self.nremSc.setEnabled(not status)
         self.remSc.setEnabled(not status)
         self.wakeSc.setEnabled(not status)
@@ -274,6 +283,10 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.previous_pageSc.setEnabled(not status)
         self.next_epochSc.setEnabled(not status)
         self.previous_epochSc.setEnabled(not status)
+
+        # Menu bar actions
+        self.menuTools.setDisabled(status)
+        self.menuResult.setDisabled(status)
         # self.setShortcutEnabled(not status)
 
     def load_data(self):
@@ -328,7 +341,12 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.fill_channel_listView()
 
         self.start_end = []
+        self.mianno = None
+        self.anno_path = ""
+        self.AnnoPathEdit.setText("")
         self.clear_refresh(clf=True)
+
+        self.check_show()
 
     def load_anno(self):
         """Triggered by actionLoad_Annotation"""
@@ -341,6 +359,7 @@ class main_window(QMainWindow, Ui_MiSleep):
         if anno_path == "":
             return
         self.anno_path = anno_path
+        _mianno = self.mianno
 
         if self.anno_path.endswith((".txt", ".TXT")):
             try:
@@ -382,8 +401,12 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.start_end = []
         self.clear_refresh(clf=True)
 
-    def check_show(self):
-        """Check and show all, triggered by actionShow"""
+        self.check_show(_mianno)
+
+    def check_show(self, mianno=None):
+        """Check and show all, triggered by actionShow
+        mianno is when load annotation is valid, keep the previous anno
+        """
         if not isinstance(self.midata, MiData):
             QMessageBox.about(
                 self, "Error", r"Load data file first."
@@ -402,7 +425,12 @@ class main_window(QMainWindow, Ui_MiSleep):
             QMessageBox.about(
                 self, "Error", r"Data and annotation do not match!"
             )
-            return
+            self.anno_path = ""
+            self.AnnoPathEdit.setText(self.anno_path)
+            if mianno:
+                self.mianno = mianno
+            if not isinstance(self.mianno, MiAnnotation):
+                self.mianno = create_new_mianno(self.midata.duration)
         self.total_seconds = self.midata.duration if self.midata.duration < self.mianno.anno_length else self.mianno.anno_length
         self.reset_sec_limit()
 
@@ -1339,12 +1367,12 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.is_saved = False
         self.AnnotationPathLabel.setText('*Annotation path:')
 
-    def about_bar_dispatcher(self, signal):
-        """Triggered by AboutBar action, show About dialog"""
+    def help_menu_dispatcher(self, signal):
+        """Triggered by Help menu"""
         if signal.text() == "About":
             self.about_dialog.exec()
 
-    def load_bar_dispatcher(self, signal):
+    def file_menu_dispatcher(self, signal):
         """Triggered by LoadBar action, load data, load annotation, show"""
         if signal.text() == "Load Data":
             self.load_data()
@@ -1352,13 +1380,6 @@ class main_window(QMainWindow, Ui_MiSleep):
             self.load_anno()
         if signal.text() == "Show":
             self.check_show()
-
-    def save_bar_dispatcher(self, signal):
-        """Triggered by SaveBar action, save data, save annotation"""
-        if signal.text() == "Save Data":
-            self.save_data()
-        if signal.text() == "Save Annotation":
-            self.save_anno()
 
     def tool_bar_dispatcher(self, signal):
         """Triggered by ToolBar action, transfer result"""
@@ -1404,6 +1425,7 @@ class main_window(QMainWindow, Ui_MiSleep):
             if anno_path == "":
                 return
             self.anno_path = anno_path
+            self.AnnoPathEdit.setText(self.anno_path)
 
         save_thread = SaveThread(file=[self.mianno, self.midata], 
                                  file_path=self.anno_path)
