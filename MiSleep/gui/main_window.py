@@ -179,10 +179,10 @@ class main_window(QMainWindow, Ui_MiSleep):
 
         # Custom second spin edit and ShowRangeCombo
         self.ShowRangeCombo.setEnabled(True)
-        self.EpochNumSpin.setDisabled(True)
-        self.EpochNumSpin.setRange(1, 720)
-        self.EpochNumSpin.setValue(6)
-        self.EpochNumSpin.valueChanged.connect(self.EpochNumSpin_changed)
+        self.SecondNumSpin.setDisabled(True)
+        self.SecondNumSpin.setRange(5, 3600)
+        self.SecondNumSpin.setValue(30)
+        self.SecondNumSpin.valueChanged.connect(self.SecondNumSpin_changed)
         self.ShowRangeCombo.currentIndexChanged.connect(self.ShowRangeCombo_changed)
         self.CustomSecondsCheck.clicked.connect(self.CustomSecondCheck_clicked)
 
@@ -1225,7 +1225,7 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.spec_window.showNormal()
 
     def set_show_duration(self, type_="Combo"):
-        """Set show_duration with ShowRangeCombo or EpochNumSpin"""
+        """Set show_duration with ShowRangeCombo or SecondNumSpin"""
 
         if type_ == "Combo":
             selected_idx = self.ShowRangeCombo.currentIndex()
@@ -1239,11 +1239,11 @@ class main_window(QMainWindow, Ui_MiSleep):
             else:
                 self.show_duration = self.ShowRangeCombo_dict[selected_idx]
         if type_ == "Spin":
-            show_duration = self.EpochNumSpin.value() * self.epoch_length
+            show_duration = self.SecondNumSpin.value()
             if show_duration + self.current_sec >= self.total_seconds:
                 self.show_duration = 30
                 self.current_sec = 0
-                self.EpochNumSpin.setValue(6)
+                self.SecondNumSpin.setValue(30)
             else:
                 self.show_duration = show_duration
 
@@ -1255,19 +1255,19 @@ class main_window(QMainWindow, Ui_MiSleep):
         """If CustomSecondCheck was clicked"""
         if self.CustomSecondsCheck.isChecked():
             self.ShowRangeCombo.setDisabled(True)
-            self.EpochNumSpin.setEnabled(True)
+            self.SecondNumSpin.setEnabled(True)
             self.set_show_duration(type_="Spin")
         else:
             self.ShowRangeCombo.setEnabled(True)
-            self.EpochNumSpin.setDisabled(True)
+            self.SecondNumSpin.setDisabled(True)
             self.set_show_duration(type_="Combo")
 
     def ShowRangeCombo_changed(self):
         """Triggered by ShowRangeCombo index change"""
         self.set_show_duration(type_="Combo")
 
-    def EpochNumSpin_changed(self):
-        """Triggered by EpochNumSpin value change"""
+    def SecondNumSpin_changed(self):
+        """Triggered by SecondNumSpin value change"""
         self.set_show_duration(type_="Spin")
 
     def nrem_label(self):
