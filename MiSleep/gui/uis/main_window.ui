@@ -108,7 +108,7 @@
    <property name="minimumSize">
     <size>
      <width>288</width>
-     <height>1</height>
+     <height>112</height>
     </size>
    </property>
    <property name="features">
@@ -186,7 +186,7 @@
    <property name="minimumSize">
     <size>
      <width>315</width>
-     <height>1</height>
+     <height>443</height>
     </size>
    </property>
    <property name="layoutDirection">
@@ -203,41 +203,6 @@
    </attribute>
    <widget class="QWidget" name="dockWidgetContents_4">
     <layout class="QGridLayout" name="gridLayout">
-     <item row="3" column="2">
-      <widget class="QPushButton" name="DeleteChBt">
-       <property name="text">
-        <string>Delete</string>
-       </property>
-      </widget>
-     </item>
-     <item row="7" column="0" colspan="3">
-      <widget class="Line" name="line_2">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="1">
-      <widget class="QPushButton" name="HideChBt">
-       <property name="text">
-        <string>Hide</string>
-       </property>
-      </widget>
-     </item>
-     <item row="8" column="2">
-      <widget class="QPushButton" name="ScalerDownBt">
-       <property name="text">
-        <string>-</string>
-       </property>
-      </widget>
-     </item>
-     <item row="10" column="0" colspan="3">
-      <widget class="Line" name="line_3">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-      </widget>
-     </item>
      <item row="2" column="0" colspan="3">
       <widget class="QListView" name="ChListView">
        <property name="showDropIndicator" stdset="0">
@@ -263,46 +228,6 @@
        </property>
       </widget>
      </item>
-     <item row="8" column="0">
-      <widget class="QLabel" name="label">
-       <property name="text">
-        <string>Scaler:</string>
-       </property>
-      </widget>
-     </item>
-     <item row="9" column="2">
-      <widget class="QPushButton" name="ShiftDownBt">
-       <property name="text">
-        <string>Down</string>
-       </property>
-      </widget>
-     </item>
-     <item row="5" column="2">
-      <widget class="QDoubleSpinBox" name="FilterHighSpin">
-       <property name="keyboardTracking">
-        <bool>false</bool>
-       </property>
-       <property name="decimals">
-        <number>1</number>
-       </property>
-       <property name="minimum">
-        <double>0.200000000000000</double>
-       </property>
-       <property name="singleStep">
-        <double>0.100000000000000</double>
-       </property>
-       <property name="value">
-        <double>30.000000000000000</double>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="0">
-      <widget class="QPushButton" name="ShowChBt">
-       <property name="text">
-        <string>Show</string>
-       </property>
-      </widget>
-     </item>
      <item row="1" column="1">
       <widget class="QDoubleSpinBox" name="PercentileSpin">
        <property name="decimals">
@@ -313,10 +238,24 @@
        </property>
       </widget>
      </item>
-     <item row="9" column="0">
-      <widget class="QLabel" name="label_2">
+     <item row="8" column="1">
+      <widget class="QPushButton" name="ScalerUpBt">
        <property name="text">
-        <string>Shift:</string>
+        <string>+</string>
+       </property>
+      </widget>
+     </item>
+     <item row="12" column="0" colspan="3">
+      <widget class="QPushButton" name="PlotSpecBt">
+       <property name="text">
+        <string>Plot spectrum and spectrogram</string>
+       </property>
+      </widget>
+     </item>
+     <item row="10" column="1">
+      <widget class="QPushButton" name="ShiftUpBt">
+       <property name="text">
+        <string>UP</string>
        </property>
       </widget>
      </item>
@@ -327,57 +266,24 @@
        </property>
       </widget>
      </item>
-     <item row="8" column="1">
-      <widget class="QPushButton" name="ScalerUpBt">
+     <item row="3" column="2">
+      <widget class="QPushButton" name="DeleteChBt">
        <property name="text">
-        <string>+</string>
+        <string>Delete</string>
        </property>
       </widget>
      </item>
-     <item row="4" column="0" colspan="3">
-      <widget class="Line" name="line">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-      </widget>
-     </item>
-     <item row="9" column="1">
-      <widget class="QPushButton" name="ShiftUpBt">
+     <item row="10" column="2">
+      <widget class="QPushButton" name="ShiftDownBt">
        <property name="text">
-        <string>UP</string>
+        <string>Down</string>
        </property>
       </widget>
      </item>
-     <item row="6" column="0" colspan="3">
-      <widget class="QPushButton" name="FilterConfirmBt">
+     <item row="8" column="2">
+      <widget class="QPushButton" name="ScalerDownBt">
        <property name="text">
-        <string>Filter</string>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="0" colspan="3">
-      <widget class="QPushButton" name="DefaultCh4SpecBt">
-       <property name="text">
-        <string>Default channel for spectrogram</string>
-       </property>
-      </widget>
-     </item>
-     <item row="5" column="1">
-      <widget class="QDoubleSpinBox" name="FilterLowSpin">
-       <property name="keyboardTracking">
-        <bool>false</bool>
-       </property>
-       <property name="decimals">
-        <number>1</number>
-       </property>
-       <property name="minimum">
-        <double>0.200000000000000</double>
-       </property>
-       <property name="maximum">
-        <double>100.000000000000000</double>
-       </property>
-       <property name="singleStep">
-        <double>0.100000000000000</double>
+        <string>-</string>
        </property>
       </widget>
      </item>
@@ -405,10 +311,127 @@
        </item>
       </widget>
      </item>
-     <item row="11" column="0" colspan="3">
-      <widget class="QPushButton" name="PlotSpecBt">
+     <item row="10" column="0">
+      <widget class="QLabel" name="label_2">
        <property name="text">
-        <string>Plot spectrum and spectrogram</string>
+        <string>Shift:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1">
+      <widget class="QPushButton" name="HideChBt">
+       <property name="text">
+        <string>Hide</string>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="0">
+      <widget class="QPushButton" name="ShowChBt">
+       <property name="text">
+        <string>Show</string>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="0" colspan="3">
+      <widget class="Line" name="line">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+      </widget>
+     </item>
+     <item row="11" column="0" colspan="3">
+      <widget class="Line" name="line_3">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+      </widget>
+     </item>
+     <item row="9" column="2">
+      <widget class="QPushButton" name="MultipleScalerConfirmBt">
+       <property name="text">
+        <string>Apply</string>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="2">
+      <widget class="QDoubleSpinBox" name="FilterHighSpin">
+       <property name="keyboardTracking">
+        <bool>false</bool>
+       </property>
+       <property name="decimals">
+        <number>1</number>
+       </property>
+       <property name="minimum">
+        <double>0.200000000000000</double>
+       </property>
+       <property name="singleStep">
+        <double>0.100000000000000</double>
+       </property>
+       <property name="value">
+        <double>30.000000000000000</double>
+       </property>
+      </widget>
+     </item>
+     <item row="7" column="0" colspan="3">
+      <widget class="Line" name="line_2">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="1">
+      <widget class="QDoubleSpinBox" name="FilterLowSpin">
+       <property name="keyboardTracking">
+        <bool>false</bool>
+       </property>
+       <property name="decimals">
+        <number>1</number>
+       </property>
+       <property name="minimum">
+        <double>0.200000000000000</double>
+       </property>
+       <property name="maximum">
+        <double>100.000000000000000</double>
+       </property>
+       <property name="singleStep">
+        <double>0.100000000000000</double>
+       </property>
+      </widget>
+     </item>
+     <item row="6" column="0" colspan="3">
+      <widget class="QPushButton" name="FilterConfirmBt">
+       <property name="text">
+        <string>Filter</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="0" colspan="3">
+      <widget class="QPushButton" name="DefaultCh4SpecBt">
+       <property name="text">
+        <string>Default channel for spectrogram</string>
+       </property>
+      </widget>
+     </item>
+     <item row="8" column="0">
+      <widget class="QLabel" name="label">
+       <property name="text">
+        <string>Scaler:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="9" column="1">
+      <widget class="QDoubleSpinBox" name="multipleScalerEditor">
+       <property name="decimals">
+        <number>3</number>
+       </property>
+       <property name="minimum">
+        <double>0.001000000000000</double>
+       </property>
+       <property name="maximum">
+        <double>200.000000000000000</double>
+       </property>
+       <property name="value">
+        <double>1.000000000000000</double>
        </property>
       </widget>
      </item>
@@ -419,7 +442,7 @@
    <property name="minimumSize">
     <size>
      <width>302</width>
-     <height>1</height>
+     <height>159</height>
     </size>
    </property>
    <property name="features">
@@ -517,7 +540,7 @@
    <property name="minimumSize">
     <size>
      <width>197</width>
-     <height>1</height>
+     <height>112</height>
     </size>
    </property>
    <property name="acceptDrops">

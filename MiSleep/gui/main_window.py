@@ -244,6 +244,9 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.WakeBt.setStyleSheet(f"background-color:{self.state_color_dict[3]}")
         self.InitBt.setStyleSheet(f"background-color:{self.state_color_dict[4]}")
 
+        # Scalar input
+        self.MultipleScalerConfirmBt.clicked.connect(self.multiple_scaler)
+
         self.change_Bts_status(True)
 
     def change_Bts_status(self, status=True):
@@ -283,6 +286,8 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.previous_pageSc.setEnabled(not status)
         self.next_epochSc.setEnabled(not status)
         self.previous_epochSc.setEnabled(not status)
+        self.multipleScalerEditor.setDisabled(status)
+        self.MultipleScalerConfirmBt.setDisabled(status)
 
         # Menu bar actions
         self.menuTools.setDisabled(status)
@@ -1137,6 +1142,19 @@ class main_window(QMainWindow, Ui_MiSleep):
 
         self.y_lims = [
             lim * 1.1 if idx in selected_channel else lim
+            for idx, lim in enumerate(self.y_lims)
+        ]
+        self.plot_signals(clf=False, replot_axes=selected_channel)
+
+    def multiple_scaler(self):
+        """Scaler with input number"""
+        selected_channel = [each.row() for each in self.ChListView.selectedIndexes()]
+        scaler_num = self.multipleScalerEditor.value()
+        if not selected_channel:
+            return
+
+        self.y_lims = [
+            lim / scaler_num if idx in selected_channel else lim
             for idx, lim in enumerate(self.y_lims)
         ]
         self.plot_signals(clf=False, replot_axes=selected_channel)
