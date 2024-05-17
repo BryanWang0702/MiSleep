@@ -262,7 +262,6 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.DateTimeEdit.setDisabled(status)
         self.ShowRangeCombo.setDisabled(status)
         self.SaveBar.setDisabled(status)
-        self.AboutBar.setDisabled(status)
         self.ToolBar.setDisabled(status)
         self.ScrollerBar.setDisabled(status)
         self.nremSc.setEnabled(not status)

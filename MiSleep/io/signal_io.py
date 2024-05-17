@@ -95,15 +95,19 @@ def load_mat(data_path):
     
         except Exception:
             # If old version misleep data
-            if raw_data.shape[0] > raw_data.shape[1]:
-                signals = raw_data.T
-            else:
-                signals = raw_data
-            
-            channels = [f'ch{each + 1}' for each in range(signals.shape[0])]
-            sf = [305. for _ in range(signals.shape[0])]
-            time = datetime.datetime.now().strftime("%Y%m%d-%H:%M:%S")
-            return MiData(signals=signals, channels=channels, sf=sf, time=time)  
+            try:
+                if raw_data.shape[0] > raw_data.shape[1]:
+                    signals = raw_data.T
+                else:
+                    signals = raw_data
+                
+                channels = [f'ch{each + 1}' for each in range(signals.shape[0])]
+                sf = [305. for _ in range(signals.shape[0])]
+                time = datetime.datetime.now().strftime("%Y%m%d-%H:%M:%S")
+                return MiData(signals=signals, channels=channels, sf=sf, time=time)
+            except Exception as e:
+                
+                return None  
 
 
 def write_mat(signals, channels, sf, time, mat_file=None):

@@ -599,7 +599,7 @@
      <item row="2" column="0">
       <widget class="QCheckBox" name="CustomSecondsCheck">
        <property name="text">
-        <string>Custom seconds</string>
+        <string>Customize seconds</string>
        </property>
       </widget>
      </item>
