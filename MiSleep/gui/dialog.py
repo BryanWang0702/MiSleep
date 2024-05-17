@@ -7,12 +7,14 @@
 @Description:  Dialog file, label dialog, transfer result dialog
 """
 from PyQt5.QtCore import QCoreApplication, Qt, QStringListModel
-from PyQt5.QtWidgets import QDialog, QMessageBox, QFileDialog
+from PyQt5.QtGui import QColor
+from PyQt5.QtWidgets import QDialog, QMessageBox, QFileDialog, QColorDialog
 import datetime
 
 from misleep.gui.uis.label_dialog_ui import Ui_Dialog
 from misleep.gui.uis.transfer_result_dialog_ui import Ui_TransferResultDialog
 from misleep.gui.uis.state_spectral_dialog_ui import Ui_StateSpectralDialog
+from misleep.gui.uis.horizontal_line_dialog_ui import Ui_horizontal_line_dialog
 from misleep.gui.thread import SaveThread
 from misleep.io.annotation_io import transfer_result
 from misleep.utils.signals import signal_filter
@@ -422,6 +424,77 @@ class stateSpectral_dialog(QDialog, Ui_StateSpectralDialog):
         event.ignore()
         self.closed = True
         self.hide()
+
+
+class horizontalLine_dialog(QDialog, Ui_horizontal_line_dialog):
+    def __init__(self, parent=None):
+        """
+        Initialize the horizontal line dialog of MiSleep
+        """
+        super().__init__(parent)
+
+        # Enable high dpi devices
+        QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
+        self.setupUi(self)
+
+        self.color = '#ff0000'
+
+        # initial color button
+        self.SetColorBt.setText(self.color)
+        self.SetColorBt.setStyleSheet(f"background-color:{'red'}")
+
+        self.AddLineBt.clicked.connect(self.add_line)
+        self.DeleteLineBt.clicked.connect(self.delete_line)
+
+        # channel list view model
+        self.line_slm = QStringListModel()
+
+        # Current selected channel
+        self.current_channel = None
+
+        # the horizontal line dict
+        self.horizontal_line = None
+
+        self.UseRelativeCheckBox.clicked.connect(self.click_relative_checkbox)
+        self.RelativeCalComboBox.setEdable(False)
+        self.RelativeNumEditor.setEditable(False)
+
+    def click_relative_checkbox(self):
+        """Unlock relative combox and num editor"""
+        if self.UseRelativeCheckBox.isChecked():
+            self.RelativeCalComboBox.setEdable(True)
+            self.RelativeNumEditor.setEditable(True)
+        else:
+            self.RelativeCalComboBox.setEdable(False)
+            self.RelativeNumEditor.setEditable(False)
+
+    def show_lines(self):
+        """Show lines in the listview"""
+        self.line_slm.setStringList(self.horizontal_line[self.current_channel])
+        self.LineListView.setModel(self.line_slm)
+
+    def add_line(self):
+        """Add a horizontan line, triggered by AddLineBt"""
+        if self.UseRelativeCheckBox.isChecked():
+            value = 0
+        else:
+            value = self.SelfDefineValueEditor.value()
+            comment = 'self defined'
+        
+        self.horizontal_line[self.current_channel].append([value, self.color, comment])
+
+        self.show_lines()
+
+    def delete_line(self):
+        """Delete line with selected index"""
+        
+
+    def select_color(self):
+        c = QColorDialog.getColor(initial=QColor(255, 0, 0))
+        self.color = c.name()
+        if self.color == '#000000':
+            self.color = '#ff0000'
+        self.SetColorBt.setText(self.color)
 
         
 

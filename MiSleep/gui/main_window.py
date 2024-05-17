@@ -26,7 +26,7 @@ from misleep.io.annotation_io import load_misleep_anno, load_bio_anno
 from misleep.gui.utils import create_new_mianno, identify_startend_color
 from misleep.utils.annotation import lst2group
 from misleep.gui.about import about_dialog
-from misleep.gui.dialog import label_dialog, transferResult_dialog, stateSpectral_dialog
+from misleep.gui.dialog import label_dialog, transferResult_dialog, stateSpectral_dialog, horizontalLine_dialog
 from misleep.gui.spec_window import SpecWindow
 from misleep.gui.uis.main_window_ui import Ui_MiSleep
 from misleep.preprocessing.spectral import spectrogram, spectrum, band_power
@@ -126,6 +126,12 @@ class main_window(QMainWindow, Ui_MiSleep):
         # Initial state spectral dialog
         self.state_spectral_dialog = stateSpectral_dialog()
 
+        # Initial horizontal line dialog
+        self.horizontal_line_dialog = horizontalLine_dialog()
+        # The horizontal_line dict contains the line value, line color, line comment
+        # example: {'ch1': [23.33, '#ff0000', '3 x Standard deviation', horizontalLineObject]}
+        self.horizontal_line = {}
+
         # Check wheher operation done and saved or not
         self.is_saved = True
 
@@ -147,6 +153,7 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.actionLoadAnnotation.triggered.connect(self.load_anno)
         self.actionStateSpectral.triggered.connect(self.state_spectral)
         self.actionTransferResult.triggered.connect(self.transfer_result)
+        self.actionAddLine.triggered.connect(self.add_horizontal_line)
 
         # Spectrogram percentile change
         self.PercentileSpin.setValue(self.spectrogram_percentile)
@@ -349,6 +356,10 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.mianno = None
         self.anno_path = ""
         self.AnnoPathEdit.setText("")
+
+        # Add horizontal line info
+        for channel in self.midata.channels:
+            self.horizontal_line[channel] = []
         self.clear_refresh(clf=True)
 
         self.check_show()
@@ -808,6 +819,31 @@ class main_window(QMainWindow, Ui_MiSleep):
         if flush:
             self.signal_figure.canvas.draw()
             self.signal_figure.canvas.flush_events()
+
+    def plot_horizontal_line(self, flush=True):
+        """Plot horizontal line"""
+        for idx, show_ in enumerate(self.show_idx):
+            ch = self.midata.channels[show_]
+            lines = self.horizontal_line[ch]
+            for each in lines:
+                try:
+                    each[3].remove()
+                except:
+                    pass
+
+                each.append(
+                    self.signal_ax[idx+1].axhline(
+                        each[0],
+                        color=each[1],
+                        alpha=1
+                    )
+                )
+        
+        if flush:
+            self.signal_figure.canvas.draw()
+            self.signal_figure.canvas.flush_events()
+
+            self.plot_hypo()
 
     def plot_hypo(self):
         """Plot hypnogram area"""
@@ -1429,7 +1465,10 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.state_spectral_dialog.spectral_analysis(midata=self.midata,
                                             mianno=self.mianno,
                                             config=self.config)
-
+        
+    def add_horizontal_line(self):
+        """Add horizontal line, triggered by addLine in the tools menu"""
+        
 
     def save_anno(self):
         """Save annotation into file"""
