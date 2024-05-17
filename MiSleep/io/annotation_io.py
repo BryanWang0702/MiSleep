@@ -120,7 +120,7 @@ def transfer_result(mianno, ac_time):
         for phase in ["NREM", "REM", "Wake", "INIT"]:
             _duration = df_[df_["state"] == phase]["bout_duration"].sum()
             _bout = df_[df_["state"] == phase]["bout_duration"].count()
-            temp_lst += [_duration, _bout, round(_duration / _bout, 2) if _bout != 0 else 0, round(_duration / 3600, 2)]
+            temp_lst += [_duration, _bout, round(_duration / _bout, 2) if _bout != 0 else 0, round(_duration / 3600, 4)*100]
         features.append(temp_lst)
 
     analyse_df[['NREM_duration', 'NREM_bout', "NREM_ave", "NREM_percentage",

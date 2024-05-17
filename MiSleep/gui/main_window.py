@@ -1154,7 +1154,7 @@ class main_window(QMainWindow, Ui_MiSleep):
             return
 
         self.y_lims = [
-            lim / scaler_num if idx in selected_channel else lim
+            lim /scaler_num if idx in selected_channel else lim
             for idx, lim in enumerate(self.y_lims)
         ]
         self.plot_signals(clf=False, replot_axes=selected_channel)
