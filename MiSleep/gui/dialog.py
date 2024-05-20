@@ -10,6 +10,7 @@ from PyQt5.QtCore import QCoreApplication, Qt, QStringListModel
 from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QDialog, QMessageBox, QFileDialog, QColorDialog
 import datetime
+import numpy as np
 
 from misleep.gui.uis.label_dialog_ui import Ui_Dialog
 from misleep.gui.uis.transfer_result_dialog_ui import Ui_TransferResultDialog
@@ -442,9 +443,15 @@ class horizontalLine_dialog(QDialog, Ui_horizontal_line_dialog):
         # initial color button
         self.SetColorBt.setText(self.color)
         self.SetColorBt.setStyleSheet(f"background-color:{'red'}")
+        self.SetColorBt.clicked.connect(self.select_color)
 
         self.AddLineBt.clicked.connect(self.add_line)
         self.DeleteLineBt.clicked.connect(self.delete_line)
+
+        self.OKBt.clicked.connect(self.okEvent)
+        self.CancelBt.clicked.connect(self.cancelEvent)
+
+        self.relative_methods_dict = {0: 'Standard deviation', 1: 'Mean'}
 
         # channel list view model
         self.line_slm = QStringListModel()
@@ -456,27 +463,61 @@ class horizontalLine_dialog(QDialog, Ui_horizontal_line_dialog):
         self.horizontal_line = None
 
         self.UseRelativeCheckBox.clicked.connect(self.click_relative_checkbox)
-        self.RelativeCalComboBox.setEdable(False)
-        self.RelativeNumEditor.setEditable(False)
+        self.RelativeCalComboBox.setDisabled(True)
+        self.RelativeNumEditor.setEnabled(False)
+
+        self.ChannelComboBox.currentIndexChanged.connect(self.chCombo_change)
+
+        self.closed = True
+        self.appled = False
+
+        self.midata = None  # For SD or Mean calculation
 
     def click_relative_checkbox(self):
         """Unlock relative combox and num editor"""
         if self.UseRelativeCheckBox.isChecked():
-            self.RelativeCalComboBox.setEdable(True)
-            self.RelativeNumEditor.setEditable(True)
+            self.RelativeCalComboBox.setDisabled(False)
+            self.RelativeNumEditor.setEnabled(True)
+            self.SelfDefineValueEditor.setDisabled(True)
         else:
-            self.RelativeCalComboBox.setEdable(False)
-            self.RelativeNumEditor.setEditable(False)
+            self.RelativeCalComboBox.setDisabled(True)
+            self.RelativeNumEditor.setEnabled(False)
+            self.SelfDefineValueEditor.setDisabled(False)
+
+    def show_chs(self):
+        """Initial channel combox"""
+        self.ChannelComboBox.clear()
+        self.ChannelComboBox.addItems(list(self.horizontal_line.keys()))
+        self.ChannelComboBox.setCurrentIndex(0)
+        self.current_channel = list(self.horizontal_line.keys())[0]
+        self.show_lines()
+
+    def chCombo_change(self):
+        """Channel combox change, reset the channel show list"""
+        current_channel_idx = self.ChannelComboBox.currentIndex()
+        self.current_channel = list(self.horizontal_line.keys())[current_channel_idx]
+        self.show_lines()
 
     def show_lines(self):
         """Show lines in the listview"""
-        self.line_slm.setStringList(self.horizontal_line[self.current_channel])
+        strs = [f'{each[0]}_{each[1]}_{each[2]}' for each in self.horizontal_line[self.current_channel]]
+        self.line_slm.setStringList(strs)
         self.LineListView.setModel(self.line_slm)
 
     def add_line(self):
         """Add a horizontan line, triggered by AddLineBt"""
         if self.UseRelativeCheckBox.isChecked():
-            value = 0
+            method_idx = self.RelativeCalComboBox.currentIndex()
+            if method_idx == 0:
+                # Standard deviation
+                value = np.std(self.midata.signals[self.midata.channels.index(self.current_channel)])
+                comment = 'SD'
+            elif method_idx == 1:
+                value = np.mean(self.midata.signals[self.midata.channels.index(self.current_channel)])
+                comment = 'Mean'
+            else:
+                value = 0
+                comment ='self defined'
         else:
             value = self.SelfDefineValueEditor.value()
             comment = 'self defined'
@@ -487,7 +528,11 @@ class horizontalLine_dialog(QDialog, Ui_horizontal_line_dialog):
 
     def delete_line(self):
         """Delete line with selected index"""
-        
+        selected_line = [each.row() for each in self.LineListView.selectedIndexes()]
+        if len(selected_line) == 0:
+            return
+        self.horizontal_line[self.current_channel].pop(selected_line[0])
+        self.show_lines()
 
     def select_color(self):
         c = QColorDialog.getColor(initial=QColor(255, 0, 0))
@@ -495,13 +540,18 @@ class horizontalLine_dialog(QDialog, Ui_horizontal_line_dialog):
         if self.color == '#000000':
             self.color = '#ff0000'
         self.SetColorBt.setText(self.color)
+        self.SetColorBt.setStyleSheet(f"background-color:{self.color}")
 
-        
+    def okEvent(self):
+        self.closed = False
+        self.hide()
 
-
-
-
-
-
-
-
+    def cancelEvent(self):
+        """Triggered by the `cancel` button"""
+        self.closed = True
+        self.hide()
+    
+    def closeEvent(self, event):
+        event.ignore()
+        self.closed = True
+        self.hide()

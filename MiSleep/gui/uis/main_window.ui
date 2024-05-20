@@ -675,12 +675,12 @@
   </widget>
   <action name="actionLoadData">
    <property name="text">
-    <string>Load Data</string>
+    <string>Load Data (Shift + D)</string>
    </property>
   </action>
   <action name="actionLoadAnnotation">
    <property name="text">
-    <string>Load Annotation</string>
+    <string>Load Annotation (Shift + A)</string>
    </property>
   </action>
   <action name="actionAddLine">

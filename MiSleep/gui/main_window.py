@@ -131,6 +131,7 @@ class main_window(QMainWindow, Ui_MiSleep):
         # The horizontal_line dict contains the line value, line color, line comment
         # example: {'ch1': [23.33, '#ff0000', '3 x Standard deviation', horizontalLineObject]}
         self.horizontal_line = {}
+        self.axhline_horizontal = []
 
         # Check wheher operation done and saved or not
         self.is_saved = True
@@ -357,9 +358,6 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.anno_path = ""
         self.AnnoPathEdit.setText("")
 
-        # Add horizontal line info
-        for channel in self.midata.channels:
-            self.horizontal_line[channel] = []
         self.clear_refresh(clf=True)
 
         self.check_show()
@@ -455,6 +453,11 @@ class main_window(QMainWindow, Ui_MiSleep):
         # Set canvas for plot area
         self.SignalArea.setWidget(self.signal_canvas)
         self.HypnoArea.setWidget(self.hypo_canvas)
+
+        self.horizontal_line = {}
+        # Add horizontal line info
+        for channel in self.midata.channels:
+            self.horizontal_line[channel] = []
 
         self.redraw_all(second=0)
         self.clear_refresh(clf=False)
@@ -590,6 +593,7 @@ class main_window(QMainWindow, Ui_MiSleep):
             self.plot_start_end_line(flush=False)
         self.plot_marker_line(flush=False)
         self.plot_start_end_label_line(flush=False)
+        self.plot_horizontal_line(flush=False)
 
         if flush:
             self.signal_figure.canvas.draw()
@@ -822,28 +826,38 @@ class main_window(QMainWindow, Ui_MiSleep):
 
     def plot_horizontal_line(self, flush=True):
         """Plot horizontal line"""
+        
+        for axhline in self.axhline_horizontal:
+            try:
+                axhline.remove()
+            except:
+                pass
         for idx, show_ in enumerate(self.show_idx):
             ch = self.midata.channels[show_]
             lines = self.horizontal_line[ch]
+            
             for each in lines:
-                try:
-                    each[3].remove()
-                except:
-                    pass
-
-                each.append(
+                self.axhline_horizontal.append(
                     self.signal_ax[idx+1].axhline(
                         each[0],
                         color=each[1],
                         alpha=1
                     )
                 )
+
+                self.axhline_horizontal.append(
+                    self.signal_ax[idx+1].text(
+                        x=int(self.show_duration*self.midata.sf[show_]),
+                        y=each[0],
+                        s=f'{each[0]:.2e}',
+                        horizontalalignment="left",
+                        color=each[1]
+                    )
+                )
         
         if flush:
             self.signal_figure.canvas.draw()
             self.signal_figure.canvas.flush_events()
-
-            self.plot_hypo()
 
     def plot_hypo(self):
         """Plot hypnogram area"""
@@ -1144,6 +1158,7 @@ class main_window(QMainWindow, Ui_MiSleep):
                 # Mark the deleted position
                 self.y_lims[each] = -1
                 self.y_shift[each] = -1
+                del self.horizontal_line[self.midata.channels[each]]
                 self.midata.delete(self.midata.channels[each])
 
             # Recover the y_lims, y_shift and spec_idx
@@ -1244,6 +1259,8 @@ class main_window(QMainWindow, Ui_MiSleep):
         )
         self.y_lims.append(self.y_lims[selected_channel[0]])
         self.y_shift.append(self.y_shift[selected_channel[0]])
+
+        self.horizontal_line[self.midata.channels[-1]] = []
 
         self.show_idx.append(self.midata.n_channels - 1)
         self.fill_channel_listView()
@@ -1432,8 +1449,6 @@ class main_window(QMainWindow, Ui_MiSleep):
             self.load_data()
         if signal.text() == "Load Annotation":
             self.load_anno()
-        if signal.text() == "Show":
-            self.check_show()
 
     def tool_bar_dispatcher(self, signal):
         """Triggered by ToolBar action, transfer result"""
@@ -1468,7 +1483,21 @@ class main_window(QMainWindow, Ui_MiSleep):
         
     def add_horizontal_line(self):
         """Add horizontal line, triggered by addLine in the tools menu"""
-        
+        try:
+            self.horizontal_line_dialog.horizontal_line = copy.deepcopy(self.horizontal_line)
+            self.horizontal_line_dialog.show_chs()
+            self.horizontal_line_dialog.midata = self.midata
+            self.horizontal_line_dialog.exec()
+            # if self.horizontal_line_dialog.appled:
+            #     self.plot_horizontal_line()
+            if self.horizontal_line_dialog.closed:
+                return
+            self.horizontal_line = self.horizontal_line_dialog.horizontal_line
+            # [each.remove() for each in self.horizontal_line_dialog.remove_lines]
+            self.plot_horizontal_line()
+        except Exception as e:
+            QMessageBox.about(self, "Error", e)
+            return
 
     def save_anno(self):
         """Save annotation into file"""
