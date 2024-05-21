@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file './misleep/gui/uis/label_dialog.ui'
+# Form implementation generated from reading ui file 'misleep/gui/uis/label_dialog.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.10
 #
@@ -21,6 +21,7 @@ class Ui_Dialog(object):
         self.gridLayout = QtWidgets.QGridLayout(Dialog)
         self.gridLayout.setObjectName("gridLayout")
         self.CancelBt = QtWidgets.QPushButton(Dialog)
+        self.CancelBt.setAutoDefault(False)
         self.CancelBt.setObjectName("CancelBt")
         self.gridLayout.addWidget(self.CancelBt, 3, 1, 1, 1)
         self.OKBt = QtWidgets.QPushButton(Dialog)

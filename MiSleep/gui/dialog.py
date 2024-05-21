@@ -7,8 +7,8 @@
 @Description:  Dialog file, label dialog, transfer result dialog
 """
 from PyQt5.QtCore import QCoreApplication, Qt, QStringListModel
-from PyQt5.QtGui import QColor
-from PyQt5.QtWidgets import QDialog, QMessageBox, QFileDialog, QColorDialog
+from PyQt5.QtGui import QColor, QKeySequence
+from PyQt5.QtWidgets import QDialog, QMessageBox, QFileDialog, QColorDialog, QShortcut, QWidget
 import datetime
 import numpy as np
 
@@ -61,6 +61,7 @@ class label_dialog(QDialog, Ui_Dialog):
         self.slm.dataChanged.connect(self.update_label_list)
         self.add_or_delete = False
 
+        self.shortcuts = []
 
     def show_contents(self, idx=0):
         """Show label contents"""
@@ -78,6 +79,15 @@ class label_dialog(QDialog, Ui_Dialog):
             idx = len(self.slm.stringList()) - 1
         idx = self.slm.index(idx)
         self.LabelListView.setCurrentIndex(idx)
+
+    def keyPressEvent(self, event):
+        """Rewrite KeyPressEvent, and validation the event to trigger number"""
+        if Qt.Key_0 <= event.key() <= Qt.Key_9:
+            if int(event.text()) <= len(self.slm.stringList()):
+                idx = self.slm.index(int(event.text()) - 1)
+                self.LabelListView.setCurrentIndex(idx)        
+        else:
+            QWidget.keyPressEvent(self, event) 
 
     def submit_label(self):
         """Triggered by Clicking Ok Button"""

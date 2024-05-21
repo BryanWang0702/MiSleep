@@ -15,7 +15,7 @@ import json
 import numpy as np
 from PyQt5.QtCore import QCoreApplication, Qt, QStringListModel, QTimer
 from PyQt5.QtGui import QKeySequence
-from PyQt5.QtWidgets import QMainWindow, QFileDialog, QMessageBox, QAction, QShortcut
+from PyQt5.QtWidgets import QMainWindow, QFileDialog, QMessageBox, QShortcut
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 
