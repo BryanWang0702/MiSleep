@@ -74,6 +74,14 @@ def load_mat(data_path):
             datetime.datetime.strptime(time, "%Y%m%d-%H:%M:%S")
         except ValueError:
             time = raw_data['time'][0]
+
+        try:
+            for idx, each in enumerate(signals):
+                if each.shape[0] > each.shape[1]:
+                    each = each.T
+                    signals[idx] = each
+        except Exception:
+            pass
         
         return MiData(signals=signals, channels=channels, sf=sf, time=time)
     
@@ -91,6 +99,15 @@ def load_mat(data_path):
             sf = [float(each) for each in raw_data['sf']]
             signals = [raw_data[each] for each in channels]
             time = raw_data['time'][0]
+
+            try:
+                for idx, each in enumerate(signals):
+                    if each.shape[0] > each.shape[1]:
+                        each = each.T
+                        signals[idx] = each
+            except Exception:
+                pass
+
             return MiData(signals=signals, channels=channels, sf=sf, time=time)
     
         except Exception:
@@ -106,8 +123,12 @@ def load_mat(data_path):
                 time = datetime.datetime.now().strftime("%Y%m%d-%H:%M:%S")
                 return MiData(signals=signals, channels=channels, sf=sf, time=time)
             except Exception as e:
-                
+                print(e)
                 return None  
+            
+    except Exception as e:
+        print(e)
+        return None
 
 
 def write_mat(signals, channels, sf, time, mat_file=None):

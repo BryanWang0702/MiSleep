@@ -1106,6 +1106,8 @@ class main_window(QMainWindow, Ui_MiSleep):
         for idx, each in enumerate(self.midata.channels):
             if each != new_channels[idx]:
                 self.midata.rename_channels({each: new_channels[idx]})
+                self.horizontal_line[new_channels[idx]] = self.horizontal_line[each]
+                del self.horizontal_line[each]
         self.fill_channel_listView()
         self.plot_signals()
 
