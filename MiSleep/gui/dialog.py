@@ -16,10 +16,12 @@ from misleep.gui.uis.label_dialog_ui import Ui_Dialog
 from misleep.gui.uis.transfer_result_dialog_ui import Ui_TransferResultDialog
 from misleep.gui.uis.state_spectral_dialog_ui import Ui_StateSpectralDialog
 from misleep.gui.uis.horizontal_line_dialog_ui import Ui_horizontal_line_dialog
+from misleep.gui.uis.SWA_detect_dialog_ui import Ui_SWADetectDialog
 from misleep.gui.thread import SaveThread
 from misleep.io.annotation_io import transfer_result
 from misleep.utils.signals import signal_filter
 from misleep.utils.annotation import lst2group
+from misleep.analysis.detection import SWA_detection
 from misleep.gui.utils import cal_draw_spectrum
 from misleep.preprocessing.signals import reject_artifact
 import pandas as pd
@@ -565,3 +567,140 @@ class horizontalLine_dialog(QDialog, Ui_horizontal_line_dialog):
         event.ignore()
         self.closed = True
         self.hide()
+
+
+class SWADetectionDialog(QDialog, Ui_SWADetectDialog):
+    def __init__(self, parent=None):
+        """
+        Initialize SWA detection dialog
+        """
+        super().__init__(parent)
+
+        # Enable high dpi devices
+        QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
+        self.setupUi(self)
+
+        self.unit_map = {0: 1, 1: 1000, 2: 1000000}
+
+        self.OKBt.clicked.connect(self.okEvent)
+        self.CancelBt.clicked.connect(self.cancelEvent)
+
+    def show_chs(self, channels):
+        """Initial channel combox"""
+        self.ChannelComBox.clear()
+        self.ChannelComBox.addItems(channels)
+        self.ChannelComBox.setCurrentIndex(0)
+
+    def swa_detection(self, midata, mianno, config):
+        """call detection function"""
+        freq_low = self.FreqLowEditor.value()
+        freq_high = self.FreqHighEditor.value()
+        channel_idx = self.ChannelComBox.currentIndex()
+        channel = midata.channels[channel_idx]
+        signal_data = deepcopy(midata.pick_chs([channel]))
+        signal_sf = signal_data.sf[0]
+        signal_data = signal_data.signals[0]
+
+        signal_data_mean = np.mean(signal_data)
+        signal_data_std = np.std(signal_data)
+        amp_threshold_low = 1*signal_data_std + signal_data_mean
+        amp_threshold_high = 10*signal_data_std + signal_data_mean
+        
+        sleep_state = lst2group([[idx, each] for idx, each in enumerate(deepcopy(mianno.sleep_state))])
+        swa_lst = []
+        if self.NREMCheckbox.isChecked():
+            for each in sleep_state:
+                if each[2] == 1 and each[1]-each[0] > 5:
+                    data_ = signal_data[int(each[0]*signal_sf): int(each[1]*signal_sf)]
+                    swa_lst_ = SWA_detection(data_, signal_sf, freq_band=[freq_low, freq_high],
+                                             amp_threshold=(amp_threshold_low, amp_threshold_high),
+                                             start_time_sec=each[0])
+
+                    if swa_lst_ is None:
+                        continue
+
+                    for each in swa_lst_:
+                        each.append('NREM')
+                        swa_lst.append(each)
+                    # swa_lst += [each.append('NREM') for each in swa_lst_]
+
+        if self.REMCheckbox.isChecked():
+            for each in sleep_state:
+                if each[2] == 2 and each[1]-each[0] > 5:
+                    data_ = signal_data[int(each[0]*signal_sf): int(each[1]*signal_sf)]
+                    swa_lst_ = SWA_detection(data_, signal_sf, freq_band=[freq_low, freq_high], 
+                                             amp_threshold=(amp_threshold_low, amp_threshold_high),
+                                             start_time_sec=each[0])
+
+                    if swa_lst_ is None:
+                        break
+                    
+                    for each in swa_lst_:
+                        each.append('REM')
+                        swa_lst.append(each)
+        
+        if self.WakeCheckbox.isChecked():
+            for each in sleep_state:
+                if each[2] == 3 and each[1]-each[0] > 5:
+                    data_ = signal_data[int(each[0]*signal_sf): int(each[1]*signal_sf)]
+                    swa_lst_ = SWA_detection(data_, signal_sf, freq_band=[freq_low, freq_high], 
+                                             amp_threshold=(amp_threshold_low, amp_threshold_high),
+                                             start_start_time_sectime=each[0])
+
+                    if swa_lst_ is None:
+                        break
+                    for each in swa_lst_:
+                        each.append('Wake')
+                        swa_lst.append(each)
+
+        if self.InitCheckbox.isChecked():
+            for each in sleep_state:
+                if each[2] == 4 and each[1]-each[0] > 5:
+                    data_ = signal_data[int(each[0]*signal_sf): int(each[1]*signal_sf)]
+                    swa_lst_ = SWA_detection(data_, signal_sf, freq_band=[freq_low, freq_high], 
+                                             amp_threshold=(amp_threshold_low, amp_threshold_high),
+                                             start_time_sec=each[0])
+
+                    if swa_lst_ is None:
+                        break
+                    for each in swa_lst_:
+                        each.append('Init')
+                        swa_lst.append(each)
+        
+        if self.ExportCheckbox.isChecked():
+            df = pd.DataFrame(swa_lst, columns=['StartTime', 'NegTime', 'MiddleTime', 
+                                        'PosTime', 'EndTime', 'Duration', 'NegPeak', 
+                                        'PosPeak', 'PTP', 'Slope', 'Frequency', 'State'])
+            fd, _ = QFileDialog.getSaveFileName(self, "Save SWA detection result",
+                                                f"{config['gui']['openpath']}SWA_result.csv", 
+                                                "*.csv;;")
+            if fd == '':
+                return
+            
+            df.to_csv(fd, index=False)
+
+        return swa_lst
+    
+    def okEvent(self):
+        self.closed = False
+        self.hide()
+
+    def cancelEvent(self):
+        """Triggered by the `cancel` button"""
+        self.closed = True
+        self.hide()
+    
+    def closeEvent(self, event):
+        event.ignore()
+        self.closed = True
+        self.hide()
+
+
+
+        
+
+
+    
+
+
+

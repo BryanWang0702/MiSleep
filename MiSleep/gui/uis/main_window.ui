@@ -652,8 +652,15 @@
     <property name="title">
      <string>Tools</string>
     </property>
+    <widget class="QMenu" name="menuEvent_Detection">
+     <property name="title">
+      <string>Event Detection</string>
+     </property>
+     <addaction name="actionSWA_detection"/>
+     <addaction name="actionSpindle_Detection"/>
+    </widget>
     <addaction name="actionAddLine"/>
-    <addaction name="actionEventDetection"/>
+    <addaction name="menuEvent_Detection"/>
    </widget>
    <widget class="QMenu" name="menuResult">
     <property name="title">
@@ -688,11 +695,6 @@
     <string>Add Line</string>
    </property>
   </action>
-  <action name="actionEventDetection">
-   <property name="text">
-    <string>Event Detection</string>
-   </property>
-  </action>
   <action name="actionStateSpectral">
    <property name="text">
     <string>State Spectral</string>
@@ -706,6 +708,16 @@
   <action name="actionAbout">
    <property name="text">
     <string>About</string>
+   </property>
+  </action>
+  <action name="actionSWA_detection">
+   <property name="text">
+    <string>SWA Detection</string>
+   </property>
+  </action>
+  <action name="actionSpindle_Detection">
+   <property name="text">
+    <string>Spindle Detection</string>
    </property>
   </action>
  </widget>

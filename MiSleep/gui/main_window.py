@@ -26,7 +26,7 @@ from misleep.io.annotation_io import load_misleep_anno, load_bio_anno
 from misleep.gui.utils import create_new_mianno, identify_startend_color
 from misleep.utils.annotation import lst2group
 from misleep.gui.about import about_dialog
-from misleep.gui.dialog import label_dialog, transferResult_dialog, stateSpectral_dialog, horizontalLine_dialog
+from misleep.gui.dialog import label_dialog, transferResult_dialog, stateSpectral_dialog, horizontalLine_dialog, SWADetectionDialog
 from misleep.gui.spec_window import SpecWindow
 from misleep.gui.uis.main_window_ui import Ui_MiSleep
 from misleep.preprocessing.spectral import spectrogram, spectrum, band_power
@@ -133,6 +133,9 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.horizontal_line = {}
         self.axhline_horizontal = []
 
+        # Initial swa detection dialog
+        self.swa_detection_dialog = SWADetectionDialog()
+
         # Check wheher operation done and saved or not
         self.is_saved = True
 
@@ -145,16 +148,13 @@ class main_window(QMainWindow, Ui_MiSleep):
     def init_qt(self):
         """Initial actions for qt widgets"""
         # Set triggers for MenuBar
-        # self.menuHelp.actionTriggered[QAction].connect(self.help_menu_dispatcher)
-        # self.menuFile.actionTriggered[QAction].connect(self.file_menu_dispatcher)
-        # self.menuResult.actionTriggered[QAction].connect(self.result_menu_dispatcher)
-        # self.menuTools.actionTriggered[QAction].connect(self.tool_menu_dispatcher)
         self.actionAbout.triggered.connect(self.about_dialog.exec)
         self.actionLoadData.triggered.connect(self.load_data)
         self.actionLoadAnnotation.triggered.connect(self.load_anno)
         self.actionStateSpectral.triggered.connect(self.state_spectral)
         self.actionTransferResult.triggered.connect(self.transfer_result)
         self.actionAddLine.triggered.connect(self.add_horizontal_line)
+        self.actionSWA_detection.triggered.connect(self.swa_detection)
 
         # Spectrogram percentile change
         self.PercentileSpin.setValue(self.spectrogram_percentile)
@@ -1499,6 +1499,27 @@ class main_window(QMainWindow, Ui_MiSleep):
             self.plot_horizontal_line()
         except Exception as e:
             QMessageBox.about(self, "Error", e)
+            return
+        
+    def swa_detection(self):
+        """Slow wave activity detection, triggered by actionSWA_detection"""
+        try:
+            self.swa_detection_dialog.show_chs(self.midata.channels)
+            self.swa_detection_dialog.exec()
+            if self.swa_detection_dialog.closed:
+                return
+            swa_lst = self.swa_detection_dialog.swa_detection(
+                self.midata, self.mianno, self.config)
+            
+            # start_end = self.mianno.start_end + 
+            self.mianno._start_end += [[each[0], each[4], 'SWA'] for each in swa_lst]
+
+            self.plot_start_end_label_line()
+            self.is_saved = False
+            self.AnnotationPathLabel.setText('*Annotation path:')
+        
+        except:
+            QMessageBox.about(self, "Error", "SWA detection ERROR")
             return
 
     def save_anno(self):
