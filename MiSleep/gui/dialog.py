@@ -755,7 +755,7 @@ class SpindleDetectionDialog(QDialog, Ui_SpindleDetectDialog):
                 if each[2] == 2 and each[1]-each[0] > 5:
                     data_ = signal_data[int(each[0]*signal_sf): int(each[1]*signal_sf)]
                     spindle_lst_ = spindle_detection(data_, signal_sf, freq_band=[freq_low, freq_high],
-                                             amp_threshold=amp_threshold_low,
+                                             std_thresh=std_thresh,
                                              start_time_sec=each[0])
 
                     if spindle_lst_ is None:
@@ -770,7 +770,7 @@ class SpindleDetectionDialog(QDialog, Ui_SpindleDetectDialog):
                 if each[2] == 3 and each[1]-each[0] > 5:
                     data_ = signal_data[int(each[0]*signal_sf): int(each[1]*signal_sf)]
                     spindle_lst_ = spindle_detection(data_, signal_sf, freq_band=[freq_low, freq_high],
-                                             amp_threshold=amp_threshold_low,
+                                             std_thresh=std_thresh,
                                              start_time_sec=each[0])
 
                     if spindle_lst_ is None:
@@ -785,7 +785,7 @@ class SpindleDetectionDialog(QDialog, Ui_SpindleDetectDialog):
                 if each[2] == 4 and each[1]-each[0] > 5:
                     data_ = signal_data[int(each[0]*signal_sf): int(each[1]*signal_sf)]
                     spindle_lst_ = spindle_detection(data_, signal_sf, freq_band=[freq_low, freq_high],
-                                             amp_threshold=amp_threshold_low,
+                                             std_thresh=std_thresh,
                                              start_time_sec=each[0])
 
                     if spindle_lst_ is None:
