@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>SWADetectDialog</class>
- <widget class="QDialog" name="SWADetectDialog">
+ <class>SpindleDetectDialog</class>
+ <widget class="QDialog" name="SpindleDetectDialog">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -21,7 +21,7 @@
    <item row="0" column="0" colspan="2">
     <widget class="QGroupBox" name="groupBox">
      <property name="title">
-      <string>SWA detection options</string>
+      <string>Spindle detection options</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_2">
       <item row="1" column="0" colspan="3">
@@ -37,7 +37,7 @@
          <number>1</number>
         </property>
         <property name="value">
-         <double>4.000000000000000</double>
+         <double>15.000000000000000</double>
         </property>
        </widget>
       </item>
@@ -92,7 +92,7 @@
          <number>1</number>
         </property>
         <property name="value">
-         <double>0.500000000000000</double>
+         <double>10.000000000000000</double>
         </property>
        </widget>
       </item>
@@ -130,14 +130,14 @@
       <item row="6" column="0">
        <widget class="QDoubleSpinBox" name="StdEditor">
         <property name="value">
-         <double>0.800000000000000</double>
+         <double>1.500000000000000</double>
         </property>
        </widget>
       </item>
       <item row="5" column="0" colspan="2">
        <widget class="QLabel" name="label_3">
         <property name="text">
-         <string>Ampliitude threshold:</string>
+         <string>Spindle square power threshold:</string>
         </property>
        </widget>
       </item>

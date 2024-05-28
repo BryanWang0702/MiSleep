@@ -26,7 +26,8 @@ from misleep.io.annotation_io import load_misleep_anno, load_bio_anno
 from misleep.gui.utils import create_new_mianno, identify_startend_color
 from misleep.utils.annotation import lst2group
 from misleep.gui.about import about_dialog
-from misleep.gui.dialog import label_dialog, transferResult_dialog, stateSpectral_dialog, horizontalLine_dialog, SWADetectionDialog
+from misleep.gui.dialog import label_dialog, transferResult_dialog, stateSpectral_dialog, \
+horizontalLine_dialog, SWADetectionDialog, SpindleDetectionDialog
 from misleep.gui.spec_window import SpecWindow
 from misleep.gui.uis.main_window_ui import Ui_MiSleep
 from misleep.preprocessing.spectral import spectrogram, spectrum, band_power
@@ -136,6 +137,9 @@ class main_window(QMainWindow, Ui_MiSleep):
         # Initial swa detection dialog
         self.swa_detection_dialog = SWADetectionDialog()
 
+        # Initial spindle detection dialog
+        self.spindel_detection_dialog = SpindleDetectionDialog()
+
         # Check wheher operation done and saved or not
         self.is_saved = True
 
@@ -155,6 +159,7 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.actionTransferResult.triggered.connect(self.transfer_result)
         self.actionAddLine.triggered.connect(self.add_horizontal_line)
         self.actionSWA_detection.triggered.connect(self.swa_detection)
+        self.actionSpindle_Detection.triggered.connect(self.spindle_detection)
 
         # Spectrogram percentile change
         self.PercentileSpin.setValue(self.spectrogram_percentile)
@@ -354,6 +359,7 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.fill_channel_listView()
 
         self.start_end = []
+        self.current_spectrogram_idx = 0
         self.mianno = None
         self.anno_path = ""
         self.AnnoPathEdit.setText("")
@@ -445,7 +451,9 @@ class main_window(QMainWindow, Ui_MiSleep):
                 self.mianno = mianno
             if not isinstance(self.mianno, MiAnnotation):
                 self.mianno = create_new_mianno(self.midata.duration)
-        self.total_seconds = self.midata.duration if self.midata.duration < self.mianno.anno_length else self.mianno.anno_length
+        self.total_seconds = self.midata.duration if  \
+        self.midata.duration < self.mianno.anno_length else \
+        self.mianno.anno_length
         self.reset_sec_limit()
 
         self.hypo_ax = self.hypo_figure.subplots(nrows=1, ncols=1)
@@ -1521,6 +1529,27 @@ class main_window(QMainWindow, Ui_MiSleep):
         except:
             QMessageBox.about(self, "Error", "SWA detection ERROR")
             return
+        
+    def spindle_detection(self):
+        """Sleep spindle activity detection, triggered by actionSpindle_Detection"""
+        # try:
+        self.spindel_detection_dialog.show_chs(self.midata.channels)
+        self.spindel_detection_dialog.exec()
+        if self.spindel_detection_dialog.closed:
+            return
+        spindle_lst = self.spindel_detection_dialog.spindle_detection(
+            self.midata, self.mianno, self.config)
+        
+        # start_end = self.mianno.start_end + 
+        self.mianno._start_end += [[each[0], each[1], 'Spindle'] for each in spindle_lst]
+
+        self.plot_start_end_label_line()
+        self.is_saved = False
+        self.AnnotationPathLabel.setText('*Annotation path:')
+        
+        # except:
+        #     QMessageBox.about(self, "Error", "Spindle detection ERROR")
+        #     return
 
     def save_anno(self):
         """Save annotation into file"""

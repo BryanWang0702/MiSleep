@@ -1,4 +1,5 @@
 from misleep.utils.signals import signal_filter
+from misleep.preprocessing.spectral import spectrogram
 from scipy.signal import find_peaks
 import numpy as np
 import pandas as pd
@@ -26,7 +27,8 @@ def SWA_detection(signal, sf, freq_band=[0.5, 4], amp_threshold=(75, ), df=False
     """
 
     # filter
-    band_data, _ = signal_filter(signal, sf, btype='bandpass', low=freq_band[0], high=freq_band[1])
+    band_data, _ = signal_filter(signal, sf, btype='bandpass', 
+                                 low=freq_band[0], high=freq_band[1])
 
     # Find peaks and zerocrossing
     pos_peak_idx, _ = find_peaks(band_data, amp_threshold)
@@ -45,7 +47,8 @@ def SWA_detection(signal, sf, freq_band=[0.5, 4], amp_threshold=(75, ), df=False
                 for pos_idx in pos_peak_idx:
                     if pos_idx > zero_idx and zero_idx not in zero_crossing_hold:
                         # no zero cross between pos and zero, neg and zero
-                        if True not in (band_data[zero_idx+1: pos_idx] <= 0) and True not in (band_data[neg_idx: zero_idx] >= 0):
+                        if True not in (band_data[zero_idx+1: pos_idx] <= 0) and \
+                        True not in (band_data[neg_idx: zero_idx] >= 0):
                             negative_peaks_hold.append(neg_idx)
                             positive_peaks_hold.append(pos_idx)
                             zero_crossing_hold.append(zero_idx)
@@ -57,11 +60,12 @@ def SWA_detection(signal, sf, freq_band=[0.5, 4], amp_threshold=(75, ), df=False
         return None
     # find the zero before negative peak and after positive peak
     # see np.searchsorted(a, v) insert v's element into a, find the index which will make the a's order preserve
-    start_zero_cross_hold = zero_crossing[:-1][np.diff(np.searchsorted(negative_peaks_hold, zero_crossing)).astype(bool)]
+    start_zero_cross_hold = zero_crossing[:-1][np.diff(
+        np.searchsorted(negative_peaks_hold, zero_crossing)).astype(bool)]
     # start_zero_cross_hold = [start_zero_cross_hold, band_data[start_zero_cross_hold]]
 
     if zero_crossing[-1] < positive_peaks_hold[-1]:
-        zero_crossing[-1] = np.append(zero_crossing, positive_peaks_hold[-1] + 1)
+        zero_crossing = np.append(zero_crossing, positive_peaks_hold[-1] + 1)
     end_zero_cross_hold = zero_crossing[np.searchsorted(zero_crossing, positive_peaks_hold)]
     # end_zero_cross_hold = [end_zero_cross_hold, band_data[end_zero_cross_hold]]
 
@@ -97,9 +101,58 @@ def SWA_detection(signal, sf, freq_band=[0.5, 4], amp_threshold=(75, ), df=False
         return df_lst
     
 
-def spindle_detection(signal, freq_band=[10, 15]):
+def spindle_detection(signal, sf, freq_band=[10, 15],  start_time_sec=0, std_thresh=None):
     """Spindle detection"""
+    
+    f, t, Sxx = spectrogram(signal, sf, band=freq_band, 
+                                    step=0.2, window=2, norm=False)
+    
+    # Get squared spectrum
+    Sxx = np.sum(Sxx, axis=0)
+    Sxx_squared = Sxx ** 2
 
+    # Use z score to find the real value for threshold
+    Sxx = Sxx_squared
+    Sxx_mean = np.mean(Sxx)
+    Sxx_std = np.std(Sxx)
+    spindle_threshold = std_thresh*Sxx_std + Sxx_mean
+
+    Sxx_peaks_idx, _ = find_peaks(Sxx, (spindle_threshold))
+
+    if Sxx_peaks_idx.shape == (0, ):
+        return None
+    # find the minimum peak for duration 
+    minimum_peaks_idx = find_peaks(-1*Sxx)[0]
+
+    # find the minimum peak around the Sxx peak
+    if minimum_peaks_idx[-1] < Sxx_peaks_idx[-1]:
+        minimum_peaks_idx = np.append(minimum_peaks_idx, Sxx_peaks_idx[-1]+1)
+
+    end_minimun_sorted_idx = np.searchsorted(minimum_peaks_idx, Sxx_peaks_idx)
+
+    end_minimum_peak_idx = minimum_peaks_idx[end_minimun_sorted_idx]
+
+    if end_minimun_sorted_idx[0] == 0:
+        end_minimun_sorted_idx = end_minimun_sorted_idx[1:]
+        start_minimum_peak_idx = minimum_peaks_idx[end_minimun_sorted_idx-1]
+        start_minimum_peak_idx = np.append(0, start_minimum_peak_idx)
+
+    else:
+        start_minimum_peak_idx = minimum_peaks_idx[end_minimun_sorted_idx-1]
+
+    # get time index based on peak index
+    start_minimum_t = t[start_minimum_peak_idx] + start_time_sec
+    end_minimum_t = t[end_minimum_peak_idx] + start_time_sec
+
+    if start_minimum_t.shape != end_minimum_t.shape:
+        return None
+    if start_minimum_t.shape == (0, ):
+        return None
+    
+    return [[each, end_minimum_t[idx]] for 
+            idx, each in enumerate(start_minimum_t) if 
+            end_minimum_t[idx] - each >= 0.5]
+    
 
 def artifact_detection(signal):
     """Artifact detection"""

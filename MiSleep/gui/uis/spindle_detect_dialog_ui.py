@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'misleep/gui/uis/SWA_detect_dialog.ui'
+# Form implementation generated from reading ui file 'misleep/gui/uis/spindle_detect_dialog.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.10
 #
@@ -11,16 +11,16 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 
-class Ui_SWADetectDialog(object):
-    def setupUi(self, SWADetectDialog):
-        SWADetectDialog.setObjectName("SWADetectDialog")
-        SWADetectDialog.resize(266, 334)
+class Ui_SpindleDetectDialog(object):
+    def setupUi(self, SpindleDetectDialog):
+        SpindleDetectDialog.setObjectName("SpindleDetectDialog")
+        SpindleDetectDialog.resize(266, 334)
         icon = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap(":/logo/logo.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-        SWADetectDialog.setWindowIcon(icon)
-        self.gridLayout = QtWidgets.QGridLayout(SWADetectDialog)
+        SpindleDetectDialog.setWindowIcon(icon)
+        self.gridLayout = QtWidgets.QGridLayout(SpindleDetectDialog)
         self.gridLayout.setObjectName("gridLayout")
-        self.groupBox = QtWidgets.QGroupBox(SWADetectDialog)
+        self.groupBox = QtWidgets.QGroupBox(SpindleDetectDialog)
         self.groupBox.setObjectName("groupBox")
         self.gridLayout_2 = QtWidgets.QGridLayout(self.groupBox)
         self.gridLayout_2.setObjectName("gridLayout_2")
@@ -31,7 +31,7 @@ class Ui_SWADetectDialog(object):
         self.gridLayout_2.addWidget(self.line, 1, 0, 1, 3)
         self.FreqHighEditor = QtWidgets.QDoubleSpinBox(self.groupBox)
         self.FreqHighEditor.setDecimals(1)
-        self.FreqHighEditor.setProperty("value", 4.0)
+        self.FreqHighEditor.setProperty("value", 15.0)
         self.FreqHighEditor.setObjectName("FreqHighEditor")
         self.gridLayout_2.addWidget(self.FreqHighEditor, 3, 1, 1, 1)
         self.label_2 = QtWidgets.QLabel(self.groupBox)
@@ -59,7 +59,7 @@ class Ui_SWADetectDialog(object):
         self.gridLayout_2.addWidget(self.line_4, 11, 0, 1, 3)
         self.FreqLowEditor = QtWidgets.QDoubleSpinBox(self.groupBox)
         self.FreqLowEditor.setDecimals(1)
-        self.FreqLowEditor.setProperty("value", 0.5)
+        self.FreqLowEditor.setProperty("value", 10.0)
         self.FreqLowEditor.setObjectName("FreqLowEditor")
         self.gridLayout_2.addWidget(self.FreqLowEditor, 3, 0, 1, 1)
         self.label_4 = QtWidgets.QLabel(self.groupBox)
@@ -78,7 +78,7 @@ class Ui_SWADetectDialog(object):
         self.line_3.setObjectName("line_3")
         self.gridLayout_2.addWidget(self.line_3, 7, 0, 1, 3)
         self.StdEditor = QtWidgets.QDoubleSpinBox(self.groupBox)
-        self.StdEditor.setProperty("value", 0.8)
+        self.StdEditor.setProperty("value", 1.5)
         self.StdEditor.setObjectName("StdEditor")
         self.gridLayout_2.addWidget(self.StdEditor, 6, 0, 1, 1)
         self.label_3 = QtWidgets.QLabel(self.groupBox)
@@ -93,30 +93,30 @@ class Ui_SWADetectDialog(object):
         self.label_5.setObjectName("label_5")
         self.gridLayout_2.addWidget(self.label_5, 6, 1, 1, 1)
         self.gridLayout.addWidget(self.groupBox, 0, 0, 1, 2)
-        self.OKBt = QtWidgets.QPushButton(SWADetectDialog)
+        self.OKBt = QtWidgets.QPushButton(SpindleDetectDialog)
         self.OKBt.setObjectName("OKBt")
         self.gridLayout.addWidget(self.OKBt, 1, 0, 1, 1)
-        self.CancelBt = QtWidgets.QPushButton(SWADetectDialog)
+        self.CancelBt = QtWidgets.QPushButton(SpindleDetectDialog)
         self.CancelBt.setObjectName("CancelBt")
         self.gridLayout.addWidget(self.CancelBt, 1, 1, 1, 1)
 
-        self.retranslateUi(SWADetectDialog)
-        QtCore.QMetaObject.connectSlotsByName(SWADetectDialog)
+        self.retranslateUi(SpindleDetectDialog)
+        QtCore.QMetaObject.connectSlotsByName(SpindleDetectDialog)
 
-    def retranslateUi(self, SWADetectDialog):
+    def retranslateUi(self, SpindleDetectDialog):
         _translate = QtCore.QCoreApplication.translate
-        SWADetectDialog.setWindowTitle(_translate("SWADetectDialog", "Dialog"))
-        self.groupBox.setTitle(_translate("SWADetectDialog", "SWA detection options"))
-        self.label_2.setText(_translate("SWADetectDialog", "Frequency band:"))
-        self.InitCheckbox.setText(_translate("SWADetectDialog", "Init"))
-        self.label.setText(_translate("SWADetectDialog", "Channel:"))
-        self.WakeCheckbox.setText(_translate("SWADetectDialog", "Wake"))
-        self.REMCheckbox.setText(_translate("SWADetectDialog", "REM"))
-        self.label_4.setText(_translate("SWADetectDialog", "State"))
-        self.ExportCheckbox.setText(_translate("SWADetectDialog", "Export to csv"))
-        self.NREMCheckbox.setText(_translate("SWADetectDialog", "NREM"))
-        self.label_3.setText(_translate("SWADetectDialog", "Ampliitude threshold:"))
-        self.label_5.setText(_translate("SWADetectDialog", "* STD + MEAN"))
-        self.OKBt.setText(_translate("SWADetectDialog", "Ok"))
-        self.CancelBt.setText(_translate("SWADetectDialog", "Cancel"))
-from misleep.gui.resources import misleep
+        SpindleDetectDialog.setWindowTitle(_translate("SpindleDetectDialog", "Dialog"))
+        self.groupBox.setTitle(_translate("SpindleDetectDialog", "Spindle detection options"))
+        self.label_2.setText(_translate("SpindleDetectDialog", "Frequency band:"))
+        self.InitCheckbox.setText(_translate("SpindleDetectDialog", "Init"))
+        self.label.setText(_translate("SpindleDetectDialog", "Channel:"))
+        self.WakeCheckbox.setText(_translate("SpindleDetectDialog", "Wake"))
+        self.REMCheckbox.setText(_translate("SpindleDetectDialog", "REM"))
+        self.label_4.setText(_translate("SpindleDetectDialog", "State"))
+        self.ExportCheckbox.setText(_translate("SpindleDetectDialog", "Export to csv"))
+        self.NREMCheckbox.setText(_translate("SpindleDetectDialog", "NREM"))
+        self.label_3.setText(_translate("SpindleDetectDialog", "Spindle square power threshold:"))
+        self.label_5.setText(_translate("SpindleDetectDialog", "* STD + MEAN"))
+        self.OKBt.setText(_translate("SpindleDetectDialog", "Ok"))
+        self.CancelBt.setText(_translate("SpindleDetectDialog", "Cancel"))
+from misleep.gui.uis import misleep
