@@ -11,6 +11,7 @@ import copy
 import datetime
 import configparser
 import json
+import os
 
 import numpy as np
 from PyQt5.QtCore import QCoreApplication, Qt, QStringListModel, QTimer
@@ -354,6 +355,9 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.ac_time = datetime.datetime.strptime(self.midata.time, 
                                                   "%Y%m%d-%H:%M:%S")
         self.AcTimeEdit.setDateTime(self.ac_time)
+
+        # set file name to window title
+        self.setWindowTitle(f'MiSleep - {os.path.basename(self.data_path)}')
 
         # Set channel infos
         self.fill_channel_listView()
