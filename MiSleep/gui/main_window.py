@@ -356,9 +356,6 @@ class main_window(QMainWindow, Ui_MiSleep):
                                                   "%Y%m%d-%H:%M:%S")
         self.AcTimeEdit.setDateTime(self.ac_time)
 
-        # set file name to window title
-        self.setWindowTitle(f'MiSleep - {os.path.basename(self.data_path)}')
-
         # Set channel infos
         self.fill_channel_listView()
 
@@ -422,7 +419,7 @@ class main_window(QMainWindow, Ui_MiSleep):
 
         # Set meta info
         self.AnnoPathEdit.setText(self.anno_path)
-        self.start_end = []
+
         self.clear_refresh(clf=True)
 
         self.check_show(_mianno)
@@ -474,6 +471,10 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.redraw_all(second=0)
         self.clear_refresh(clf=False)
         self.change_Bts_status(False)
+
+        # set data and anno file name to window title
+        self.setWindowTitle(f'MiSleep - {os.path.basename(self.data_path)} - {os.path.basename(self.anno_path)}')
+        self.start_end = []
 
         # save timer start, 5 mins
         self.save_timer.start(60*5*1000)
