@@ -1537,24 +1537,24 @@ class main_window(QMainWindow, Ui_MiSleep):
         
     def spindle_detection(self):
         """Sleep spindle activity detection, triggered by actionSpindle_Detection"""
-        # try:
-        self.spindel_detection_dialog.show_chs(self.midata.channels)
-        self.spindel_detection_dialog.exec()
-        if self.spindel_detection_dialog.closed:
-            return
-        spindle_lst = self.spindel_detection_dialog.spindle_detection(
-            self.midata, self.mianno, self.config)
-        
-        # start_end = self.mianno.start_end + 
-        self.mianno._start_end += [[each[0], each[1], 'Spindle'] for each in spindle_lst]
+        try:
+            self.spindel_detection_dialog.show_chs(self.midata.channels)
+            self.spindel_detection_dialog.exec()
+            if self.spindel_detection_dialog.closed:
+                return
+            spindle_lst = self.spindel_detection_dialog.spindle_detection(
+                self.midata, self.mianno, self.config)
+            
+            # start_end = self.mianno.start_end + 
+            self.mianno._start_end += [[each[0], each[1], 'Spindle'] for each in spindle_lst]
 
-        self.plot_start_end_label_line()
-        self.is_saved = False
-        self.AnnotationPathLabel.setText('*Annotation path:')
+            self.plot_start_end_label_line()
+            self.is_saved = False
+            self.AnnotationPathLabel.setText('*Annotation path:')
         
-        # except:
-        #     QMessageBox.about(self, "Error", "Spindle detection ERROR")
-        #     return
+        except:
+            QMessageBox.about(self, "Error", "Spindle detection ERROR")
+            return
 
     def save_anno(self):
         """Save annotation into file"""
