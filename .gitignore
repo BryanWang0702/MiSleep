@@ -10,12 +10,10 @@
 /MiSleep/gui/__pycache__
 /.idea
 /datasets
-/dist
 /build
 /misleep.egg-info
 /.vscode
 
 #ignore files
 *.pyc
-config.ini
 .gitignore
