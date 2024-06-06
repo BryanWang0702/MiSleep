@@ -16,7 +16,7 @@ import os
 import numpy as np
 from PyQt5.QtCore import QCoreApplication, Qt, QStringListModel, QTimer
 from PyQt5.QtGui import QKeySequence
-from PyQt5.QtWidgets import QMainWindow, QFileDialog, QMessageBox, QShortcut
+from PyQt5.QtWidgets import QMainWindow, QFileDialog, QMessageBox, QShortcut, QWidget
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 
@@ -218,14 +218,14 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.LabelBt.clicked.connect(self.append_start_end)
 
         # Label button shortcut
-        self.nremSc = QShortcut(QKeySequence('1'), self)
-        self.nremSc.activated.connect(self.nrem_label)
-        self.remSc = QShortcut(QKeySequence('2'), self)
-        self.remSc.activated.connect(self.rem_label)
-        self.wakeSc = QShortcut(QKeySequence('3'), self)
-        self.wakeSc.activated.connect(self.wake_label)
-        self.initSc = QShortcut(QKeySequence('4'), self)
-        self.initSc.activated.connect(self.init_label)
+        # self.nremSc = QShortcut(QKeySequence('1'), self)
+        # self.nremSc.activated.connect(self.nrem_label)
+        # self.remSc = QShortcut(QKeySequence('2'), self)
+        # self.remSc.activated.connect(self.rem_label)
+        # self.wakeSc = QShortcut(QKeySequence('3'), self)
+        # self.wakeSc.activated.connect(self.wake_label)
+        # self.initSc = QShortcut(QKeySequence('4'), self)
+        # self.initSc.activated.connect(self.init_label)
         self.labelSc = QShortcut(QKeySequence('a'), self)
         self.labelSc.activated.connect(self.append_start_end)
         self.specSc = QShortcut(QKeySequence('s'), self)
@@ -290,10 +290,10 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.DateTimeEdit.setDisabled(status)
         self.ShowRangeCombo.setDisabled(status)
         self.SecondSpin.setDisabled(status)
-        self.nremSc.setEnabled(not status)
-        self.remSc.setEnabled(not status)
-        self.wakeSc.setEnabled(not status)
-        self.initSc.setEnabled(not status)
+        # self.nremSc.setEnabled(not status)
+        # self.remSc.setEnabled(not status)
+        # self.wakeSc.setEnabled(not status)
+        # self.initSc.setEnabled(not status)
         self.labelSc.setEnabled(not status)
         self.specSc.setEnabled(not status)
         self.next_pageSc.setEnabled(not status)
@@ -331,6 +331,7 @@ class main_window(QMainWindow, Ui_MiSleep):
                 )
                 self.data_path = ""
                 self.change_Bts_status(True)
+                self.mianno = None
                 return
 
         if self.data_path.endswith((".edf", ".EDF")):
@@ -345,6 +346,7 @@ class main_window(QMainWindow, Ui_MiSleep):
                 )
                 self.data_path = ""
                 self.change_Bts_status(True)
+                self.mianno = None
                 return
 
         # Save config
@@ -401,6 +403,7 @@ class main_window(QMainWindow, Ui_MiSleep):
                         )
                         self.anno_path = ""
                         self.change_Bts_status(True)
+                        self.mianno = None
                         return
 
                 if e.args[0] == "Invalid":
@@ -412,6 +415,7 @@ class main_window(QMainWindow, Ui_MiSleep):
                     )
                     self.anno_path = ""
                     self.change_Bts_status(True)
+                    self.mianno = None
                     return
                 
         # Save config
@@ -432,6 +436,8 @@ class main_window(QMainWindow, Ui_MiSleep):
             QMessageBox.about(
                 self, "Error", r"Load data file first."
             )
+            self.midata = None
+            self.mianno = None
             return
         
         if isinstance(self.midata, MiData) and not isinstance(self.mianno, MiAnnotation):
@@ -475,6 +481,7 @@ class main_window(QMainWindow, Ui_MiSleep):
         # set data and anno file name to window title
         self.setWindowTitle(f'MiSleep - {os.path.basename(self.data_path)} - {os.path.basename(self.anno_path)}')
         self.start_end = []
+        self.mianno._state_map = self.state_map_dict
 
         # save timer start, 5 mins
         self.save_timer.start(60*5*1000)
@@ -1408,6 +1415,10 @@ class main_window(QMainWindow, Ui_MiSleep):
         """label start_end label as init label, triggered by InitBt"""
         self.append_sleep_state(sleep_type=4)
 
+    def sleep_state_label(self, state_code=1):
+        """Label other state beyond 'nrem', 'rem' 'wake' and 'init', in the config.ini file """
+        self.append_sleep_state(sleep_type=state_code)
+
     def append_sleep_state(self, sleep_type=None):
         """Append sleep state to self.mianno.sleep_state"""
         if len(self.start_end) != 2:
@@ -1551,7 +1562,7 @@ class main_window(QMainWindow, Ui_MiSleep):
             self.plot_start_end_label_line()
             self.is_saved = False
             self.AnnotationPathLabel.setText('*Annotation path:')
-        
+            
         except:
             QMessageBox.about(self, "Error", "Spindle detection ERROR")
             return
@@ -1580,8 +1591,7 @@ class main_window(QMainWindow, Ui_MiSleep):
         save_thread.quit()
 
     def save_data(self):
-        """Save data into file"""
-        
+        """Save data into file"""        
     
     def auto_save(self):
         """Auto save every 5 mins"""
@@ -1597,6 +1607,15 @@ class main_window(QMainWindow, Ui_MiSleep):
                                  file_path='./misleep/config.ini')
         save_thread.save_config()
         save_thread.quit()
+
+    def keyPressEvent(self, event):
+        """Rewrite KeyPressEvent, and validation the event to trigger number"""
+        if Qt.Key_0 <= event.key() <= Qt.Key_9:
+            state = int(event.text())
+            if state in self.state_map_dict.keys():
+                self.sleep_state_label(state_code=state)    
+        else:
+            QWidget.keyPressEvent(self, event) 
 
     def closeEvent(self, event):
         """Check if saved and quit"""

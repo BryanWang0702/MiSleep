@@ -1,5 +1,6 @@
 from misleep.utils.signals import signal_filter
 from misleep.preprocessing.spectral import spectrogram
+from misleep.utils.annotation import lst2group
 from scipy.signal import find_peaks
 import numpy as np
 import pandas as pd
@@ -116,42 +117,57 @@ def spindle_detection(signal, sf, freq_band=[10, 15],  start_time_sec=0, std_thr
     Sxx_mean = np.mean(Sxx)
     Sxx_std = np.std(Sxx)
     spindle_threshold = std_thresh*Sxx_std + Sxx_mean
+    duration_threshold = 0.1*Sxx_std + Sxx_mean
 
     Sxx_peaks_idx, _ = find_peaks(Sxx, (spindle_threshold))
 
+    # Fund duration
+    duration_group = lst2group([[idx, each] for idx, each in enumerate(Sxx > duration_threshold)])
+    start_time = []
+    end_time = []
+    for each in duration_group:
+        if each[0] != 0 and each[2]:
+            if each[1] < len(t) and each[2]:
+                start_time.append(t[each[0]])
+                end_time.append(t[each[1]])
+
+    start_time = np.array(start_time)
+    end_time = np.array(end_time)
+
     if Sxx_peaks_idx.shape == (0, ):
         return None
-    # find the minimum peak for duration 
-    minimum_peaks_idx = find_peaks(-1*Sxx)[0]
+    
+    # # find the minimum peak for duration 
+    # minimum_peaks_idx = find_peaks(-1*Sxx)[0]
 
-    # find the minimum peak around the Sxx peak
-    if minimum_peaks_idx[-1] < Sxx_peaks_idx[-1]:
-        minimum_peaks_idx = np.append(minimum_peaks_idx, Sxx_peaks_idx[-1]+1)
+    # # find the minimum peak around the Sxx peak
+    # if minimum_peaks_idx[-1] < Sxx_peaks_idx[-1]:
+    #     minimum_peaks_idx = np.append(minimum_peaks_idx, Sxx_peaks_idx[-1]+1)
 
-    end_minimun_sorted_idx = np.searchsorted(minimum_peaks_idx, Sxx_peaks_idx)
+    # end_minimun_sorted_idx = np.searchsorted(minimum_peaks_idx, Sxx_peaks_idx)
 
-    end_minimum_peak_idx = minimum_peaks_idx[end_minimun_sorted_idx]
+    # end_minimum_peak_idx = minimum_peaks_idx[end_minimun_sorted_idx]
 
-    if end_minimun_sorted_idx[0] == 0:
-        end_minimun_sorted_idx = end_minimun_sorted_idx[1:]
-        start_minimum_peak_idx = minimum_peaks_idx[end_minimun_sorted_idx-1]
-        start_minimum_peak_idx = np.append(0, start_minimum_peak_idx)
+    # if end_minimun_sorted_idx[0] == 0:
+    #     end_minimun_sorted_idx = end_minimun_sorted_idx[1:]
+    #     start_minimum_peak_idx = minimum_peaks_idx[end_minimun_sorted_idx-1]
+    #     start_minimum_peak_idx = np.append(0, start_minimum_peak_idx)
 
-    else:
-        start_minimum_peak_idx = minimum_peaks_idx[end_minimun_sorted_idx-1]
+    # else:
+    #     start_minimum_peak_idx = minimum_peaks_idx[end_minimun_sorted_idx-1]
 
     # get time index based on peak index
-    start_minimum_t = t[start_minimum_peak_idx] + start_time_sec
-    end_minimum_t = t[end_minimum_peak_idx] + start_time_sec
+    start_time = start_time + start_time_sec
+    end_time = end_time + start_time_sec
 
-    if start_minimum_t.shape != end_minimum_t.shape:
+    if start_time.shape != end_time.shape:
         return None
-    if start_minimum_t.shape == (0, ):
+    if start_time.shape == (0, ):
         return None
     
-    return [[each, end_minimum_t[idx]] for 
-            idx, each in enumerate(start_minimum_t) if 
-            end_minimum_t[idx] - each >= 0.5]
+    return [[each, end_time[idx]] for 
+            idx, each in enumerate(start_time) if 
+            end_time[idx] - each >= 0.5]
     
 
 def artifact_detection(signal):
