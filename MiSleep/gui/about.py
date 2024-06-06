@@ -19,8 +19,6 @@ class about_dialog(QDialog, Ui_AboutDialog):
         """
         super().__init__(parent)
 
-        # Enable high dpi devices
-        QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
         self.setupUi(self)
         if version:
             self.VersionLabel.setText(f"Version: {version}")

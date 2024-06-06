@@ -7,8 +7,8 @@
 @Description:  Dialog file, label dialog, transfer result dialog
 """
 from PyQt5.QtCore import QCoreApplication, Qt, QStringListModel
-from PyQt5.QtGui import QColor, QKeySequence
-from PyQt5.QtWidgets import QDialog, QMessageBox, QFileDialog, QColorDialog, QShortcut, QWidget
+from PyQt5.QtGui import QColor
+from PyQt5.QtWidgets import QDialog, QMessageBox, QFileDialog, QColorDialog, QWidget
 import datetime
 import numpy as np
 
@@ -36,8 +36,6 @@ class label_dialog(QDialog, Ui_Dialog):
         """
         super().__init__(parent)
 
-        # Enable high dpi devices
-        QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
         self.setupUi(self)
 
         # Load configuration
@@ -175,8 +173,6 @@ class transferResult_dialog(QDialog, Ui_TransferResultDialog):
         """
         super().__init__(parent)
 
-        # Enable high dpi devices
-        QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
         self.setupUi(self)
 
         self.ACTimeEditor.setDisabled(True)
@@ -264,8 +260,6 @@ class stateSpectral_dialog(QDialog, Ui_StateSpectralDialog):
         """
         super().__init__(parent)
 
-        # Enable high dpi devices
-        QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
         self.setupUi(self)
 
         self.BPFilterCheckBox.clicked.connect(self.BP_filter_check_changed)
@@ -447,8 +441,6 @@ class horizontalLine_dialog(QDialog, Ui_horizontal_line_dialog):
         """
         super().__init__(parent)
 
-        # Enable high dpi devices
-        QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
         self.setupUi(self)
 
         self.color = '#ff0000'
@@ -577,8 +569,6 @@ class SWADetectionDialog(QDialog, Ui_SWADetectDialog):
         """
         super().__init__(parent)
 
-        # Enable high dpi devices
-        QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
         self.setupUi(self)
 
         self.unit_map = {0: 1, 1: 1000, 2: 1000000}
@@ -705,9 +695,7 @@ class SpindleDetectionDialog(QDialog, Ui_SpindleDetectDialog):
         Initialize Spindle detection dialog
         """
         super().__init__(parent)
-
-        # Enable high dpi devices
-        QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
+        
         self.setupUi(self)
 
         self.OKBt.clicked.connect(self.okEvent)
@@ -729,9 +717,9 @@ class SpindleDetectionDialog(QDialog, Ui_SpindleDetectDialog):
         signal_sf = signal_data.sf[0]
         signal_data = signal_data.signals[0]
 
-        signal_data_mean = np.mean(signal_data)
-        signal_data_std = np.std(signal_data)
         std_thresh = self.StdEditor.value()
+        duration_thres = self.durationThresholdEditor.value()
+
         
         sleep_state = lst2group([[idx, each] for idx, each in enumerate(deepcopy(mianno.sleep_state))])
         spindle_lst = []
@@ -740,7 +728,7 @@ class SpindleDetectionDialog(QDialog, Ui_SpindleDetectDialog):
                 if each[2] == 1 and each[1]-each[0] > 5:
                     data_ = signal_data[int(each[0]*signal_sf): int(each[1]*signal_sf)]
                     spindle_lst_ = spindle_detection(data_, signal_sf, freq_band=[freq_low, freq_high],
-                                             std_thresh=std_thresh,
+                                             std_thresh=std_thresh, duration_thresh=duration_thres,
                                              start_time_sec=each[0])
 
                     if spindle_lst_ is None:
@@ -755,7 +743,7 @@ class SpindleDetectionDialog(QDialog, Ui_SpindleDetectDialog):
                 if each[2] == 2 and each[1]-each[0] > 5:
                     data_ = signal_data[int(each[0]*signal_sf): int(each[1]*signal_sf)]
                     spindle_lst_ = spindle_detection(data_, signal_sf, freq_band=[freq_low, freq_high],
-                                             std_thresh=std_thresh,
+                                             std_thresh=std_thresh, duration_thresh=duration_thres,
                                              start_time_sec=each[0])
 
                     if spindle_lst_ is None:
@@ -770,7 +758,7 @@ class SpindleDetectionDialog(QDialog, Ui_SpindleDetectDialog):
                 if each[2] == 3 and each[1]-each[0] > 5:
                     data_ = signal_data[int(each[0]*signal_sf): int(each[1]*signal_sf)]
                     spindle_lst_ = spindle_detection(data_, signal_sf, freq_band=[freq_low, freq_high],
-                                             std_thresh=std_thresh,
+                                             std_thresh=std_thresh, duration_thresh=duration_thres,
                                              start_time_sec=each[0])
 
                     if spindle_lst_ is None:
@@ -785,7 +773,7 @@ class SpindleDetectionDialog(QDialog, Ui_SpindleDetectDialog):
                 if each[2] == 4 and each[1]-each[0] > 5:
                     data_ = signal_data[int(each[0]*signal_sf): int(each[1]*signal_sf)]
                     spindle_lst_ = spindle_detection(data_, signal_sf, freq_band=[freq_low, freq_high],
-                                             std_thresh=std_thresh,
+                                             std_thresh=std_thresh, duration_thresh=duration_thres,
                                              start_time_sec=each[0])
 
                     if spindle_lst_ is None:

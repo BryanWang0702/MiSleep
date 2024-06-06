@@ -42,8 +42,6 @@ class main_window(QMainWindow, Ui_MiSleep):
         """
         super().__init__(parent)
 
-        # Enable high dpi devices
-        QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
         self.setupUi(self)
 
         # Load configuration

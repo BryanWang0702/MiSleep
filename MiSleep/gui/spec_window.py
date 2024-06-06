@@ -23,8 +23,6 @@ class SpecWindow(QMainWindow, Ui_spec_window):
         """
         super().__init__(parent)
 
-        # Enable high dpi devices
-        QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
         self.setupUi(self)
 
         self.start_end = []

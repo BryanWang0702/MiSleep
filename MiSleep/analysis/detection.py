@@ -102,7 +102,8 @@ def SWA_detection(signal, sf, freq_band=[0.5, 4], amp_threshold=(75, ), df=False
         return df_lst
     
 
-def spindle_detection(signal, sf, freq_band=[10, 15],  start_time_sec=0, std_thresh=None):
+def spindle_detection(signal, sf, freq_band=[10, 15],  start_time_sec=0, 
+                      std_thresh=None, duration_thresh=None):
     """Spindle detection"""
     
     f, t, Sxx = spectrogram(signal, sf, band=freq_band, 
@@ -117,7 +118,7 @@ def spindle_detection(signal, sf, freq_band=[10, 15],  start_time_sec=0, std_thr
     Sxx_mean = np.mean(Sxx)
     Sxx_std = np.std(Sxx)
     spindle_threshold = std_thresh*Sxx_std + Sxx_mean
-    duration_threshold = 0.1*Sxx_std + Sxx_mean
+    duration_threshold = duration_thresh*Sxx_std + Sxx_mean
 
     Sxx_peaks_idx, _ = find_peaks(Sxx, (spindle_threshold))
 
