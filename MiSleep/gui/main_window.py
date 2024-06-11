@@ -1540,8 +1540,8 @@ class main_window(QMainWindow, Ui_MiSleep):
             self.is_saved = False
             self.AnnotationPathLabel.setText('*Annotation path:')
         
-        except:
-            QMessageBox.about(self, "Error", "SWA detection ERROR")
+        except Exception as e:
+            QMessageBox.about(self, "Error", f"SWA detection ERROR. {e}")
             return
         
     def spindle_detection(self):

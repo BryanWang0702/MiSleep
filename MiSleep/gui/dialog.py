@@ -592,16 +592,16 @@ class SWADetectionDialog(QDialog, Ui_SWADetectDialog):
         signal_sf = signal_data.sf[0]
         signal_data = signal_data.signals[0]
 
-        signal_data_mean = np.mean(signal_data)
-        signal_data_std = np.std(signal_data)
         std_thresh = self.StdEditor.value()
-        amp_threshold_low = std_thresh*signal_data_std + signal_data_mean
 
-        amp_threshold_high = 10*signal_data_std + signal_data_mean
-        
         sleep_state = lst2group([[idx, each] for idx, each in enumerate(deepcopy(mianno.sleep_state))])
         swa_lst = []
         if self.NREMCheckbox.isChecked():
+            # Compute the std and mean in the current state
+            amp_threshold_low, amp_threshold_high = self.get_state_thres(
+                data=signal_data, sf=signal_sf, sleep_state=sleep_state, state=1, thres=std_thresh
+            )
+
             for each in sleep_state:
                 if each[2] == 1 and each[1]-each[0] > 5:
                     data_ = signal_data[int(each[0]*signal_sf): int(each[1]*signal_sf)]
@@ -618,6 +618,12 @@ class SWADetectionDialog(QDialog, Ui_SWADetectDialog):
                     # swa_lst += [each.append('NREM') for each in swa_lst_]
 
         if self.REMCheckbox.isChecked():
+            
+            # Compute the std and mean in the current state
+            amp_threshold_low, amp_threshold_high = self.get_state_thres(
+                data=signal_data, sf=signal_sf, sleep_state=sleep_state, state=2, thres=std_thresh
+            )
+
             for each in sleep_state:
                 if each[2] == 2 and each[1]-each[0] > 5:
                     data_ = signal_data[int(each[0]*signal_sf): int(each[1]*signal_sf)]
@@ -633,12 +639,16 @@ class SWADetectionDialog(QDialog, Ui_SWADetectDialog):
                         swa_lst.append(each)
         
         if self.WakeCheckbox.isChecked():
+            # Compute the std and mean in the current state
+            amp_threshold_low, amp_threshold_high = self.get_state_thres(
+                data=signal_data, sf=signal_sf, sleep_state=sleep_state, state=3, thres=std_thresh
+            )
             for each in sleep_state:
                 if each[2] == 3 and each[1]-each[0] > 5:
                     data_ = signal_data[int(each[0]*signal_sf): int(each[1]*signal_sf)]
                     swa_lst_ = SWA_detection(data_, signal_sf, freq_band=[freq_low, freq_high], 
                                              amp_threshold=(amp_threshold_low, amp_threshold_high),
-                                             start_start_time_sectime=each[0])
+                                             start_time_sec=each[0])
 
                     if swa_lst_ is None:
                         break
@@ -647,6 +657,10 @@ class SWADetectionDialog(QDialog, Ui_SWADetectDialog):
                         swa_lst.append(each)
 
         if self.InitCheckbox.isChecked():
+            # Compute the std and mean in the current state
+            amp_threshold_low, amp_threshold_high = self.get_state_thres(
+                data=signal_data, sf=signal_sf, sleep_state=sleep_state, state=4, thres=std_thresh
+            )
             for each in sleep_state:
                 if each[2] == 4 and each[1]-each[0] > 5:
                     data_ = signal_data[int(each[0]*signal_sf): int(each[1]*signal_sf)]
@@ -670,9 +684,23 @@ class SWADetectionDialog(QDialog, Ui_SWADetectDialog):
             if fd == '':
                 return
             
-            df.to_csv(fd, index=False)
+            try:
+                df.to_csv(fd, index=False)
+            except PermissionError as e:
+                QMessageBox.critical(self, "Error", f"Permission denied: {e}, close the file first")
+                return
 
         return swa_lst
+    
+    def get_state_thres(self, data, sf, sleep_state, state, thres):
+        """Get low and high thres for swa detection, based on the whole state data"""
+        all_data = [data[int(each[0]*sf): int(each[1]*sf)] 
+                                     for each in sleep_state if each[2] ==state]
+        all_data = [item for each in all_data for item in each]
+        mean_ = np.mean(all_data)
+        std_ = np.std(all_data)
+
+        return thres*std_ + mean_, 10*std_ + mean_
     
     def okEvent(self):
         self.closed = False
@@ -717,18 +745,23 @@ class SpindleDetectionDialog(QDialog, Ui_SpindleDetectDialog):
         signal_sf = signal_data.sf[0]
         signal_data = signal_data.signals[0]
 
-        std_thresh = self.StdEditor.value()
-        duration_thres = self.durationThresholdEditor.value()
+        std_thres_input = self.StdEditor.value()
+        duration_thres_input = self.durationThresholdEditor.value()
 
         
         sleep_state = lst2group([[idx, each] for idx, each in enumerate(deepcopy(mianno.sleep_state))])
         spindle_lst = []
         if self.NREMCheckbox.isChecked():
+            
+            std_thres, duration_thres = self.get_state_thres(
+                data=signal_data, sf=signal_sf, sleep_state=sleep_state, state=1, 
+                thres1=std_thres_input, thres2=duration_thres_input
+            )
             for each in sleep_state:
                 if each[2] == 1 and each[1]-each[0] > 5:
                     data_ = signal_data[int(each[0]*signal_sf): int(each[1]*signal_sf)]
                     spindle_lst_ = spindle_detection(data_, signal_sf, freq_band=[freq_low, freq_high],
-                                             std_thresh=std_thresh, duration_thresh=duration_thres,
+                                             std_thresh=std_thres, duration_thresh=duration_thres,
                                              start_time_sec=each[0])
 
                     if spindle_lst_ is None:
@@ -739,11 +772,15 @@ class SpindleDetectionDialog(QDialog, Ui_SpindleDetectDialog):
                         spindle_lst.append(each)
 
         if self.REMCheckbox.isChecked():
+            std_thres, duration_thres = self.get_state_thres(
+                data=signal_data, sf=signal_sf, sleep_state=sleep_state, state=2, 
+                thres1=std_thres_input, thres2=duration_thres_input
+            )
             for each in sleep_state:
                 if each[2] == 2 and each[1]-each[0] > 5:
                     data_ = signal_data[int(each[0]*signal_sf): int(each[1]*signal_sf)]
                     spindle_lst_ = spindle_detection(data_, signal_sf, freq_band=[freq_low, freq_high],
-                                             std_thresh=std_thresh, duration_thresh=duration_thres,
+                                             std_thresh=std_thres, duration_thresh=duration_thres,
                                              start_time_sec=each[0])
 
                     if spindle_lst_ is None:
@@ -754,11 +791,15 @@ class SpindleDetectionDialog(QDialog, Ui_SpindleDetectDialog):
                         spindle_lst.append(each)
         
         if self.WakeCheckbox.isChecked():
+            std_thres, duration_thres = self.get_state_thres(
+                data=signal_data, sf=signal_sf, sleep_state=sleep_state, state=3, 
+                thres1=std_thres_input, thres2=duration_thres_input
+            )
             for each in sleep_state:
                 if each[2] == 3 and each[1]-each[0] > 5:
                     data_ = signal_data[int(each[0]*signal_sf): int(each[1]*signal_sf)]
                     spindle_lst_ = spindle_detection(data_, signal_sf, freq_band=[freq_low, freq_high],
-                                             std_thresh=std_thresh, duration_thresh=duration_thres,
+                                             std_thresh=std_thres, duration_thresh=duration_thres,
                                              start_time_sec=each[0])
 
                     if spindle_lst_ is None:
@@ -769,11 +810,15 @@ class SpindleDetectionDialog(QDialog, Ui_SpindleDetectDialog):
                         spindle_lst.append(each)
 
         if self.InitCheckbox.isChecked():
+            std_thres, duration_thres = self.get_state_thres(
+                data=signal_data, sf=signal_sf, sleep_state=sleep_state, state=4, 
+                thres1=std_thres_input, thres2=duration_thres_input
+            )
             for each in sleep_state:
                 if each[2] == 4 and each[1]-each[0] > 5:
                     data_ = signal_data[int(each[0]*signal_sf): int(each[1]*signal_sf)]
                     spindle_lst_ = spindle_detection(data_, signal_sf, freq_band=[freq_low, freq_high],
-                                             std_thresh=std_thresh, duration_thresh=duration_thres,
+                                             std_thresh=std_thres, duration_thresh=duration_thres,
                                              start_time_sec=each[0])
 
                     if spindle_lst_ is None:
@@ -791,9 +836,23 @@ class SpindleDetectionDialog(QDialog, Ui_SpindleDetectDialog):
             if fd == '':
                 return
             
-            df.to_csv(fd, index=False)
+            try:
+                df.to_csv(fd, index=False)
+            except PermissionError as e:
+                QMessageBox.critical(self, "Error", f"Permission denied: {e}, close the file first")
+                return
 
         return spindle_lst
+    
+    def get_state_thres(self, data, sf, sleep_state, state, thres1, thres2):
+        """Get low and high thres for swa detection, based on the whole state data"""
+        all_data = [data[int(each[0]*sf): int(each[1]*sf)] 
+                                     for each in sleep_state if each[2] ==state]
+        all_data = [item for each in all_data for item in each]
+        mean_ = np.mean(all_data)
+        std_ = np.std(all_data)
+
+        return thres1*std_ + mean_, thres2*std_ + mean_
     
     def okEvent(self):
         self.closed = False
