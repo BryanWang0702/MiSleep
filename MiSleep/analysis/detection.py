@@ -82,9 +82,9 @@ def SWA_detection(signal, sf, freq_band=[0.5, 4], amp_threshold=(75, ), df=False
         middle_cross_time = zero_crossing_hold[idx] / sf + start_time_sec
 
         time_pos_peak = positive_peaks_hold[idx] / sf + start_time_sec
-        val_pos_peak = positive_peaks_hold[idx]
+        val_pos_peak = band_data[positive_peaks_hold[idx]]
         time_neg_peak = negative_peaks_hold[idx] / sf + start_time_sec
-        val_neg_peak = negative_peaks_hold[idx]
+        val_neg_peak = band_data[negative_peaks_hold[idx]]
 
         peak_to_peak = val_pos_peak - val_neg_peak
 
