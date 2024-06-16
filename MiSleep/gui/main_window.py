@@ -388,7 +388,7 @@ class main_window(QMainWindow, Ui_MiSleep):
                 if file[:5] == 'Start':
                     self.mianno = load_bio_anno(self.anno_path)
                 else:
-                    self.mianno = load_misleep_anno(self.anno_path)
+                    self.mianno = load_misleep_anno(self.anno_path, state_map=self.state_map_dict)
             except AssertionError as e:
                 if e.args[0] == "Empty":
                     if isinstance(self.midata, MiData):
