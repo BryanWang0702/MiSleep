@@ -13,6 +13,8 @@ Find the directory where you installed misleep, run
 python -m misleep
 ```
 
+See [https://bryanwang.cn/MiSleep/](https://bryanwang.cn/MiSleep/) for a simple documentation.
+
 ### New features
 1. New data structure
 
@@ -27,13 +29,13 @@ as Slow Wave Activities or Spindle, e.t. You can select the `Start-End` mode in
 the Annotation tool dock and click wherever in the signal area to annotate the 
 event.
 
-2. Tool bar dock
+3. Tool bar dock
 
 ![dock](resources/dockoperation.gif)
 
 Now you can move the toolbar to wherever you want.
 
-3. Color for state
+4. Color for state
 
 ![statecolor](resources/statecolor.gif)
 
@@ -41,7 +43,15 @@ Different color background for different sleep states. Now the color map is:
 
 Init: White; NREM: Orange; REM: Blue; Wake: Red.
 
-**Future**: you can self-define the color for each sleep state.
+5. Event Detection
+
+For sleep spindle and sleep slow-wave activities detection, you can check the tools menu for event detection. The auto stage will coming soon.
+
+6. Self-define `config.ini`
+
+There is a config.ini in the root directory of MiSleep source package, multiple parameters can be self define there, check [config.ini](https://bryanwang.cn/MiSleep/#config-file) for detail.
+
+**Future**: Auto stage. Open for suggestions :).
 
 
 
