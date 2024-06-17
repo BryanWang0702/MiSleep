@@ -3,7 +3,7 @@ MiSleep is for EEG/EMG signal processing and visualization
 
 ![logo](../resources/entire_logo.png)
 
-Here we only introduce the GUI of MiSleep.
+Here we only introduce the GUI of MiSleep. [Github repo](https://github.com/BryanWang0702/MiSleep)
 
 ## Table of Contents
 
