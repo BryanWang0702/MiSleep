@@ -33,6 +33,7 @@ from misleep.gui.spec_window import SpecWindow
 from misleep.gui.uis.main_window_ui import Ui_MiSleep
 from misleep.preprocessing.spectral import spectrogram, spectrum, band_power
 from misleep.gui.thread import SaveThread
+from misleep.utils.logger_handler import logger
 
 
 class main_window(QMainWindow, Ui_MiSleep):
@@ -47,6 +48,8 @@ class main_window(QMainWindow, Ui_MiSleep):
         # Load configuration
         self.config = configparser.ConfigParser()
         self.config.read(r'./misleep/config.ini')
+
+        logger.info(f"Initializing MiSleep {self.config['gui']['version']}")
 
         # print(f'{self.config['gui']['openpath']}')
         self.midata = None
@@ -1470,16 +1473,28 @@ class main_window(QMainWindow, Ui_MiSleep):
     def file_menu_dispatcher(self, signal):
         """Triggered by LoadBar action, load data, load annotation, show"""
         if signal.text() == "Load Data":
-            self.load_data()
+            try:
+                self.load_data()
+            except Exception as e:
+                logger.error(f"Load data ERROR: {e}")
         if signal.text() == "Load Annotation":
-            self.load_anno()
+            try:
+                self.load_anno()
+            except Exception as e:
+                logger.error(f"Load annotation ERROR: {e}")
 
     def tool_bar_dispatcher(self, signal):
         """Triggered by ToolBar action, transfer result"""
         if signal.text() == "State Spectral":
-            self.state_spectral()
+            try:
+                self.state_spectral()
+            except Exception as e:
+                logger.error(f"State Spectral ERROR: {e}")
         if signal.text() == "Transfer Result":
-            self.transfer_result()
+            try:
+                self.transfer_result()
+            except Exception as e:
+                logger.error(f"Transfer Result ERROR: {e}")
 
     def transfer_result(self):
         """Transfer result into file"""
@@ -1520,6 +1535,7 @@ class main_window(QMainWindow, Ui_MiSleep):
             # [each.remove() for each in self.horizontal_line_dialog.remove_lines]
             self.plot_horizontal_line()
         except Exception as e:
+            logger.error(f"Add horizontal line ERROR: {e}")
             QMessageBox.about(self, "Error", e)
             return
         
@@ -1541,6 +1557,7 @@ class main_window(QMainWindow, Ui_MiSleep):
             self.AnnotationPathLabel.setText('*Annotation path:')
         
         except Exception as e:
+            logger.error(f"SWA_detection ERROR: {e}")
             QMessageBox.about(self, "Error", f"SWA detection ERROR. {e}")
             return
         
@@ -1562,6 +1579,7 @@ class main_window(QMainWindow, Ui_MiSleep):
             self.AnnotationPathLabel.setText('*Annotation path:')
             
         except:
+            logger.error(f"Spindel_detection ERROR: {e}")
             QMessageBox.about(self, "Error", "Spindle detection ERROR")
             return
 

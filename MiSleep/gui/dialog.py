@@ -11,6 +11,7 @@ from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QDialog, QMessageBox, QFileDialog, QColorDialog, QWidget
 import datetime
 import numpy as np
+from misleep.utils.logger_handler import logger
 
 from misleep.gui.uis.label_dialog_ui import Ui_Dialog
 from misleep.gui.uis.transfer_result_dialog_ui import Ui_TransferResultDialog
@@ -233,6 +234,7 @@ class transferResult_dialog(QDialog, Ui_TransferResultDialog):
             
             writer.close()
         except PermissionError as e:
+            logger.error(f"Permission error: {e}")
             QMessageBox.about(self, "Error", "Close the EXCEL sheet first.")
             return
 
@@ -687,6 +689,7 @@ class SWADetectionDialog(QDialog, Ui_SWADetectDialog):
             try:
                 df.to_csv(fd, index=False)
             except PermissionError as e:
+                logger.error(f"Permission error: {e}")
                 QMessageBox.critical(self, "Error", f"Permission denied: {e}, close the file first")
                 return
 
@@ -839,6 +842,7 @@ class SpindleDetectionDialog(QDialog, Ui_SpindleDetectDialog):
             try:
                 df.to_csv(fd, index=False)
             except PermissionError as e:
+                logger.error(f"Permission denied: {e}")
                 QMessageBox.critical(self, "Error", f"Permission denied: {e}, close the file first")
                 return
 

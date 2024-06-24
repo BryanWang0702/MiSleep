@@ -14,6 +14,7 @@ from hdf5storage import savemat
 import pyedflib
 import datetime
 from misleep.io.base import MiData
+from misleep.utils.logger_handler import logger
 
 
 def load_mat(data_path):
@@ -68,11 +69,16 @@ def load_mat(data_path):
         # Saved by matlab
         channels = [each for item in raw_data['channels'][0] for each in item]
         sf = [float(each[0]) for item in raw_data['sf'][0] for each in item]
-        signals = [raw_data[each][0] for each in channels]
+        try:
+            signals = [raw_data[each][0] for each in channels]
+        except KeyError as e:
+            logger.error(f"Load data ERROR: {e}")
+            return 
         try:
             time = raw_data['time'][0][0][0]
             datetime.datetime.strptime(time, "%Y%m%d-%H:%M:%S")
-        except ValueError:
+        except ValueError as e:
+            logger.error(f"Load data ERROR: {e}")
             time = raw_data['time'][0]
 
         try:
@@ -80,7 +86,7 @@ def load_mat(data_path):
                 if each.shape[0] > each.shape[1]:
                     each = each.T
                     signals[idx] = each
-        except Exception:
+        except Exception as e:
             pass
         
         return MiData(signals=signals, channels=channels, sf=sf, time=time)
@@ -123,11 +129,11 @@ def load_mat(data_path):
                 time = datetime.datetime.now().strftime("%Y%m%d-%H:%M:%S")
                 return MiData(signals=signals, channels=channels, sf=sf, time=time)
             except Exception as e:
-                print(e)
+                logger.error(f"Load data ERROR: {e}")
                 return None  
             
     except Exception as e:
-        print(e)
+        logger.error(f"Load data ERROR: {e}")
         return None
 
 
