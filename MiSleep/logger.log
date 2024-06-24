@@ -9,3 +9,4 @@
 2024-06-24 11:20:02,055 - misleep_logger - INFO - Spindle_detection: Freq_thres: [10.0, 15.0], std_thresh_input: 1.5, duration_thresh_ionput: 0.2
 2024-06-24 11:21:47,498 - misleep_logger - INFO - Initializing MiSleep v0.1.12
 2024-06-24 11:21:47,662 - misleep_logger - INFO - Existing
+2024-06-24 11:31:27,793 - misleep_logger - INFO - Initializing MiSleep v0.1.13
