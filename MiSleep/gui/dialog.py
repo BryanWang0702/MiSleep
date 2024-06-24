@@ -692,7 +692,8 @@ class SWADetectionDialog(QDialog, Ui_SWADetectDialog):
                 logger.error(f"Permission error: {e}")
                 QMessageBox.critical(self, "Error", f"Permission denied: {e}, close the file first")
                 return
-
+            
+        logger.info(f"SWA_detection: Freq_thres: {[freq_low, freq_high]}, std_thresh: {std_thresh}")
         return swa_lst
     
     def get_state_thres(self, data, sf, sleep_state, state, thres):
@@ -846,6 +847,10 @@ class SpindleDetectionDialog(QDialog, Ui_SpindleDetectDialog):
                 QMessageBox.critical(self, "Error", f"Permission denied: {e}, close the file first")
                 return
 
+        
+        logger.info(f"Spindle_detection: Freq_thres: {[freq_low, freq_high]}, "
+                    f"std_thresh_input: {std_thres_input}, "
+                    f"duration_thresh_ionput: {duration_thres_input}")
         return spindle_lst
     
     def get_state_thres(self, data, sf, sleep_state, state, thres1, thres2):

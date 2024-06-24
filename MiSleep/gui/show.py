@@ -12,6 +12,7 @@ import os
 sys.path.append(os.getcwd())
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QCoreApplication, Qt
+from misleep.utils.logger_handler import logger
 
 def show():
     from misleep.gui.main_window import main_window

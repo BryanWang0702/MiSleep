@@ -4,6 +4,7 @@ from misleep.utils.annotation import lst2group
 from scipy.signal import find_peaks
 import numpy as np
 import pandas as pd
+from misleep.utils.logger_handler import logger
 
 def SWA_detection(signal, sf, freq_band=[0.5, 4], amp_threshold=(75, ), df=False, start_time_sec=0):
     """Slow wave activity detection

@@ -484,6 +484,8 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.start_end = []
         self.mianno._state_map = self.state_map_dict
 
+        logger.info(f"Load SUCCEED: data - {self.data_path}, anno - {self.anno_path}")
+
         # save timer start, 5 mins
         self.save_timer.start(60*5*1000)
 
