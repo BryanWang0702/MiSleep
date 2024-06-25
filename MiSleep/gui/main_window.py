@@ -370,7 +370,10 @@ class main_window(QMainWindow, Ui_MiSleep):
 
         self.clear_refresh(clf=True)
 
-        self.check_show()
+        try:
+            self.check_show()    
+        except Exception as e:
+            logger.error(f"Check Show ERROR: {e}")
 
     def load_anno(self):
         """Triggered by actionLoad_Annotation"""
@@ -427,7 +430,11 @@ class main_window(QMainWindow, Ui_MiSleep):
 
         self.clear_refresh(clf=True)
 
-        self.check_show(_mianno)
+        try:
+            self.check_show(_mianno)    
+        except Exception as e:
+            logger.error(f"Check Show ERROR: {e}")
+
 
     def check_show(self, mianno=None):
         """Check and show all, triggered by actionShow

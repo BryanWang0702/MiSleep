@@ -69,25 +69,22 @@ def load_mat(data_path):
         # Saved by matlab
         channels = [each for item in raw_data['channels'][0] for each in item]
         sf = [float(each[0]) for item in raw_data['sf'][0] for each in item]
+        signals = []
         try:
-            signals = [raw_data[each][0] for each in channels]
-        except KeyError as e:
+            for each in channels:
+                signal_ = raw_data[each]
+                if signal_.shape[0] > signal_.shape[1]:
+                    signals.append(signal_.T[0])
+                if signal_.shape[0] < signal_.shape[1]:
+                    signals.append(signal_[0])
+        except Exception as e:
             logger.error(f"Load data ERROR: {e}")
             return 
         try:
             time = raw_data['time'][0][0][0]
             datetime.datetime.strptime(time, "%Y%m%d-%H:%M:%S")
         except ValueError as e:
-            logger.error(f"Load data ERROR: {e}")
             time = raw_data['time'][0]
-
-        try:
-            for idx, each in enumerate(signals):
-                if each.shape[0] > each.shape[1]:
-                    each = each.T
-                    signals[idx] = each
-        except Exception as e:
-            pass
         
         return MiData(signals=signals, channels=channels, sf=sf, time=time)
     
@@ -103,16 +100,19 @@ def load_mat(data_path):
 
             channels = raw_data['channels']
             sf = [float(each) for each in raw_data['sf']]
-            signals = [raw_data[each] for each in channels]
+            signals = []
             time = raw_data['time'][0]
 
             try:
-                for idx, each in enumerate(signals):
-                    if each.shape[0] > each.shape[1]:
-                        each = each.T
-                        signals[idx] = each
-            except Exception:
-                pass
+                for each in channels:
+                    signal_ = raw_data[each]
+                    if signal_.shape[0] > signal_.shape[1]:
+                        signals.append(signal_.T)
+                    if signal_.shape[0] < signal_.shape[1]:
+                        signals.append(signal_)
+            except Exception as e:
+                logger.error(f"Load data ERROR: {e}")
+                return 
 
             return MiData(signals=signals, channels=channels, sf=sf, time=time)
     

@@ -10,3 +10,16 @@
 2024-06-24 11:21:47,498 - misleep_logger - INFO - Initializing MiSleep v0.1.12
 2024-06-24 11:21:47,662 - misleep_logger - INFO - Existing
 2024-06-24 11:31:27,793 - misleep_logger - INFO - Initializing MiSleep v0.1.13
+2024-06-25 11:24:40,416 - misleep_logger - INFO - Initializing MiSleep v0.1.13
+2024-06-25 11:26:47,229 - misleep_logger - INFO - Initializing MiSleep v0.1.13
+2024-06-25 11:27:09,977 - misleep_logger - ERROR - Check Show ERROR: max() arg is an empty sequence
+2024-06-25 11:28:06,912 - misleep_logger - INFO - Initializing MiSleep v0.1.13
+2024-06-25 11:28:47,116 - misleep_logger - INFO - Initializing MiSleep v0.1.13
+2024-06-25 11:30:14,927 - misleep_logger - INFO - Initializing MiSleep v0.1.13
+2024-06-25 11:33:48,343 - misleep_logger - INFO - Initializing MiSleep v0.1.13
+2024-06-25 11:38:34,493 - misleep_logger - INFO - Initializing MiSleep v0.1.13
+2024-06-25 11:38:42,924 - misleep_logger - ERROR - Load data ERROR: only integers, slices (`:`), ellipsis (`...`), numpy.newaxis (`None`) and integer or boolean arrays are valid indices
+2024-06-25 11:39:08,505 - misleep_logger - ERROR - Load data ERROR: only integers, slices (`:`), ellipsis (`...`), numpy.newaxis (`None`) and integer or boolean arrays are valid indices
+2024-06-25 11:39:19,742 - misleep_logger - ERROR - Load data ERROR: only integers, slices (`:`), ellipsis (`...`), numpy.newaxis (`None`) and integer or boolean arrays are valid indices
+2024-06-25 11:40:17,996 - misleep_logger - INFO - Initializing MiSleep v0.1.13
+2024-06-25 11:40:40,467 - misleep_logger - INFO - Load SUCCEED: data - //172.16.41.188/liyating/Data/FP/HA_PFC/20240620_11am_1h/HA_240620_11am_1h_raw.mat, anno - 
