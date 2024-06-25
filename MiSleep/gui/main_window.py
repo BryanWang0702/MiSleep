@@ -1315,7 +1315,15 @@ class main_window(QMainWindow, Ui_MiSleep):
 
     def show_spec_window(self):
         """Show spectrum dialog, triggered by PlotSpecBt"""
-        if len(self.start_end) != 2 or self.start_end[1] - self.start_end[0] < 10:
+        if self.SleepStateRadio.isChecked() and len(self.start_end) == 2 and self.start_end[1] - self.start_end[0] >= 10:
+            start_ = self.start_end[0]
+            end_ = self.start_end[1]
+        
+        elif self.StartEndRadio.isChecked() and len(self.start_end_ms) == 2 and self.start_end_ms[1] - self.start_end_ms[0] >= 10:
+            start_ = self.start_end_ms[0]
+            end_ = self.start_end_ms[1]
+        
+        else:
             QMessageBox.about(
                 self,
                 "Error",
@@ -1336,8 +1344,8 @@ class main_window(QMainWindow, Ui_MiSleep):
         channel = selected_channel[0]
         
         signal_data = self.midata.signals[channel][
-            int(self.start_end[0]*self.midata.sf[channel]) : 
-            int(self.start_end[1]*self.midata.sf[channel])
+            int(start_*self.midata.sf[channel]) : 
+            int(end_*self.midata.sf[channel])
         ]
         
         freq, psd = spectrum(signal=signal_data,
@@ -1356,7 +1364,7 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.spec_window.show_(spectrum=[psd, freq], 
                                spectrogram=[f, t, Sxx],
                                percentile_=self.spectrogram_percentile,
-                               ratio=ratio, start_end=self.start_end)
+                               ratio=ratio, start_end=[start_, end_])
         
         self.spec_window.activateWindow()
         self.spec_window.setWindowState(
