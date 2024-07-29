@@ -17,3 +17,4 @@
 #ignore files
 *.pyc
 .gitignore
+*.log

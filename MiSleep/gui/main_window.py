@@ -838,7 +838,7 @@ class main_window(QMainWindow, Ui_MiSleep):
                 for idx, show_ in enumerate(self.show_idx):
                     self.signal_ax[idx + 1].axvline(
                         int((each[1] - self.current_sec) * self.midata.sf[show_]),
-                        color=identify_startend_color(self.start_end_color_dict, each[2]),
+                        color='orange',
                         alpha=1,
                     )
                 self.signal_ax[1].text(
