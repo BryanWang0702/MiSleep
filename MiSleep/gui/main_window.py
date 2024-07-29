@@ -847,7 +847,7 @@ class main_window(QMainWindow, Ui_MiSleep):
                     s=each[2]+'-E',
                     verticalalignment="top",
                     horizontalalignment='right',
-                    color=identify_startend_color(self.start_end_color_dict, each[2]),
+                    color='orange',
                 )
 
         if flush:
