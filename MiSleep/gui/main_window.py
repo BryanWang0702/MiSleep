@@ -452,7 +452,7 @@ class main_window(QMainWindow, Ui_MiSleep):
             self.mianno = create_new_mianno(self.midata.duration)
 
         self.show_idx = list(range(self.midata.n_channels))
-        self.y_lims = [max(each[:1000]) for each in self.midata.signals]
+        self.y_lims = [max(abs(each[:1000])) for each in self.midata.signals]
         self.y_lims = [1e-3 if each == 0.0 else each for each in self.y_lims]
         self.y_shift = [0 for _ in range(self.midata.n_channels)]
 
