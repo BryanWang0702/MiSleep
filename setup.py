@@ -11,7 +11,7 @@ MAINTAINER_EMAIL = "swang@gmail.com"
 URL = "https://github.com/BryanWang0702/MiSleep/"
 LICENSE = "BSD (3-clause)"
 DOWNLOAD_URL = "https://github.com/BryanWang0702/MiSleep/"
-VERSION = "0.1.17"
+VERSION = "0.1.18"
 
 INSTALL_REQUIRES = [
     "numpy>=1.18.1",
@@ -49,7 +49,7 @@ DATA_FILES = [
             "misleep/gui/resources/misleep.qrc",
             "misleep/gui/resources/logo.png",
             "misleep/gui/resources/entire_logo.png",
-        ]
+        ],
     )
 ]
 
@@ -65,7 +65,7 @@ if __name__ == "__main__":
         author_email=MAINTAINER_EMAIL,
         maintainer=MAINTAINER,
         maintainer_email=MAINTAINER_EMAIL,
-        long_description_content_type = 'text/markdown',
+        long_description_content_type="text/markdown",
         description=DESCRIPTION,
         long_description=LONG_DESCRIPTION,
         license=LICENSE,
@@ -76,7 +76,6 @@ if __name__ == "__main__":
         data_files=DATA_FILES,
         include_package_data=True,
         packages=find_packages(),
-        package_dir={'misleep': 'misleep'},
+        package_dir={"misleep": "misleep"},
         classifiers=CLASSIFIERS,
-        
     )
