@@ -16,6 +16,7 @@ Here we only introduce the GUI of MiSleep. [Github repo](https://github.com/Brya
         - [Tool part](#tool-part)
         - [Menu tool](#menu-tool)
     - [Config file](#config-file)
+    - [Install MiSleep](#install-misleep)
 
 ## [Get start](#get-start)
 ```shell
@@ -135,3 +136,41 @@ The **statemap** and **statecolor** is for **Sleep state** mode. The number shou
 **markerlinecolor** and **startendlinecolor** are the default line color for **Marker** and **Start-End** mode respectively.
 
 **openpath** is the default path to open in the MiSleep GUI, and after each browser, the path will update.
+
+## [Install MiSleep](#install-misleep)
+To install misleep, you need to download the [miniconda](https://docs.anaconda.com/miniconda/), for windows only download [this](https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe) and install it. 
+
+1. Create a new environment with conda. Open the cmd (terminal if you use macOS), use the following commands:
+```shell
+# Create a environment for misleep
+conda create -n misleep python=3.9
+# activate the environment
+conda activate misleep
+# install the misleep
+pip install misleep
+```
+
+2. Now you can use the misleep by commands.
+```shell
+# enter the path you install the misleep
+# First you need to enter the disk you install miniconda, like me 'E:', so I just enter E:
+E:
+# Go to the directory you install miniconda
+cd PATH_YOU_INSTALL_MINICONDA
+# Go to the directory you install misleep, if you are already in the miniconda path
+cd envs/misleep/Lib/site-packages
+# Use python to run misleep
+python -m misleep
+```
+
+3. For quickly start misleep, you can write a script, just create a new .txt file, and enter the following contents:
+```shell
+# go to the directory you installed misleep
+E:
+cd PATH_YOU_INSTALL_MINICONDA/envs/misleep/Lib/site-packages
+call conda activate misleep
+python -m misleep
+```
+Save the file and change the extension name to .bat or .cmd, then you can open it by double click.
+
+:)
