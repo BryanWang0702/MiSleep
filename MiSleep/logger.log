@@ -578,3 +578,14 @@
 2024-11-08 09:56:52,535 - misleep_logger - INFO - Initializing MiSleep v0.1.18
 2024-11-08 09:56:58,523 - misleep_logger - ERROR - Check Show ERROR: ufunc 'absolute' did not contain a loop with signature matching types <class 'numpy.dtype[str_]'> -> None
 2024-11-08 10:01:13,218 - misleep_logger - ERROR - Check Show ERROR: ufunc 'absolute' did not contain a loop with signature matching types <class 'numpy.dtype[str_]'> -> None
+2024-11-08 22:38:01,616 - misleep_logger - INFO - Initializing MiSleep v0.1.19
+2024-11-08 22:38:09,131 - misleep_logger - ERROR - Check Show ERROR: '>=' not supported between instances of 'list' and 'float'
+2024-11-08 22:38:28,934 - misleep_logger - INFO - Initializing MiSleep v0.1.19
+2024-11-08 22:38:34,094 - misleep_logger - ERROR - Check Show ERROR: ufunc 'absolute' did not contain a loop with signature matching types <class 'numpy.dtype[str_]'> -> None
+2024-11-08 22:38:43,128 - misleep_logger - INFO - Initializing MiSleep v0.1.19
+2024-11-08 22:38:54,735 - misleep_logger - ERROR - Check Show ERROR: '>=' not supported between instances of 'list' and 'float'
+2024-11-08 22:39:34,793 - misleep_logger - INFO - Initializing MiSleep v0.1.19
+2024-11-08 22:39:46,237 - misleep_logger - ERROR - Check Show ERROR: '>=' not supported between instances of 'list' and 'float'
+2024-11-08 22:40:04,619 - misleep_logger - ERROR - Check Show ERROR: '>=' not supported between instances of 'list' and 'float'
+2024-11-08 22:40:40,624 - misleep_logger - INFO - Initializing MiSleep v0.1.19
+2024-11-08 22:40:42,543 - misleep_logger - INFO - Load SUCCEED: data - F:/FUS imaging/CRM_baseline.mat, anno - 
