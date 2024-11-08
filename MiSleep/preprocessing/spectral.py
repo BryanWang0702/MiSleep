@@ -35,8 +35,10 @@ def spectrum(signal, sf, band=None, relative=True, win_sec=5):
     if not isinstance(signal, np.ndarray):
         raise TypeError(f"'signal' should be np.array like")
     if not isinstance(sf, (int, float)):
-        raise TypeError(f"'sf' should be an integer or float "
-                        f"which stands for sample frequency, got {type(sf)}")
+        raise TypeError(
+            f"'sf' should be an integer or float "
+            f"which stands for sample frequency, got {type(sf)}"
+        )
 
     if not isinstance(relative, bool):
         raise TypeError(f"'relative' should be a boolean")
@@ -44,13 +46,16 @@ def spectrum(signal, sf, band=None, relative=True, win_sec=5):
     if band is None:
         band = [0.5, 30]
     if not isinstance(band, list):
-        raise TypeError(f"'band' should be a list of tuple(s),"
-                        f"e.g. [0.5, 4], got {type(band)}")
+        raise TypeError(
+            f"'band' should be a list of tuple(s)," f"e.g. [0.5, 4], got {type(band)}"
+        )
 
-    signal, _ = signal_filter(data=signal, sf=sf, btype='bandpass',
-                              low=band[0], high=band[1])
+    signal, _ = signal_filter(
+        data=signal, sf=sf, btype="bandpass", low=band[0], high=band[1]
+    )
 
     freq, psd = welch(signal, sf, nperseg=int(sf * win_sec))
+    freq = [round(each, 2) for each in freq]
 
     idx_freq = np.logical_and(freq >= band[0], freq <= band[1])
     freq = freq[idx_freq]
@@ -96,8 +101,10 @@ def spectrogram(signal, sf, band=None, step=0.2, window=2, norm=False):
     if not isinstance(signal, np.ndarray):
         raise TypeError(f"'signal' should be np.array like")
     if not isinstance(sf, (int, float)):
-        raise TypeError(f"'sf' should be an integer or float "
-                        f"which stands for sample frequency, got {type(sf)}")
+        raise TypeError(
+            f"'sf' should be an integer or float "
+            f"which stands for sample frequency, got {type(sf)}"
+        )
 
     if step > window:
         raise ValueError(f"'step' ({step}) should smaller than 'window' ({window})")
@@ -109,14 +116,19 @@ def spectrogram(signal, sf, band=None, step=0.2, window=2, norm=False):
     if band is None:
         band = [0.5, 30]
     if not isinstance(band, list):
-        raise TypeError(f"'band' should be a list of tuple(s),"
-                        f"e.g. [0.5, 30], got {type(band)}")
+        raise TypeError(
+            f"'band' should be a list of tuple(s)," f"e.g. [0.5, 30], got {type(band)}"
+        )
 
     # Define STFT parameters
     nperseg = int(window * sf)
     noverlap = int(nperseg - (step * sf))
 
-    f, t, Sxx = stft(signal, sf, nperseg=nperseg, noverlap=noverlap, padded=False, boundary='zeros')
+    f, t, Sxx = stft(
+        signal, sf, nperseg=nperseg, noverlap=noverlap, padded=False, boundary="zeros"
+    )
+
+    f = [round(each, 2) for each in f]
 
     idx_f = np.logical_and(f >= band[0], f <= band[1])
     f = f[idx_f]
@@ -154,7 +166,7 @@ def band_power(psd, freq, bands=None, relative=False):
 
     Note
     ----
-    Use the composite Simpson's rule. 
+    Use the composite Simpson's rule.
     Inspired by https://raphaelvallat.com/bandpower.html
     """
 
@@ -166,11 +178,7 @@ def band_power(psd, freq, bands=None, relative=False):
 
         if relative:
             bp /= simps(psd, dx=freq_res)
-        
+
         band_dict[each[2]] = bp
 
     return band_dict
-
-    
-
-    
