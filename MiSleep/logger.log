@@ -608,3 +608,4 @@
 2024-11-12 14:18:09,487 - misleep_logger - INFO - Initializing MiSleep v0.1.20
 2024-11-12 14:18:17,466 - misleep_logger - INFO - Load SUCCEED: data - //172.16.41.188/wangxueqiang/EEG_data/TDT/extracted/20241031_074807_ls_13_wtfemale.mat, anno - 
 2024-11-12 14:18:20,573 - misleep_logger - INFO - Load SUCCEED: data - //172.16.41.188/wangxueqiang/EEG_data/TDT/extracted/20241031_074807_ls_13_wtfemale.mat, anno - //172.16.41.188/wangxueqiang/EEG_data/TDT/extracted/20241031_074807_ls_13_wtfemale.txt
+2024-11-12 15:06:18,930 - misleep_logger - INFO - Initializing MiSleep v0.1.22
