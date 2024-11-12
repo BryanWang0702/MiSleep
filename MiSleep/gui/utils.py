@@ -146,6 +146,8 @@ def cal_draw_spectrum(data, sf, nperseg, freq_band=None, relative=None):
     if freq_band is None:
         freq_band = [0.5, 30]
     F, P = welch(data, sf, nperseg=nperseg)
+    
+    F = np.array([round(each, 1) for each in F])
 
     # find frequency band
     if freq_band is not None:

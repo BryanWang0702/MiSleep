@@ -8,6 +8,7 @@
 /misleep/preprocessing/__pycache__
 /MiSleep/viz/__pycache__/
 /MiSleep/gui/__pycache__
+/MiSleep/gui/uis/__pycache__/
 /.idea
 /datasets
 /build

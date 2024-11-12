@@ -1595,7 +1595,7 @@ class main_window(QMainWindow, Ui_MiSleep):
             self.is_saved = False
             self.AnnotationPathLabel.setText('*Annotation path:')
             
-        except:
+        except Exception as e:
             logger.error(f"Spindel_detection ERROR: {e}")
             QMessageBox.about(self, "Error", "Spindle detection ERROR")
             return

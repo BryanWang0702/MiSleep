@@ -55,7 +55,7 @@ def spectrum(signal, sf, band=None, relative=True, win_sec=5):
     )
 
     freq, psd = welch(signal, sf, nperseg=int(sf * win_sec))
-    freq = np.array([round(each, 2) for each in freq])
+    freq = np.array([round(each, 1) for each in freq])
 
     idx_freq = np.logical_and(freq >= band[0], freq <= band[1])
     freq = freq[idx_freq]
@@ -128,7 +128,7 @@ def spectrogram(signal, sf, band=None, step=0.2, window=2, norm=False):
         signal, sf, nperseg=nperseg, noverlap=noverlap, padded=False, boundary="zeros"
     )
 
-    f = np.array([round(each, 2) for each in f])
+    f = np.array([round(each, 1) for each in f])
 
     idx_f = np.logical_and(f >= band[0], f <= band[1])
     f = f[idx_f]

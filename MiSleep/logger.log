@@ -589,3 +589,22 @@
 2024-11-08 22:40:04,619 - misleep_logger - ERROR - Check Show ERROR: '>=' not supported between instances of 'list' and 'float'
 2024-11-08 22:40:40,624 - misleep_logger - INFO - Initializing MiSleep v0.1.19
 2024-11-08 22:40:42,543 - misleep_logger - INFO - Load SUCCEED: data - F:/FUS imaging/CRM_baseline.mat, anno - 
+2024-11-12 11:40:54,840 - misleep_logger - INFO - Initializing MiSleep v0.1.20
+2024-11-12 11:41:31,296 - misleep_logger - INFO - Load SUCCEED: data - //172.16.41.188/wangxueqiang/EEG_data/TDT/extracted/20241031_074807_ls_13_wtfemale.mat, anno - 
+2024-11-12 11:41:53,459 - misleep_logger - INFO - Load SUCCEED: data - //172.16.41.188/wangxueqiang/EEG_data/TDT/extracted/20241031_074807_ls_13_wtfemale.mat, anno - //172.16.41.188/wangxueqiang/EEG_data/TDT/extracted/20241031_074807_ls_13_wtfemale.txt
+2024-11-12 11:44:51,585 - misleep_logger - INFO - Initializing MiSleep v0.1.20
+2024-11-12 11:47:27,790 - misleep_logger - INFO - Load SUCCEED: data - //172.16.41.188/wangxueqiang/EEG_data/TDT/extracted/20241031_074807_ls_13_wtfemale.mat, anno - 
+2024-11-12 11:47:38,366 - misleep_logger - INFO - Load SUCCEED: data - //172.16.41.188/wangxueqiang/EEG_data/TDT/extracted/20241031_074807_ls_13_wtfemale.mat, anno - //172.16.41.188/wangxueqiang/EEG_data/TDT/extracted/20241031_074807_ls_13_wtfemale.txt
+2024-11-12 11:48:23,523 - misleep_logger - INFO - Initializing MiSleep v0.1.20
+2024-11-12 11:48:37,424 - misleep_logger - INFO - Load SUCCEED: data - //172.16.41.188/wangxueqiang/EEG_data/TDT/extracted/20241031_074807_ls_13_wtfemale.mat, anno - //172.16.41.188/wangxueqiang/EEG_data/TDT/extracted/20241031_074807_ls_13_wtfemale.txt
+2024-11-12 11:50:21,506 - misleep_logger - INFO - Load SUCCEED: data - //172.16.41.188/wangxueqiang/EEG_data/TDT/extracted/20241031_074807_ls_13_wtfemale.mat, anno - //172.16.41.188/wangxueqiang/EEG_data/TDT/extracted/20241031_074807_ls_13_wtfemale.txt
+2024-11-12 11:50:47,796 - misleep_logger - INFO - Initializing MiSleep v0.1.20
+2024-11-12 14:11:26,321 - misleep_logger - INFO - Initializing MiSleep v0.1.20
+2024-11-12 14:11:37,405 - misleep_logger - INFO - Load SUCCEED: data - //172.16.41.188/wangxueqiang/EEG_data/TDT/extracted/20241031_074807_ls_13_wtfemale.mat, anno - 
+2024-11-12 14:11:41,881 - misleep_logger - INFO - Load SUCCEED: data - //172.16.41.188/wangxueqiang/EEG_data/TDT/extracted/20241031_074807_ls_13_wtfemale.mat, anno - //172.16.41.188/wangxueqiang/EEG_data/TDT/extracted/20241031_074807_ls_13_wtfemale.txt
+2024-11-12 14:14:06,081 - misleep_logger - INFO - Initializing MiSleep v0.1.20
+2024-11-12 14:14:14,981 - misleep_logger - INFO - Load SUCCEED: data - //172.16.41.188/wangxueqiang/EEG_data/TDT/extracted/20241031_074807_ls_13_wtfemale.mat, anno - 
+2024-11-12 14:14:21,506 - misleep_logger - INFO - Load SUCCEED: data - //172.16.41.188/wangxueqiang/EEG_data/TDT/extracted/20241031_074807_ls_13_wtfemale.mat, anno - //172.16.41.188/wangxueqiang/EEG_data/TDT/extracted/20241031_074807_ls_13_wtfemale.txt
+2024-11-12 14:18:09,487 - misleep_logger - INFO - Initializing MiSleep v0.1.20
+2024-11-12 14:18:17,466 - misleep_logger - INFO - Load SUCCEED: data - //172.16.41.188/wangxueqiang/EEG_data/TDT/extracted/20241031_074807_ls_13_wtfemale.mat, anno - 
+2024-11-12 14:18:20,573 - misleep_logger - INFO - Load SUCCEED: data - //172.16.41.188/wangxueqiang/EEG_data/TDT/extracted/20241031_074807_ls_13_wtfemale.mat, anno - //172.16.41.188/wangxueqiang/EEG_data/TDT/extracted/20241031_074807_ls_13_wtfemale.txt
