@@ -6,7 +6,7 @@ logger = logging.getLogger("misleep_logger")
 logger.setLevel(logging.INFO)
 
 # Create a file handler
-file_handler = logging.FileHandler('./misleep/logger.log')
+file_handler = logging.FileHandler('../logger.log')
 file_handler.setLevel(logging.INFO)
 
 # Create a stream handler to print the log in the command line window

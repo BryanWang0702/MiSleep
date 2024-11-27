@@ -11,7 +11,7 @@ from misleep.utils.annotation import marker2mianno, start_end2mianno, lst2group,
 import pandas as pd
 
 
-def load_misleep_anno(file_path, state_map):
+def load_misleep_anno(file_path, state_map=None):
     """
     Load annotations from misleep annotation file
 
