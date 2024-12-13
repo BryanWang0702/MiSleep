@@ -1,5 +1,7 @@
 # [MiSleep](#misleep)
-MiSleep is for EEG/EMG signal processing and visualization
+MiSleep is for EEG/EMG signal processing and visualization.
+
+The name MiSleep is from '**Mi**ce **Sleep**' and also sounds like 'my sleep'.
 
 ![logo](../resources/entire_logo.png)
 
@@ -8,15 +10,27 @@ Here we only introduce the GUI of MiSleep. [Github repo](https://github.com/Brya
 ## Table of Contents
 
 - [MiSleep](#misleep)
-    - [Get Start](#get-start)
-    - [Basic usage](#basic-usage)
-        - [Prepare work](#prepare-work)
-        - [Preview data](#preview-data)
-        - [Visualization part](#visualization-part)
-        - [Tool part](#tool-part)
-        - [Menu tool](#menu-tool)
-    - [Config file](#config-file)
-    - [Install MiSleep](#install-misleep)
+  - [Table of Contents](#table-of-contents)
+  - [Get start](#get-start)
+  - [Basic usage](#basic-usage)
+    - [Prepare work](#prepare-work)
+      - [1. Data file](#1-data-file)
+      - [2. Annotation file](#2-annotation-file)
+    - [Preview data](#preview-data)
+    - [Visualization part](#visualization-part)
+    - [Tool part](#tool-part)
+      - [Meta dock](#meta-dock)
+      - [Channel dock](#channel-dock)
+      - [Annotation dock](#annotation-dock)
+        - [Marker](#marker)
+        - [Start-End](#start-end)
+        - [Sleep state](#sleep-state)
+      - [Time dock](#time-dock)
+    - [Menu tool](#menu-tool)
+      - [Tools](#tools)
+      - [Result](#result)
+  - [Config file](#config-file)
+  - [Install MiSleep](#install-misleep)
 
 ## [Get start](#get-start)
 ```shell
