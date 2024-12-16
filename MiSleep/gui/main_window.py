@@ -242,6 +242,9 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.previous_epochSc = QShortcut(QKeySequence('up'), self)
         self.previous_epochSc.activated.connect(self.previous_epoch)
 
+        # Wheel events of mouse for next and previous pages
+        self.wheelEvent = self.handle_mouse_wheel
+
         # Load data and annotation shortcuts
         self.load_dataSc = QShortcut(QKeySequence('shift+d'), self)
         self.load_dataSc.activated.connect(self.load_data)
@@ -1118,6 +1121,14 @@ class main_window(QMainWindow, Ui_MiSleep):
         """<- button"""
         current_sec = self.current_sec - self.show_duration
         self.redraw_all(second=current_sec)
+
+    def handle_mouse_wheel(self, event):
+        """Detect mouse wheel events to get previous and next page"""
+        delta = event.angleDelta().y()
+        if delta < 0:
+            self.next_page()
+        if delta > 0:
+            self.previous_page()
 
     def SecondSpin_change(self):
         """SecondSpin changed"""
