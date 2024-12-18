@@ -3,6 +3,10 @@ MiSleep is for EEG/EMG signal processing and visualization
 
 ![logo](resources/entire_logo.png)
 
+The name 'MiSleep' is from '**Mi**ce **Sleep**' and sounds like '**my sleep**'.
+
+---
+
 ## Get start
 ```shell
 pip install misleep
@@ -12,68 +16,42 @@ Find the directory where you installed misleep, run
 ```shell
 python -m misleep
 ```
+If you use the miniconda or anaconda, the path will be like `D:/miniconda3/envs/misleep/Lib/site-packages`.
 
 See [https://bryanwang.cn/MiSleep/](https://bryanwang.cn/MiSleep/) for a simple documentation.
 
-### New features
-1. New data structure
+---
 
-You can save the original data as a new data structure (See `Data save protocol`).
-Where you can add the channels' name, sampling rate and the acquisition time into 
-the original data.
+## Some features
+1. Free self-define data structure
 
-2. Annotate more details
+You can organize your data with matlab structure like this:
+```matlab
+data.EEG = AN_ARRAY_OF_EEG_DATA;
+data.EMG_DIFF = AN_ARRAY_OF_EMG_DIFFERENTIAL_DATA;
+% Channel name must be the same with you defined above
+data.channels = {'EEG' 'EMG_DIFF'};
+% Sampling frequency for each channel of data
+data.sf = {256 256};
+% Acquisition time of your data
+data.time = {'20240409-18:00:00'}; 
+```
+Or if your data format is `.edf`, misleep will also support well.
 
-Here we provide the start_end mode as a more precise way to annotate the event such
-as Slow Wave Activities or Spindle, e.t. You can select the `Start-End` mode in
-the Annotation tool dock and click wherever in the signal area to annotate the 
-event.
-
-3. Tool bar dock
-
-![dock](resources/dockoperation.gif)
-
-Now you can move the toolbar to wherever you want.
-
-4. Color for state
-
-![statecolor](resources/statecolor.gif)
-
-Different color background for different sleep states. Now the color map is:
-
-Init: White; NREM: Orange; REM: Blue; Wake: Red.
-
-5. Event Detection
+2. Event Detection
 
 For sleep spindle and sleep slow-wave activities detection, you can check the tools menu for event detection. The auto stage will coming soon.
 
-6. Self-define `config.ini`
+3. Self-define `config.ini`
 
 There is a config.ini in the root directory of MiSleep source package, multiple parameters can be self define there, check [config.ini](https://bryanwang.cn/MiSleep/#config-file) for detail.
 
-**Future**: Auto stage. Open for suggestions :).
+**Future**: Open for suggestions :).
 
+---
 
+## Cite this work
 
-## Data save protocol
-You need to use matlab for data saving, the final data should be a structure.
+If you use this software, please cite it as below.
+Xueqiang Wang. (2024). BryanWang0702/MiSleep. Zenodo. https://doi.org/10.5281/zenodo.14511905
 
-
-If you are using TDT for recording, here is the example script to save the data.
-```matlab
-tdt_data = ...
-
-data.EEG_F = tdt_data.streams.EEG1.data(1, :);
-data.EEG_P = tdt_data.streams.EEG1.data(2, :);
-data.EEG_DIFF = data.EEG_F - data.EEG_P
-data.EMG_1 = tdt_data.streams.EMG1.data(1, :);
-data.EMG_2 = tdt_data.streams.EMG1.data(2, :);
-data.EMG_DIFF = data.EMG_1 - data.EMG_2;
-data.REF = data.streams.mou1.data(1, :);
-data.channels = {'EEG_F' 'EEG_P' 'EEG_DIFF' 'EMG_1' 'EMG_2' 'EMG_DIFF' 'REF'};
-data.sf = {305.1758 305.1758 305.1758 305.1758 305.1758 305.1758 305.1758};
-data.time = {'20240409-18:00:00'};  
-```
-And an example of result data:
-
-![Alt text](resources/matdata.png)
