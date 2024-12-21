@@ -19,11 +19,13 @@ from misleep.gui.uis.state_spectral_dialog_ui import Ui_StateSpectralDialog
 from misleep.gui.uis.horizontal_line_dialog_ui import Ui_horizontal_line_dialog
 from misleep.gui.uis.SWA_detect_dialog_ui import Ui_SWADetectDialog
 from misleep.gui.uis.spindle_detect_dialog_ui import Ui_SpindleDetectDialog
+from misleep.gui.uis.auto_stage_dialog_ui import Ui_AutoStageDialog
 from misleep.gui.thread import SaveThread
 from misleep.io.annotation_io import transfer_result
 from misleep.utils.signals import signal_filter
 from misleep.utils.annotation import lst2group
 from misleep.analysis.detection import SWA_detection, spindle_detection
+from misleep.analysis.auto_stage import auto_stage_gbm
 from misleep.gui.utils import cal_draw_spectrum
 from misleep.preprocessing.signals import reject_artifact
 import pandas as pd
@@ -878,7 +880,55 @@ class SpindleDetectionDialog(QDialog, Ui_SpindleDetectDialog):
         self.hide()
 
 
+class AutoStageDialog(QDialog, Ui_AutoStageDialog):
+    def __init__(self, parent=None):
+        """
+        Initialize auto stage dialog
+        """
+        super().__init__(parent)
 
+        self.setupUi(self)
+
+        self.OKBt.clicked.connect(self.okEvent)
+        self.CancelBt.clicked.connect(self.cancelEvent)
+
+    def show_chs(self, channels):
+        """Initial channel combox"""
+        self.EEGChannelCombox.clear()
+        self.EEGChannelCombox.addItems(channels)
+        self.EEGChannelCombox.setCurrentIndex(0)
+        self.EMGchannelCombox.clear()
+        self.EMGchannelCombox.addItems(channels)
+        self.EMGchannelCombox.setCurrentIndex(1)
+
+    def auto_stage(self, midata):
+        """Auto stage with misleep data"""
+
+        EEG_channel_idx = self.EEGChannelCombox.currentIndex()
+        EMG_channel_idx = self.EMGchannelCombox.currentIndex()
+        EEG = deepcopy(midata.signals[EEG_channel_idx])
+        EMG = deepcopy(midata.signals[EMG_channel_idx])
+        sf = deepcopy(midata.sf[EEG_channel_idx])
+
+        EEG_site = ['P', 'F'][self.EEGSiteCombox.currentIndex()]
+
+        pred_label = auto_stage_gbm(EEG=EEG, EMG=EMG, sf=sf, EEG_channel=EEG_site)
+
+        return pred_label
+
+    def okEvent(self):
+        self.closed = False
+        self.hide()
+
+    def cancelEvent(self):
+        """Triggered by the `cancel` button"""
+        self.closed = True
+        self.hide()
+    
+    def closeEvent(self, event):
+        event.ignore()
+        self.closed = True
+        self.hide()
         
 
 

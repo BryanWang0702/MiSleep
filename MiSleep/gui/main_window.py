@@ -28,7 +28,7 @@ from misleep.gui.utils import create_new_mianno, identify_startend_color
 from misleep.utils.annotation import lst2group
 from misleep.gui.about import about_dialog
 from misleep.gui.dialog import label_dialog, transferResult_dialog, stateSpectral_dialog, \
-horizontalLine_dialog, SWADetectionDialog, SpindleDetectionDialog
+horizontalLine_dialog, SWADetectionDialog, SpindleDetectionDialog, AutoStageDialog
 from misleep.gui.spec_window import SpecWindow
 from misleep.gui.uis.main_window_ui import Ui_MiSleep
 from misleep.preprocessing.spectral import spectrogram, spectrum, band_power
@@ -142,6 +142,9 @@ class main_window(QMainWindow, Ui_MiSleep):
         # Initial spindle detection dialog
         self.spindel_detection_dialog = SpindleDetectionDialog()
 
+        # Initial auto stage dialog
+        self.auto_stage_dialog = AutoStageDialog()
+
         # Check wheher operation done and saved or not
         self.is_saved = True
 
@@ -162,6 +165,7 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.actionAddLine.triggered.connect(self.add_horizontal_line)
         self.actionSWA_detection.triggered.connect(self.swa_detection)
         self.actionSpindle_Detection.triggered.connect(self.spindle_detection)
+        self.actionAuto_Stage.triggered.connect(self.auto_stage)
 
         # Spectrogram percentile change
         self.PercentileSpin.setValue(self.spectrogram_percentile)
@@ -1124,6 +1128,8 @@ class main_window(QMainWindow, Ui_MiSleep):
 
     def handle_mouse_wheel(self, event):
         """Detect mouse wheel events to get previous and next page"""
+        if self.midata == None:
+            return
         delta = event.angleDelta().y()
         if delta < 0:
             self.next_page()
@@ -1609,6 +1615,27 @@ class main_window(QMainWindow, Ui_MiSleep):
         except Exception as e:
             logger.error(f"Spindel_detection ERROR: {e}")
             QMessageBox.about(self, "Error", "Spindle detection ERROR")
+            return
+    
+    def auto_stage(self):
+        """Auto stage data"""
+        try:
+            self.auto_stage_dialog.show_chs(self.midata.channels)
+            self.auto_stage_dialog.exec()
+            if self.auto_stage_dialog.closed:
+                return
+            auto_stage_lst = self.auto_stage_dialog.auto_stage(self.midata)
+            
+            # start_end = self.mianno.start_end + 
+            self.mianno._sleep_state[:len(auto_stage_lst)] = auto_stage_lst
+
+            self.is_saved = False
+            self.AnnotationPathLabel.setText('*Annotation path:')
+            self.plot_signals()
+            self.plot_hypo()
+        except Exception as e:
+            logger.error(f"Auto stage ERROR: {e}")
+            QMessageBox.about(self, "Error", "Auto stage ERROR")
             return
 
     def save_anno(self):

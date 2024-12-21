@@ -46,6 +46,10 @@ For sleep spindle and sleep slow-wave activities detection, you can check the to
 
 There is a config.ini in the root directory of MiSleep source package, multiple parameters can be self define there, check [config.ini](https://bryanwang.cn/MiSleep/#config-file) for detail.
 
+4. Auto stage
+
+Finally, now we have the auto stage function! Check it in the tool.
+
 **Future**: Open for suggestions :).
 
 ---

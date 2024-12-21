@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1445</width>
-    <height>964</height>
+    <height>971</height>
    </rect>
   </property>
   <property name="focusPolicy">
@@ -62,7 +62,7 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>1106</width>
+         <width>1063</width>
          <height>128</height>
         </rect>
        </property>
@@ -85,8 +85,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>1106</width>
-         <height>762</height>
+         <width>1063</width>
+         <height>756</height>
         </rect>
        </property>
       </widget>
@@ -107,8 +107,8 @@
   <widget class="QDockWidget" name="MetaDock">
    <property name="minimumSize">
     <size>
-     <width>288</width>
-     <height>112</height>
+     <width>347</width>
+     <height>134</height>
     </size>
    </property>
    <property name="features">
@@ -185,8 +185,8 @@
    </property>
    <property name="minimumSize">
     <size>
-     <width>315</width>
-     <height>443</height>
+     <width>318</width>
+     <height>474</height>
     </size>
    </property>
    <property name="layoutDirection">
@@ -444,8 +444,8 @@
   <widget class="QDockWidget" name="AnnotationDock">
    <property name="minimumSize">
     <size>
-     <width>302</width>
-     <height>159</height>
+     <width>353</width>
+     <height>191</height>
     </size>
    </property>
    <property name="features">
@@ -542,8 +542,8 @@
   <widget class="QDockWidget" name="TimeDock">
    <property name="minimumSize">
     <size>
-     <width>197</width>
-     <height>112</height>
+     <width>238</width>
+     <height>131</height>
     </size>
    </property>
    <property name="acceptDrops">
@@ -638,7 +638,7 @@
      <x>0</x>
      <y>0</y>
      <width>1445</width>
-     <height>23</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -661,6 +661,7 @@
     </widget>
     <addaction name="actionAddLine"/>
     <addaction name="menuEvent_Detection"/>
+    <addaction name="actionAuto_Stage"/>
    </widget>
    <widget class="QMenu" name="menuResult">
     <property name="title">
@@ -718,6 +719,11 @@
   <action name="actionSpindle_Detection">
    <property name="text">
     <string>Spindle Detection</string>
+   </property>
+  </action>
+  <action name="actionAuto_Stage">
+   <property name="text">
+    <string>Auto Stage</string>
    </property>
   </action>
  </widget>
