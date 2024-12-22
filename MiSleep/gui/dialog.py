@@ -916,6 +916,7 @@ class AutoStageDialog(QDialog, Ui_AutoStageDialog):
 
         return pred_label
 
+
     def okEvent(self):
         self.closed = False
         self.hide()

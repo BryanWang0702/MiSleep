@@ -1626,8 +1626,8 @@ class main_window(QMainWindow, Ui_MiSleep):
                 return
             auto_stage_lst = self.auto_stage_dialog.auto_stage(self.midata)
             
-            # start_end = self.mianno.start_end + 
-            self.mianno._sleep_state[:len(auto_stage_lst)] = auto_stage_lst
+            # Not sure which one is shorter, so get the minimum one
+            self.mianno._sleep_state[:min(len(self.mianno._sleep_state),len(auto_stage_lst))] = auto_stage_lst[:min(len(self.mianno._sleep_state),len(auto_stage_lst))] 
 
             self.is_saved = False
             self.AnnotationPathLabel.setText('*Annotation path:')

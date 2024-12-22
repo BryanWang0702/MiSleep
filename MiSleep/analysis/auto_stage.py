@@ -5,6 +5,7 @@ import pandas as pd
 from scipy import stats
 import antropy
 import joblib
+import copy
 
 
 def filter_power_line_noise(data, sf, noise_band='50-100-150'):
@@ -36,8 +37,10 @@ def split_window_data(data, sf, state, window_length=20, stride_length=5):
         return []
     
     window_data = []
-    for i in range(0, len(data) - int(window_length*sf) + 1, int(stride_length*sf)):
-        window = data[i:i + int(window_length*sf)]
+    # Make sure we have enough data point of the final segment
+    data_sec_length = floor(data.shape[0] / sf)
+    for i in range(0, data_sec_length-stride_length, stride_length):
+        window = data[int(i*sf):int((i+window_length)*sf)]
         window_data.append([window, state])
 
     return window_data
@@ -99,6 +102,24 @@ def get_data_features(data, sf, data_format='EEG'):
 
     return window_feature_df
 
+def result_constraints(pred_label):
+    """
+    Once finished the prediction, add some constraints to make the result more smooth
+    1. No REM after Wake, set to NREM
+    2. All one epoch between two same state will be set to the around state
+    """
+
+    pred_label = copy.deepcopy(pred_label)
+    for idx in range(1, len(pred_label)-1):
+        label_ = pred_label[idx]
+        if label_ == 3 and pred_label[idx+1] == 2:  # REM after Wake
+            pred_label[idx+1] = 1
+        if pred_label[idx-1] ==pred_label[idx+1]:  # Same state previous and after
+            pred_label[idx] = pred_label[idx-1]
+    
+    return pred_label
+
+
 def auto_stage_gbm(EEG, EMG, sf, EEG_channel='F'):
     """
     Auto stage with lightgbm method
@@ -132,5 +153,6 @@ def auto_stage_gbm(EEG, EMG, sf, EEG_channel='F'):
         gbm_model = joblib.load(r'./misleep/analysis/auto_stage_model/EEG_P_lightgbm_20241221.pkl')
 
     pred_label = gbm_model.predict(window_feature_df, num_iteration=gbm_model.best_iteration_)
+    pred_label = result_constraints(pred_label)
     pred_label = [item for each in pred_label for item in [each]*5]
     return pred_label
