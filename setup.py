@@ -51,7 +51,8 @@ DATA_FILES = [
             "misleep/gui/resources/misleep.qrc",
             "misleep/gui/resources/logo.png",
             "misleep/gui/resources/entire_logo.png",
-            "misleep/analysis/auto_stage_model/*"
+            "misleep/analysis/auto_stage_model/EEG_F_lightgbm_20241221.pkl",
+            "misleep/analysis/auto_stage_model/EEG_P_lightgbm_20241221.pkl"
         ],
     )
 ]
