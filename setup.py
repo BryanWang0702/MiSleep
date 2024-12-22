@@ -11,7 +11,7 @@ MAINTAINER_EMAIL = "swang@gmail.com"
 URL = "https://github.com/BryanWang0702/MiSleep/"
 LICENSE = "BSD (3-clause)"
 DOWNLOAD_URL = "https://github.com/BryanWang0702/MiSleep/"
-VERSION = "0.2.1"
+VERSION = "0.2.2"
 
 INSTALL_REQUIRES = [
     "numpy>=1.18.1",
@@ -51,6 +51,7 @@ DATA_FILES = [
             "misleep/gui/resources/misleep.qrc",
             "misleep/gui/resources/logo.png",
             "misleep/gui/resources/entire_logo.png",
+            "misleep/analysis/auto_stage_model/*"
         ],
     )
 ]
