@@ -48,7 +48,7 @@ There is a config.ini in the root directory of MiSleep source package, multiple 
 
 4. Auto stage
 
-Finally, now we have the auto stage function! Check it in the tool.
+Finally, now we have the auto stage function! Check it in the tool. The overall test accuracy of NREM and Wake is higher than 90%, and for REM, the accuracy is higher than 80%. Currently the model's result is rather fragmented in the state transition segments, we will add some constraints to fix this.
 
 **Future**: Open for suggestions :).
 

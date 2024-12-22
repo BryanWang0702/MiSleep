@@ -16,6 +16,7 @@ Here we only introduce the GUI of MiSleep. [Github repo](https://github.com/Brya
     - [Prepare work](#prepare-work)
       - [1. Data file](#1-data-file)
       - [2. Annotation file](#2-annotation-file)
+      - [3. Auto Stage](#3-auto-stage)
     - [Preview data](#preview-data)
     - [Visualization part](#visualization-part)
     - [Tool part](#tool-part)
@@ -58,6 +59,11 @@ Here we suggest to use `.edf` or `.mat` format data. `EDF` is the `European Data
 
 #### [2. Annotation file](#2-annotation-file)
 About annotation file, you need to create a new `.txt` file.
+
+#### [3. Auto Stage](#3-auto-stage)
+We trained a model based on time domain features and frequency domain features, with a lightgbm model. The overall accuracy for NREM and Wake is more than 90% and for REM is over 80%. Currently the results predicted by the model is rather than fragmented, we will add some constraints to make it better. 
+
+To use the auto stage, check the tool menu, click the `Auto Stage`, and fill the checkbox with your own data (select the EEG and EMG channel for prediction). The EEG site can be parietal or frontal (Just roughly where your EEG electrode is), which may improve the accuracy of the model a little bit.
 
 ### [Preview data](#preview-data)
 Load data and annotation files using the `File` menubar, or use shortcut.
