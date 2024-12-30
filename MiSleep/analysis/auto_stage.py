@@ -102,16 +102,27 @@ def get_data_features(data, sf, data_format='EEG'):
 
     return window_feature_df
 
-def result_constraints(pred_label):
+def result_constraints(pred_prob):
     """
     Once finished the prediction, add some constraints to make the result more smooth
     1. No REM after Wake, set to NREM
     2. All one epoch between two same state will be set to the around state
     """
 
-    pred_label = copy.deepcopy(pred_label)
+    """
+    Once finished the prediction, add some constraints to make the result more smooth
+    1. REM threshold is lower, set to 0.15
+    2. No REM after Wake, set to NREM
+    3. All one epoch between two same state will be set to the around state
+    """
+
+    pred_prob = copy.deepcopy(pred_prob)
+    pred_label = [each+1 for each in np.argmax(pred_prob, axis=1)]
+    pred_label = [2 if each[1] > 0.1 else pred_label[idx] for idx, each in enumerate(pred_prob)]  # NREM threshold
+        
     for idx in range(1, len(pred_label)-1):
         label_ = pred_label[idx]
+
         if label_ == 3 and pred_label[idx+1] == 2:  # REM after Wake
             pred_label[idx+1] = 1
         if pred_label[idx-1] ==pred_label[idx+1]:  # Same state previous and after
@@ -120,7 +131,7 @@ def result_constraints(pred_label):
     return pred_label
 
 
-def auto_stage_gbm(EEG, EMG, sf, EEG_channel='F'):
+def auto_stage_gbm(EEG, EMG, sf, EEG_channel='F', mouse_age='adult'):
     """
     Auto stage with lightgbm method
     
@@ -134,6 +145,9 @@ def auto_stage_gbm(EEG, EMG, sf, EEG_channel='F'):
         Sampling frequency of the EEG and EMG data, should be the same.
     EEG_channel : string
         Specify the channel of EEG, frontal or parietal. Options: {'F', 'P'}. Default is 'F' for frontal.
+    mouse_age : string
+        Specify which age model to use. {'adult', 'ado', 'P30'}, default is 'adult'.
+        Here the adult is > P56, ado is P30~P56, P30 is less than P30.
 
     Return
     ------
@@ -147,12 +161,9 @@ def auto_stage_gbm(EEG, EMG, sf, EEG_channel='F'):
     window_feature_df = pd.concat([get_data_features(EEG, sf, data_format='EEG'), get_data_features(EMG, sf, data_format='EMG')], axis=1)
     window_feature_df = window_feature_df.filter(like='E')
 
-    if EEG_channel == 'F':
-        gbm_model = joblib.load(r'./misleep/analysis/auto_stage_model/EEG_F_lightgbm_20241221.pkl')
-    if EEG_channel == 'P':
-        gbm_model = joblib.load(r'./misleep/analysis/auto_stage_model/EEG_P_lightgbm_20241221.pkl')
+    gbm_model = joblib.load(f'./misleep/analysis/auto_stage_model/{mouse_age}_EEG_{EEG_channel}_lightgbm.pkl')
 
-    pred_label = gbm_model.predict(window_feature_df, num_iteration=gbm_model.best_iteration_)
-    pred_label = result_constraints(pred_label)
+    pred_prob = gbm_model.predict_proba(window_feature_df, num_iteration=gbm_model.best_iteration_)
+    pred_label = result_constraints(pred_prob)
     pred_label = [item for each in pred_label for item in [each]*5]
     return pred_label

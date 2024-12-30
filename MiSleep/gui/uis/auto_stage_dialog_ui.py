@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file '.\auto_stage_dialog.ui'
+# Form implementation generated from reading ui file 'auto_stage_dialog.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.9
 #
@@ -36,20 +36,29 @@ class Ui_AutoStageDialog(object):
         self.label = QtWidgets.QLabel(self.groupBox)
         self.label.setObjectName("label")
         self.gridLayout_2.addWidget(self.label, 0, 0, 1, 1)
-        self.label_8 = QtWidgets.QLabel(self.groupBox)
-        self.label_8.setObjectName("label_8")
-        self.gridLayout_2.addWidget(self.label_8, 1, 0, 1, 1)
         self.EMGchannelCombox = QtWidgets.QComboBox(self.groupBox)
         self.EMGchannelCombox.setObjectName("EMGchannelCombox")
         self.gridLayout_2.addWidget(self.EMGchannelCombox, 1, 1, 1, 2)
-        self.EEGChannelCombox = QtWidgets.QComboBox(self.groupBox)
-        self.EEGChannelCombox.setObjectName("EEGChannelCombox")
-        self.gridLayout_2.addWidget(self.EEGChannelCombox, 0, 1, 1, 2)
         self.EEGSiteCombox = QtWidgets.QComboBox(self.groupBox)
         self.EEGSiteCombox.setObjectName("EEGSiteCombox")
         self.EEGSiteCombox.addItem("")
         self.EEGSiteCombox.addItem("")
         self.gridLayout_2.addWidget(self.EEGSiteCombox, 2, 1, 1, 2)
+        self.EEGChannelCombox = QtWidgets.QComboBox(self.groupBox)
+        self.EEGChannelCombox.setObjectName("EEGChannelCombox")
+        self.gridLayout_2.addWidget(self.EEGChannelCombox, 0, 1, 1, 2)
+        self.label_8 = QtWidgets.QLabel(self.groupBox)
+        self.label_8.setObjectName("label_8")
+        self.gridLayout_2.addWidget(self.label_8, 1, 0, 1, 1)
+        self.label_3 = QtWidgets.QLabel(self.groupBox)
+        self.label_3.setObjectName("label_3")
+        self.gridLayout_2.addWidget(self.label_3, 3, 0, 1, 1)
+        self.AgeCombox = QtWidgets.QComboBox(self.groupBox)
+        self.AgeCombox.setObjectName("AgeCombox")
+        self.AgeCombox.addItem("")
+        self.AgeCombox.addItem("")
+        self.AgeCombox.addItem("")
+        self.gridLayout_2.addWidget(self.AgeCombox, 3, 1, 1, 2)
         self.gridLayout.addWidget(self.groupBox, 0, 0, 1, 2)
 
         self.retranslateUi(AutoStageDialog)
@@ -63,7 +72,11 @@ class Ui_AutoStageDialog(object):
         self.groupBox.setTitle(_translate("AutoStageDialog", "Auto Stage options"))
         self.label_2.setText(_translate("AutoStageDialog", "EEG site:"))
         self.label.setText(_translate("AutoStageDialog", "EEG channel:"))
-        self.label_8.setText(_translate("AutoStageDialog", "EMG channel:"))
         self.EEGSiteCombox.setItemText(0, _translate("AutoStageDialog", "Parietal"))
         self.EEGSiteCombox.setItemText(1, _translate("AutoStageDialog", "Frontal"))
+        self.label_8.setText(_translate("AutoStageDialog", "EMG channel:"))
+        self.label_3.setText(_translate("AutoStageDialog", "Mouse age:"))
+        self.AgeCombox.setItemText(0, _translate("AutoStageDialog", "> P56"))
+        self.AgeCombox.setItemText(1, _translate("AutoStageDialog", "P30 - P56"))
+        self.AgeCombox.setItemText(2, _translate("AutoStageDialog", "< P30"))
 from misleep.gui.resources import misleep

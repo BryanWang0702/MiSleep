@@ -1,0 +1,10 @@
+[upload to pypi]
+python setup.py sdist
+python setup.py sdist bdist_wheel --universal
+twine upload dist/*
+
+[transfer ui to py]
+Transfer pyqtdesigner .ui file to .py file
+pyuic5.exe .\labels.ui -o .\labels.py
+Transfer the resources 
+pyrcc5 -o .\img_rc.py .\img.qrc
