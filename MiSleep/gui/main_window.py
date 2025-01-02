@@ -1624,11 +1624,13 @@ class main_window(QMainWindow, Ui_MiSleep):
             self.auto_stage_dialog.exec()
             if self.auto_stage_dialog.closed:
                 return
-            auto_stage_lst = self.auto_stage_dialog.auto_stage(self.midata)
+            auto_stage_lst, save_anno = self.auto_stage_dialog.auto_stage(self.midata, self.mianno)
             
             # Not sure which one is shorter, so get the minimum one
             self.mianno._sleep_state[:min(len(self.mianno._sleep_state),len(auto_stage_lst))] = auto_stage_lst[:min(len(self.mianno._sleep_state),len(auto_stage_lst))] 
 
+            if save_anno:
+                self.save_anno()
             self.is_saved = False
             self.AnnotationPathLabel.setText('*Annotation path:')
             self.plot_signals()
@@ -1638,8 +1640,11 @@ class main_window(QMainWindow, Ui_MiSleep):
             QMessageBox.about(self, "Error", "Auto stage ERROR")
             return
 
-    def save_anno(self):
-        """Save annotation into file"""
+    def save_anno(self, just_save=False):
+        """Save annotation into file
+        Just save: bool
+            For when I only want to save a file but not cover the current labels
+        """
         if self.anno_path == "":
             anno_path, _ = QFileDialog.getOpenFileName(
             self, "Select annotation file", 
@@ -1649,15 +1654,15 @@ class main_window(QMainWindow, Ui_MiSleep):
 
             if anno_path == "":
                 return
-            self.anno_path = anno_path
-            self.AnnoPathEdit.setText(self.anno_path)
+            if not just_save:
+                self.anno_path = anno_path
+                self.AnnoPathEdit.setText(self.anno_path)
 
         save_thread = SaveThread(file=[self.mianno, self.midata], 
                                  file_path=self.anno_path)
         saved = save_thread.save_anno()
-        if saved:
+        if saved and not just_save:
             self.is_saved = True
-            
             self.AnnotationPathLabel.setText('Annotation path:')
         save_thread.quit()
 

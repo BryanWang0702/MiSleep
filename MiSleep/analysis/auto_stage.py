@@ -6,6 +6,7 @@ from scipy import stats
 import antropy
 import joblib
 import copy
+import lightgbm
 
 
 def filter_power_line_noise(data, sf, noise_band='50-100-150'):
@@ -33,7 +34,7 @@ def split_window_data(data, sf, state, window_length=20, stride_length=5):
     """
 
     # If the data is shorter than the window length, remove it
-    if data.shape[0]/sf < 20:
+    if data.shape[0]/sf < window_length:
         return []
     
     window_data = []
@@ -45,15 +46,24 @@ def split_window_data(data, sf, state, window_length=20, stride_length=5):
 
     return window_data
 
-def delta_theta_ratio(data, sf):
+def delta_theta_ratio_theta(data, sf):
     """Calculate the delta/theta ratio from the original signal data
     Note, here the data is 20 seconds, we only need the ratio from the 5 seconds beginning
     """
     freq, t, Sxx = misleep.spectrogram(data, sf, window=1)
     band_second = np.where(t < 5)
     psd = np.sum(np.array([each[band_second] for each in Sxx]), axis=1)
-    band_power = misleep.band_power(psd, freq, bands=[[0.5, 4, 'delta'], [5, 9, 'theta']])
-    return band_power['delta'] / band_power['theta']
+    band_power = misleep.band_power(psd, freq, bands=[[0.5, 4, 'delta'], [5, 9, 'theta']], relative=True)
+    return band_power['delta'] / band_power['theta'], band_power['theta']
+
+def self_zscore(feature, quantile=0.95):
+    """Zscore the extracted features from the signal data, to exclude the abnormal signal, use 0.95 quantile
+    Return the quantile zscore feature data
+    """
+    upper_quantile = np.quantile(feature, quantile)
+    feature = [each if each < upper_quantile else upper_quantile for each in feature]
+    return (feature - np.mean(feature)) / np.std(feature)
+
 
 def get_data_features(data, sf, data_format='EEG'):
     """ Get data features, data format can be 'EEG' or 'EMG'
@@ -67,11 +77,8 @@ def get_data_features(data, sf, data_format='EEG'):
     # Time-domain features, both EEG and EMG
     # 1. standard deviation
     data_std = np.array([np.std(each[0][:int(5*sf)]) for each in data])
-    # Set those abnormal points to the upper quartile
-    data_std_upper_quantile = np.quantile(data_std, 0.95)
-    data_std = [each if each < data_std_upper_quantile else data_std_upper_quantile for each in data_std]
     # Z-score the std features
-    window_feature_df[f'{data_format}_std_zscore'] = (data_std - np.mean(data_std)) / np.std(data_std)
+    window_feature_df[f'{data_format}_std_zscore'] = self_zscore(data_std)
     
     # 2. Zero crossing rate for EEG and EMG
     zerocross_rate = [antropy.num_zerocross(each[0][:int(5*sf)]) / (5*sf) for each in data]
@@ -81,24 +88,27 @@ def get_data_features(data, sf, data_format='EEG'):
     hjorth = [antropy.hjorth_params(each[0][:int(5*sf)]) for each in data]
     hjorth_M = [each[0] for each in hjorth]
     hjorth_C = [each[1] for each in hjorth]
-    window_feature_df[f'{data_format}_Hjorth_M'] = (hjorth_M - np.mean(hjorth_M)) / np.std(hjorth_M)
-    window_feature_df[f'{data_format}_Hjorth_C'] = (hjorth_C - np.mean(hjorth_C)) / np.std(hjorth_C)
+    window_feature_df[f'{data_format}_Hjorth_M'] = self_zscore(hjorth_M)
+    window_feature_df[f'{data_format}_Hjorth_C'] = self_zscore(hjorth_C)
 
     # 4. Permutation entropy
     perm_entropy= [antropy.perm_entropy(each[0][:int(5*sf)]) for each in data]
-    window_feature_df[f'{data_format}_perm_entropy'] = (perm_entropy - np.mean(perm_entropy)) / np.std(perm_entropy) 
+    window_feature_df[f'{data_format}_perm_entropy'] = self_zscore(perm_entropy)
 
     # Some features only with EEG
     if data_format.startswith('EEG'):
         # 1. Skewness and kurtosis for EEG signal(s)
         data_skewness = np.array([stats.skew(each[0][:int(5*sf)]) for each in data])
         data_kurtosis = np.array([stats.kurtosis(each[0][:int(5*sf)]) for each in data])
-        window_feature_df[f'{data_format}_skewness_zscore'] = (data_skewness - np.mean(data_skewness)) / np.std(data_skewness)
-        window_feature_df[f'{data_format}_kurtosis_zscore'] = (data_kurtosis - np.mean(data_kurtosis)) / np.std(data_kurtosis)
+        window_feature_df[f'{data_format}_skewness_zscore'] = self_zscore(data_skewness)
+        window_feature_df[f'{data_format}_kurtosis_zscore'] = self_zscore(data_kurtosis)
         # Frequency-domain features
         # 1. delta/theta
-        delta_theta = [delta_theta_ratio(each[0], sf) for each in data]
-        window_feature_df[f'{data_format}_delta_theta'] = (delta_theta - np.mean(delta_theta)) / np.std(delta_theta) 
+        delta_theta = [delta_theta_ratio_theta(each[0], sf) for each in data]
+        delta_theta_ratio = [each[0] for each in delta_theta]
+        theta = [each[1] for each in delta_theta]
+        window_feature_df[f'{data_format}_delta_theta_ratio'] = self_zscore(delta_theta_ratio)
+        window_feature_df[f'{data_format}_theta'] = self_zscore(theta)
 
     return window_feature_df
 
@@ -118,20 +128,20 @@ def result_constraints(pred_prob):
 
     pred_prob = copy.deepcopy(pred_prob)
     pred_label = [each+1 for each in np.argmax(pred_prob, axis=1)]
-    pred_label = [2 if each[1] > 0.1 else pred_label[idx] for idx, each in enumerate(pred_prob)]  # NREM threshold
+    pred_label = [2 if each[1] > 0.1 else pred_label[idx] for idx, each in enumerate(pred_prob)]  # REM threshold
         
-    for idx in range(1, len(pred_label)-1):
-        label_ = pred_label[idx]
+    # for idx in range(1, len(pred_label)-1):
+    #     label_ = pred_label[idx]
 
-        if label_ == 3 and pred_label[idx+1] == 2:  # REM after Wake
-            pred_label[idx+1] = 1
-        if pred_label[idx-1] ==pred_label[idx+1]:  # Same state previous and after
-            pred_label[idx] = pred_label[idx-1]
+    #     if label_ == 3 and pred_label[idx+1] == 2:  # REM after Wake
+    #         pred_label[idx+1] = 1
+    #     if pred_label[idx-1] ==pred_label[idx+1]:  # Same state previous and after
+    #         pred_label[idx] = pred_label[idx-1]
     
     return pred_label
 
 
-def auto_stage_gbm(EEG, EMG, sf, EEG_channel='F', mouse_age='adult'):
+def auto_stage_gbm(EEG, EMG, label, sf, EEG_channel='F', mouse_age='adult'):
     """
     Auto stage with lightgbm method
     
@@ -141,6 +151,8 @@ def auto_stage_gbm(EEG, EMG, sf, EEG_channel='F', mouse_age='adult'):
         EEG data for auto stage. For channel specify, see EEG_channel.
     EMG : array
         EMG data for auto stage.
+    label: lst
+        MiSleep labeled sleep state label, for fine-tune the model
     sf : double
         Sampling frequency of the EEG and EMG data, should be the same.
     EEG_channel : string
@@ -154,16 +166,53 @@ def auto_stage_gbm(EEG, EMG, sf, EEG_channel='F', mouse_age='adult'):
     pred_label : list
         Predicted labels for every second. May less than the data length for about 15 seconds.
     """ 
+
+    gbm_model = joblib.load(f'./misleep/analysis/auto_stage_model/{mouse_age}_EEG_{EEG_channel}_lightgbm.pkl')
+    group_label = misleep.lst2group([idx, each] for idx, each in enumerate(label))
+    
+    # try:
+    #     fine_tune_EEG = [split_window_data(EEG[int(each[0]*sf): int(each[1]*sf)], sf, each[2], window_length=5) for each in group_label if each[2] in [1,2,3]]
+    #     fine_tune_EEG = [item for each in fine_tune_EEG for item in each]
+    #     fine_tune_EMG = [split_window_data(EMG[int(each[0]*sf): int(each[1]*sf)], sf, each[2], window_length=5) for each in group_label if each[2] in [1,2,3]]
+    #     fine_tune_EMG = [item for each in fine_tune_EMG for item in each]
+    #     fine_tune_feature_df = pd.DataFrame()
+    #     fine_tune_feature_df = pd.concat([get_data_features(fine_tune_EEG, sf, data_format='EEG'), 
+    #                                     get_data_features(fine_tune_EMG, sf, data_format='EMG')], axis=1)
+
+    #     # Use the labeld data fine-tune the model
+    #     X = fine_tune_feature_df.filter(like='E')
+    #     Y = fine_tune_feature_df[['label']].iloc[:, 0]
+    #     fine_tune_dataset = lightgbm.Dataset(X, Y)
+    #     params = dict(
+    #         boosting_type='gbdt',
+    #         max_depth=11,
+    #         num_leaves=50,
+    #         colsample_bytree=0.6,
+    #         importance_type='gain',
+    #         learning_rate=0.1
+    #     )
+    #     fine_tuned_gbm_model = lightgbm.train(params, fine_tune_dataset, init_model=gbm_model, keep_training_booster=True)
+
+    #     # I need to use the gbm model but not the Booster
+    #     gbm_model = lightgbm.LGBMClassifier()
+    #     gbm_model._Booster = fine_tuned_gbm_model  #
+    # except Exception as e:
+    #     pass
+
     EEG = split_window_data(EEG, sf, state=4)  # All set the initial state '4'
     EMG = split_window_data(EMG, sf, state=4)
 
     window_feature_df = pd.DataFrame()
     window_feature_df = pd.concat([get_data_features(EEG, sf, data_format='EEG'), get_data_features(EMG, sf, data_format='EMG')], axis=1)
     window_feature_df = window_feature_df.filter(like='E')
-
-    gbm_model = joblib.load(f'./misleep/analysis/auto_stage_model/{mouse_age}_EEG_{EEG_channel}_lightgbm.pkl')
-
-    pred_prob = gbm_model.predict_proba(window_feature_df, num_iteration=gbm_model.best_iteration_)
+    
+    # Predict with the probility
+    pred_prob = gbm_model.predict_proba(window_feature_df)
     pred_label = result_constraints(pred_prob)
     pred_label = [item for each in pred_label for item in [each]*5]
+
+    # Cover the original labeled to predicted
+    for each in group_label:
+         if each[2] in [1,2,3]:
+            pred_label[each[0]: each[1]] = [each[2]]*(each[1]-each[0])
     return pred_label

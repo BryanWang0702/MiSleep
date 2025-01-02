@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>347</width>
-    <height>265</height>
+    <width>408</width>
+    <height>342</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -38,54 +38,6 @@
       <string>Auto Stage options</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_2">
-      <item row="2" column="0">
-       <widget class="QLabel" name="label_2">
-        <property name="text">
-         <string>EEG site:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="0">
-       <widget class="QLabel" name="label">
-        <property name="text">
-         <string>EEG channel:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="1" colspan="2">
-       <widget class="QComboBox" name="EMGchannelCombox"/>
-      </item>
-      <item row="2" column="1" colspan="2">
-       <widget class="QComboBox" name="EEGSiteCombox">
-        <item>
-         <property name="text">
-          <string>Parietal</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Frontal</string>
-         </property>
-        </item>
-       </widget>
-      </item>
-      <item row="0" column="1" colspan="2">
-       <widget class="QComboBox" name="EEGChannelCombox"/>
-      </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="label_8">
-        <property name="text">
-         <string>EMG channel:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="0">
-       <widget class="QLabel" name="label_3">
-        <property name="text">
-         <string>Mouse age:</string>
-        </property>
-       </widget>
-      </item>
       <item row="3" column="1" colspan="2">
        <widget class="QComboBox" name="AgeCombox">
         <item>
@@ -103,6 +55,61 @@
           <string>&lt; P30</string>
          </property>
         </item>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="label">
+        <property name="text">
+         <string>EEG channel:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="label_3">
+        <property name="text">
+         <string>Mouse age:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1" colspan="2">
+       <widget class="QComboBox" name="EMGchannelCombox"/>
+      </item>
+      <item row="0" column="1" colspan="2">
+       <widget class="QComboBox" name="EEGChannelCombox"/>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="label_2">
+        <property name="text">
+         <string>EEG site:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="label_8">
+        <property name="text">
+         <string>EMG channel:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1" colspan="2">
+       <widget class="QComboBox" name="EEGSiteCombox">
+        <item>
+         <property name="text">
+          <string>Parietal</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Frontal</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item row="4" column="0" colspan="3">
+       <widget class="QCheckBox" name="SaveAnnoCheckbox">
+        <property name="text">
+         <string>Cover current label</string>
+        </property>
        </widget>
       </item>
      </layout>

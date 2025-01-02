@@ -901,20 +901,26 @@ class AutoStageDialog(QDialog, Ui_AutoStageDialog):
         self.EMGchannelCombox.addItems(channels)
         self.EMGchannelCombox.setCurrentIndex(1)
 
-    def auto_stage(self, midata):
+    def auto_stage(self, midata, mianno):
         """Auto stage with misleep data"""
 
         EEG_channel_idx = self.EEGChannelCombox.currentIndex()
         EMG_channel_idx = self.EMGchannelCombox.currentIndex()
         EEG = deepcopy(midata.signals[EEG_channel_idx])
         EMG = deepcopy(midata.signals[EMG_channel_idx])
+        label = deepcopy(mianno._sleep_state)
         sf = deepcopy(midata.sf[EEG_channel_idx])
 
         EEG_site = ['P', 'F'][self.EEGSiteCombox.currentIndex()]
+        mouse_age = ['adult', 'ado', 'P30'][self.AgeCombox.currentIndex()]
 
-        pred_label = auto_stage_gbm(EEG=EEG, EMG=EMG, sf=sf, EEG_channel=EEG_site)
+        pred_label = auto_stage_gbm(EEG=EEG, EMG=EMG, label=label, sf=sf, EEG_channel=EEG_site, mouse_age=mouse_age)
+        if self.SaveAnnoCheckbox.isChecked():
+            save_anno = True
+        else: 
+            save_anno = False
 
-        return pred_label
+        return pred_label, save_anno
 
 
     def okEvent(self):
