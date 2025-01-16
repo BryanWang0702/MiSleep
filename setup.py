@@ -11,7 +11,7 @@ MAINTAINER_EMAIL = "swang@gmail.com"
 URL = "https://github.com/BryanWang0702/MiSleep/"
 LICENSE = "BSD (3-clause)"
 DOWNLOAD_URL = "https://github.com/BryanWang0702/MiSleep/"
-VERSION = "0.2.3"
+VERSION = "0.2.4"
 
 INSTALL_REQUIRES = [
     "numpy>=1.18.1",
@@ -51,8 +51,12 @@ DATA_FILES = [
             "misleep/gui/resources/misleep.qrc",
             "misleep/gui/resources/logo.png",
             "misleep/gui/resources/entire_logo.png",
-            "misleep/analysis/auto_stage_model/EEG_F_lightgbm_20241221.pkl",
-            "misleep/analysis/auto_stage_model/EEG_P_lightgbm_20241221.pkl"
+            "misleep/analysis/auto_stage_model/adult_EEG_F_lightgbm.pkl",
+            "misleep/analysis/auto_stage_model/adult_EEG_P_lightgbm.pkl",
+            "misleep/analysis/auto_stage_model/ado_EEG_F_lightgbm.pkl",
+            "misleep/analysis/auto_stage_model/ado_EEG_P_lightgbm.pkl",
+            "misleep/analysis/auto_stage_model/P30_EEG_F_lightgbm.pkl",
+            "misleep/analysis/auto_stage_model/P30_EEG_P_lightgbm.pkl"
         ],
     )
 ]
