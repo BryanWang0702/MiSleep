@@ -135,6 +135,34 @@ def transfer_result(mianno, ac_time):
     ] = analyse_df[
         ['NREM_duration', 'NREM_bout', 'REM_duration', 'REM_bout', 'WAKE_duration',
         'WAKE_bout', 'INIT_duration', 'INIT_bout']].astype(int)
+
+
+    # gather the 12-h data to output the light phase and dark phase, set the first hour as ZT0 by default
+
+    try:
+        phase_data = pd.DataFrame()
+        phase_data['date_time'] = ['ZT0-ZT12', 'ZT12-ZT24']
+        phase_data['NREM_duration'] = [analyse_df['NREM_duration'].iloc[:12].sum(), analyse_df['NREM_duration'].iloc[12:24].sum()]
+        phase_data['NREM_bout'] = [analyse_df['NREM_bout'].iloc[:12].sum(), analyse_df['NREM_bout'].iloc[12:24].sum()]
+        phase_data['NREM_ave'] = phase_data.apply(lambda x: x['NREM_duration']/x['NREM_bout'] if x['NREM_bout']!=0 else 0, axis=1)
+        phase_data['NREM_percentage'] = phase_data.apply(lambda x: x['NREM_duration'] / 3600*12, axis=1)
+        phase_data['REM_duration'] = [analyse_df['REM_duration'].iloc[:12].sum(), analyse_df['REM_duration'].iloc[12:24].sum()]
+        phase_data['REM_bout'] = [analyse_df['REM_bout'].iloc[:12].sum(), analyse_df['REM_bout'].iloc[12:24].sum()]
+        phase_data['REM_ave'] = phase_data.apply(lambda x: x['REM_duration']/x['REM_bout'] if x['REM_bout']!=0 else 0, axis=1)
+        phase_data['REM_percentage'] = phase_data.apply(lambda x: x['REM_duration'] / 3600*12, axis=1)
+        phase_data['WAKE_duration'] = [analyse_df['WAKE_duration'].iloc[:12].sum(), analyse_df['WAKE_duration'].iloc[12:24].sum()]
+        phase_data['WAKE_bout'] = [analyse_df['WAKE_bout'].iloc[:12].sum(), analyse_df['WAKE_bout'].iloc[12:24].sum()]
+        phase_data['WAKE_ave'] = phase_data.apply(lambda x: x['WAKE_duration']/x['WAKE_bout'] if x['WAKE_bout']!=0 else 0, axis=1)
+        phase_data['WAKE_percentage'] = phase_data.apply(lambda x: x['WAKE_duration'] / 3600*12, axis=1)
+        phase_data['INIT_duration'] = [analyse_df['INIT_duration'].iloc[:12].sum(), analyse_df['INIT_duration'].iloc[12:24].sum()]
+        phase_data['INIT_bout'] = [analyse_df['INIT_bout'].iloc[:12].sum(), analyse_df['INIT_bout'].iloc[12:24].sum()]
+        phase_data['INIT_ave'] = phase_data.apply(lambda x: x['INIT_duration']/x['INIT_bout'] if x['INIT_bout']!=0 else 0, axis=1)
+        phase_data['INIT_percentage'] = phase_data.apply(lambda x: x['INIT_duration'] / 3600*12, axis=1)
+
+        analyse_df = pd.concat([analyse_df, phase_data])
+        analyse_df.reset_index(inplace=True)
+    except Exception as e:
+        pass
     
     start_end_df = pd.DataFrame(start_end_label, 
                                 columns=['start_time', 'start_time_sec', 

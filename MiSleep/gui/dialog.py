@@ -220,7 +220,7 @@ class transferResult_dialog(QDialog, Ui_TransferResultDialog):
         df, analyse_df, start_end_df, marker_df = transfer_result(mianno=mianno, ac_time=ac_time)        
         
         fd, _ = QFileDialog.getSaveFileName(self, "Save transfered result",
-                                                f"{config['gui']['openpath'].split('/')[0]}/transfer_result.xlsx", 
+                                                f"{config['gui']['openpath']}", 
                                                 "*.xlsx;;")
         if fd == '':
             return

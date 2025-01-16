@@ -151,8 +151,6 @@ def auto_stage_gbm(EEG, EMG, label, sf, EEG_channel='F', mouse_age='adult'):
         EEG data for auto stage. For channel specify, see EEG_channel.
     EMG : array
         EMG data for auto stage.
-    label: lst
-        MiSleep labeled sleep state label, for fine-tune the model
     sf : double
         Sampling frequency of the EEG and EMG data, should be the same.
     EEG_channel : string
@@ -167,52 +165,16 @@ def auto_stage_gbm(EEG, EMG, label, sf, EEG_channel='F', mouse_age='adult'):
         Predicted labels for every second. May less than the data length for about 15 seconds.
     """ 
 
-    gbm_model = joblib.load(f'./misleep/analysis/auto_stage_model/{mouse_age}_EEG_{EEG_channel}_lightgbm.pkl')
-    group_label = misleep.lst2group([idx, each] for idx, each in enumerate(label))
-    
-    # try:
-    #     fine_tune_EEG = [split_window_data(EEG[int(each[0]*sf): int(each[1]*sf)], sf, each[2], window_length=5) for each in group_label if each[2] in [1,2,3]]
-    #     fine_tune_EEG = [item for each in fine_tune_EEG for item in each]
-    #     fine_tune_EMG = [split_window_data(EMG[int(each[0]*sf): int(each[1]*sf)], sf, each[2], window_length=5) for each in group_label if each[2] in [1,2,3]]
-    #     fine_tune_EMG = [item for each in fine_tune_EMG for item in each]
-    #     fine_tune_feature_df = pd.DataFrame()
-    #     fine_tune_feature_df = pd.concat([get_data_features(fine_tune_EEG, sf, data_format='EEG'), 
-    #                                     get_data_features(fine_tune_EMG, sf, data_format='EMG')], axis=1)
-
-    #     # Use the labeld data fine-tune the model
-    #     X = fine_tune_feature_df.filter(like='E')
-    #     Y = fine_tune_feature_df[['label']].iloc[:, 0]
-    #     fine_tune_dataset = lightgbm.Dataset(X, Y)
-    #     params = dict(
-    #         boosting_type='gbdt',
-    #         max_depth=11,
-    #         num_leaves=50,
-    #         colsample_bytree=0.6,
-    #         importance_type='gain',
-    #         learning_rate=0.1
-    #     )
-    #     fine_tuned_gbm_model = lightgbm.train(params, fine_tune_dataset, init_model=gbm_model, keep_training_booster=True)
-
-    #     # I need to use the gbm model but not the Booster
-    #     gbm_model = lightgbm.LGBMClassifier()
-    #     gbm_model._Booster = fine_tuned_gbm_model  #
-    # except Exception as e:
-    #     pass
-
     EEG = split_window_data(EEG, sf, state=4)  # All set the initial state '4'
     EMG = split_window_data(EMG, sf, state=4)
 
     window_feature_df = pd.DataFrame()
     window_feature_df = pd.concat([get_data_features(EEG, sf, data_format='EEG'), get_data_features(EMG, sf, data_format='EMG')], axis=1)
     window_feature_df = window_feature_df.filter(like='E')
-    
-    # Predict with the probility
-    pred_prob = gbm_model.predict_proba(window_feature_df)
+
+    gbm_model = joblib.load(f'./misleep/analysis/auto_stage_model/{mouse_age}_EEG_{EEG_channel}_lightgbm.pkl')
+
+    pred_prob = gbm_model.predict_proba(window_feature_df, num_iteration=gbm_model.best_iteration_)
     pred_label = result_constraints(pred_prob)
     pred_label = [item for each in pred_label for item in [each]*5]
-
-    # Cover the original labeled to predicted
-    for each in group_label:
-         if each[2] in [1,2,3]:
-            pred_label[each[0]: each[1]] = [each[2]]*(each[1]-each[0])
     return pred_label
