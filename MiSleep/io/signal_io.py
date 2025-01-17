@@ -106,10 +106,10 @@ def load_mat(data_path):
             try:
                 for each in channels:
                     signal_ = raw_data[each]
-                    if signal_.shape[0] > signal_.shape[1]:
-                        signals.append(signal_.T)
-                    if signal_.shape[0] < signal_.shape[1]:
+                    if signal_.shape[0] > 1:
                         signals.append(signal_)
+                    if signal_.shape[0] == 1:
+                        signals.append(signal_.T)
             except Exception as e:
                 logger.error(f"Load data ERROR: {e}")
                 return 
