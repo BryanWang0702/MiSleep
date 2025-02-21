@@ -3,7 +3,7 @@ import numpy as np
 from math import floor
 import pandas as pd
 from scipy import stats
-import antropy
+from misleep.utils.self_antropy import num_zerocross, perm_entropy, hjorth_params
 import joblib
 import copy
 import lightgbm
@@ -81,18 +81,18 @@ def get_data_features(data, sf, data_format='EEG'):
     window_feature_df[f'{data_format}_std_zscore'] = self_zscore(data_std)
     
     # 2. Zero crossing rate for EEG and EMG
-    zerocross_rate = [antropy.num_zerocross(each[0][:int(5*sf)]) / (5*sf) for each in data]
+    zerocross_rate = [num_zerocross(each[0][:int(5*sf)]) / (5*sf) for each in data]
     window_feature_df[f'{data_format}_zerocross_rate'] = (zerocross_rate - np.mean(zerocross_rate)) / np.std(zerocross_rate)
 
     # 3. Hjorth parameters -- Mobility and Complexity
-    hjorth = [antropy.hjorth_params(each[0][:int(5*sf)]) for each in data]
+    hjorth = [hjorth_params(each[0][:int(5*sf)]) for each in data]
     hjorth_M = [each[0] for each in hjorth]
     hjorth_C = [each[1] for each in hjorth]
     window_feature_df[f'{data_format}_Hjorth_M'] = self_zscore(hjorth_M)
     window_feature_df[f'{data_format}_Hjorth_C'] = self_zscore(hjorth_C)
 
     # 4. Permutation entropy
-    perm_entropy= [antropy.perm_entropy(each[0][:int(5*sf)]) for each in data]
+    perm_entropy= [perm_entropy(each[0][:int(5*sf)]) for each in data]
     window_feature_df[f'{data_format}_perm_entropy'] = self_zscore(perm_entropy)
 
     # Some features only with EEG
