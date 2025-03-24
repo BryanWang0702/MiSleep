@@ -647,6 +647,7 @@
     </property>
     <addaction name="actionLoadData"/>
     <addaction name="actionLoadAnnotation"/>
+    <addaction name="actionLoad_AccuSleep_Data"/>
    </widget>
    <widget class="QMenu" name="menuTools">
     <property name="title">
@@ -724,6 +725,11 @@
   <action name="actionAuto_Stage">
    <property name="text">
     <string>Auto Stage</string>
+   </property>
+  </action>
+  <action name="actionLoad_AccuSleep_Data">
+   <property name="text">
+    <string>Load AccuSleep Data</string>
    </property>
   </action>
  </widget>

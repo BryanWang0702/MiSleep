@@ -143,6 +143,8 @@ def cal_draw_spectrum(data, sf, nperseg, freq_band=None, relative=None):
     import numpy as np
     import matplotlib.pyplot as plt
 
+    plt.close()
+
     if freq_band is None:
         freq_band = [0.5, 30]
     F, P = welch(data, sf, nperseg=nperseg)

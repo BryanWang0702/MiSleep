@@ -396,6 +396,49 @@ class stateSpectral_dialog(QDialog, Ui_StateSpectralDialog):
             4: 'Init'
         }
 
+        # Check the hour segmentation checkbox, and calculate the spectrum for each hour, with the second
+        # if enabled
+        NREM_hour_spec = []
+        REM_hour_spec = []
+        Wake_hour_spec = []
+        if self.HourSegmentCheckBox.isChecked():
+            for sec in range(start_sec, end_sec, 3600):
+                sleep_state = mianno.sleep_state[sec:sec+3601]
+                sleep_state = lst2group([[idx, each] for idx, each in enumerate(sleep_state)])
+
+                # Merge 4 states' data
+                NREM_data = [channel_data[int((each[0]+sec)*sf): int((each[1]+sec)*sf)] 
+                            for each in sleep_state if each[2] == 1]
+                NREM_data = [element for sublist in NREM_data for element in sublist]
+                REM_data = [channel_data[int((each[0]+sec)*sf): int((each[1]+sec)*sf)] 
+                            for each in sleep_state if each[2] == 2]
+                REM_data = [element for sublist in REM_data for element in sublist]
+                Wake_data = [channel_data[int((each[0]+sec)*sf): int((each[1]+sec)*sf)] 
+                            for each in sleep_state if each[2] == 3]
+                Wake_data = [element for sublist in Wake_data for element in sublist]
+                Init_data = [channel_data[int((each[0]+sec)*sf): int((each[1]+sec)*sf)] 
+                            for each in sleep_state if each[2] == 4]
+                Init_data = [element for sublist in Init_data for element in sublist]
+
+                if self.RejectArtifactCheckBox.isChecked():
+                    threshold = self.ArtThresholdSpinBox.value()
+                else:
+                    threshold = 1.5
+                if self.RejectArtifactCheckBox.isChecked():
+                    NREM_data = reject_artifact(NREM_data, sf=sf, threshold=threshold)
+                    REM_data = reject_artifact(REM_data, sf=sf, threshold=threshold)
+                    Wake_data = reject_artifact(Wake_data, sf=sf, threshold=threshold)
+                    Init_data = reject_artifact(Init_data, sf=sf, threshold=threshold)
+
+                NREM_hour_spec.append(cal_draw_spectrum(data=NREM_data, sf=sf, 
+                                                   nperseg=nperseg, relative=relative)[0][1])
+                REM_hour_spec.append(cal_draw_spectrum(data=REM_data, sf=sf, 
+                                                        nperseg=nperseg, relative=relative)[0][1])
+                Wake_hour_spec.append(cal_draw_spectrum(data=Wake_data, sf=sf,
+                                                        nperseg=nperseg, relative=relative)[0][1])
+        hour_spec = [NREM_hour_spec, REM_hour_spec, Wake_hour_spec]
+                            
+
         fd = QFileDialog.getExistingDirectory(self, 
                                               "Select a folder to save 4 stages' data", 
                                               f"{config['gui']['openpath']}")
@@ -411,6 +454,9 @@ class stateSpectral_dialog(QDialog, Ui_StateSpectralDialog):
         # Write to excel file
         for idx, spec in enumerate([NREM_spec, REM_spec, Wake_spec]):
             _df = pd.DataFrame(data=spec.T, columns=['frequency', 'power'])
+            if hour_spec[idx] != []:
+                # Add the hour spectrum to the dataframe
+                _df[[str(each) for each in range(1, len(hour_spec[idx])+1)]] = pd.DataFrame(hour_spec[idx]).T
             _df.to_excel(excel_writer=writer, sheet_name=name_map[idx+1], index=False)
         if len(Init_data) > sf*10:
             Init_spec, Init_figure = cal_draw_spectrum(data=Init_data, sf=sf,

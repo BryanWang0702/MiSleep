@@ -1332,11 +1332,11 @@ class main_window(QMainWindow, Ui_MiSleep):
 
     def show_spec_window(self):
         """Show spectrum dialog, triggered by PlotSpecBt"""
-        if self.SleepStateRadio.isChecked() and len(self.start_end) == 2 and self.start_end[1] - self.start_end[0] >= 10:
+        if self.SleepStateRadio.isChecked() and len(self.start_end) == 2 and self.start_end[1] - self.start_end[0] >= 5:
             start_ = self.start_end[0]
             end_ = self.start_end[1]
         
-        elif self.StartEndRadio.isChecked() and len(self.start_end_ms) == 2 and self.start_end_ms[1] - self.start_end_ms[0] >= 10:
+        elif self.StartEndRadio.isChecked() and len(self.start_end_ms) == 2 and self.start_end_ms[1] - self.start_end_ms[0] >= 5:
             start_ = self.start_end_ms[0]
             end_ = self.start_end_ms[1]
         
@@ -1344,7 +1344,7 @@ class main_window(QMainWindow, Ui_MiSleep):
             QMessageBox.about(
                 self,
                 "Error",
-                "Please select a start-end larger than 10 seconds.",
+                "Please select a start-end larger than 5 seconds.",
             )
             return
         

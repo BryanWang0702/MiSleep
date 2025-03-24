@@ -14,6 +14,7 @@
 /build
 /misleep.egg-info
 /.vscode
+/tutorials
 
 #ignore files
 *.pyc

@@ -92,8 +92,8 @@ def get_data_features(data, sf, data_format='EEG'):
     window_feature_df[f'{data_format}_Hjorth_C'] = self_zscore(hjorth_C)
 
     # 4. Permutation entropy
-    perm_entropy= [perm_entropy(each[0][:int(5*sf)]) for each in data]
-    window_feature_df[f'{data_format}_perm_entropy'] = self_zscore(perm_entropy)
+    perm_entropy_ = [perm_entropy(each[0][:int(5*sf)]) for each in data]
+    window_feature_df[f'{data_format}_perm_entropy'] = self_zscore(perm_entropy_)
 
     # Some features only with EEG
     if data_format.startswith('EEG'):
