@@ -402,21 +402,21 @@ class stateSpectral_dialog(QDialog, Ui_StateSpectralDialog):
         REM_hour_spec = []
         Wake_hour_spec = []
         if self.HourSegmentCheckBox.isChecked():
-            for sec in range(start_sec, end_sec, 3600):
-                sleep_state = mianno.sleep_state[sec:sec+3601]
-                sleep_state = lst2group([[idx, each] for idx, each in enumerate(sleep_state)])
+            for sec in range(0, end_sec-start_sec, 3600):
+                sleep_state = mianno.sleep_state[sec:sec+3600]
+                sleep_state = lst2group([[idx+sec, each] for idx, each in enumerate(sleep_state)])
 
                 # Merge 4 states' data
-                NREM_data = [channel_data[int((each[0]+sec)*sf): int((each[1]+sec)*sf)] 
+                NREM_data = [channel_data[int(each[0]*sf): int(each[1]*sf)] 
                             for each in sleep_state if each[2] == 1]
                 NREM_data = [element for sublist in NREM_data for element in sublist]
-                REM_data = [channel_data[int((each[0]+sec)*sf): int((each[1]+sec)*sf)] 
+                REM_data = [channel_data[int(each[0]*sf): int(each[1]*sf)] 
                             for each in sleep_state if each[2] == 2]
                 REM_data = [element for sublist in REM_data for element in sublist]
-                Wake_data = [channel_data[int((each[0]+sec)*sf): int((each[1]+sec)*sf)] 
+                Wake_data = [channel_data[int(each[0]*sf): int(each[1]*sf)] 
                             for each in sleep_state if each[2] == 3]
                 Wake_data = [element for sublist in Wake_data for element in sublist]
-                Init_data = [channel_data[int((each[0]+sec)*sf): int((each[1]+sec)*sf)] 
+                Init_data = [channel_data[int(each[0]*sf): int(each[1]*sf)] 
                             for each in sleep_state if each[2] == 4]
                 Init_data = [element for sublist in Init_data for element in sublist]
 
