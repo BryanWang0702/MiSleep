@@ -6,7 +6,6 @@
 @Date: 2024/3/6
 @Description:  Annotation io, default is for MiSleep annotation, `NAME.txt`
 """
-from misleep.io.base import MiAnnotation
 from misleep.utils.annotation import marker2mianno, start_end2mianno, lst2group, sleep_state2mianno, transfer_time
 import pandas as pd
 
@@ -43,6 +42,8 @@ def load_misleep_anno(file_path, state_map=None):
 
     sleep_state = annotation[sleep_state_idx + 1:]
     sleep_state = sleep_state2mianno(sleep_state)
+    
+    from misleep.io.base import MiAnnotation
 
     return MiAnnotation(sleep_state=sleep_state, start_end=start_end, marker=marker, state_map=state_map)
 
@@ -62,6 +63,8 @@ def load_bio_anno(file_path):
     }
 
     state_list = [state_map[each] for each in state_list]
+    
+    from misleep.io.base import MiAnnotation
     return MiAnnotation(sleep_state=state_list, marker=[], start_end=[])
 
 

@@ -13,7 +13,6 @@
 from hdf5storage import savemat
 import pyedflib
 import datetime
-from misleep.io.base import MiData
 from misleep.utils.logger_handler import logger
 
 
@@ -40,6 +39,8 @@ def load_mat(data_path):
 
     from scipy.io import loadmat as scipy_loadmat
     from mat73 import loadmat as mat73_loadmat
+    
+    from misleep.io.base import MiData
 
     try:
         # Use scipy to load
@@ -183,6 +184,8 @@ def load_edf(data_path):
     """
 
     signals, signal_headers, meta = pyedflib.highlevel.read_edf(edf_file=data_path)
+    
+    from misleep.io.base import MiData
 
     return MiData(signals=signals,
                   channels=[each['label'] for each in signal_headers],

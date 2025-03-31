@@ -466,7 +466,6 @@ class stateSpectral_dialog(QDialog, Ui_StateSpectralDialog):
             Init_figure.savefig(fd + '/Init_spectrum.pdf')
 
         writer.close()
-
         QMessageBox.about(self, "Info", "Spectral analysis finished")
 
     def okEvent(self):

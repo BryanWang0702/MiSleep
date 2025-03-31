@@ -9,7 +9,7 @@
 import math
 
 import numpy as np
-from misleep.utils.signals import signal_filter
+
 
 
 class MiData:
@@ -143,6 +143,7 @@ class MiData:
         low : float
         high : float
         """
+        from misleep.utils.signals import signal_filter
         if chans is None or not isinstance(chans, list):
             raise TypeError(f"'chans' should be a list of channel names, got {type(chans)}")
 
