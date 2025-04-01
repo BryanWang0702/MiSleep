@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import matplotlib
 
 
-def plot_hypno(sleep_state, state_map=None):
+def plot_hypno(sleep_state, state_map=None, time_range=[0, -1]):
     """
     Draw hypnogram with sleep_state list
 
@@ -21,10 +21,21 @@ def plot_hypno(sleep_state, state_map=None):
         List of sleep state, should be integers, and use state_map map to contents
     state_map : dict
         Dict of mapping from sleep state content to it's meaning
+    time_range : list
+        Time range to plot the hypnogram
     """
 
     if not isinstance(sleep_state, list):
         raise TypeError(f"'sleep_state' should be a list, got {type(sleep_state)}")
+    
+    try:
+        if time_range != [0, -1]:
+            sleep_state_ = sleep_state[time_range[0]:time_range[1]]
+    except Exception as e:
+        print("Invalid time range, plot as default")
+        sleep_state_ = sleep_state
+
+    sleep_state = sleep_state_
 
     if state_map is None:
         state_map = {

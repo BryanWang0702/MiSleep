@@ -403,7 +403,7 @@ class stateSpectral_dialog(QDialog, Ui_StateSpectralDialog):
         Wake_hour_spec = []
         if self.HourSegmentCheckBox.isChecked():
             for sec in range(0, end_sec-start_sec, 3600):
-                sleep_state = mianno.sleep_state[sec:sec+3600]
+                sleep_state = mianno.sleep_state[start_sec+sec: start_sec+sec+3600]
                 sleep_state = lst2group([[idx+sec, each] for idx, each in enumerate(sleep_state)])
 
                 # Merge 4 states' data
