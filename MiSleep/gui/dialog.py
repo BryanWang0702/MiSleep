@@ -20,6 +20,7 @@ from misleep.gui.uis.horizontal_line_dialog_ui import Ui_horizontal_line_dialog
 from misleep.gui.uis.SWA_detect_dialog_ui import Ui_SWADetectDialog
 from misleep.gui.uis.spindle_detect_dialog_ui import Ui_SpindleDetectDialog
 from misleep.gui.uis.auto_stage_dialog_ui import Ui_AutoStageDialog
+from misleep.gui.uis.save_data_dialog_ui import Ui_SaveDataDialog
 from misleep.gui.thread import SaveThread
 from misleep.io.annotation_io import transfer_result
 from misleep.utils.signals import signal_filter
@@ -967,6 +968,68 @@ class AutoStageDialog(QDialog, Ui_AutoStageDialog):
 
         return pred_label, save_anno
 
+
+    def okEvent(self):
+        self.closed = False
+        self.hide()
+
+    def cancelEvent(self):
+        """Triggered by the `cancel` button"""
+        self.closed = True
+        self.hide()
+    
+    def closeEvent(self, event):
+        event.ignore()
+        self.closed = True
+        self.hide()
+
+
+class SaveData_dialog(QDialog, Ui_SaveDataDialog):
+    def __init__(self, parent=None):
+        """
+        Initialize the save data dialog of MiSleep
+        """
+        super().__init__(parent)
+
+        self.setupUi(self)
+
+        self.CropStartTimeEditor.setDisabled(True)
+        self.CropEndTimeEditor.setDisabled(True)
+
+        self.CropStartTimeEditor.setDisabled(True)
+        self.CropEndTimeEditor.setDisabled(True)
+        self.CropDataStartCheckBox.clicked.connect(self.crop_start_time_editor_changed)
+        self.CropDataEndCheckBox.clicked.connect(self.crop_end_time_editor_changed)
+        
+        self.channel_slm = QStringListModel()
+        
+        self.OKBtn.clicked.connect(self.okEvent)
+        self.CancelBtn.clicked.connect(self.cancelEvent)
+        self.closed = True
+
+    def crop_start_time_editor_changed(self):
+        if self.CropDataStartCheckBox.isChecked():
+            self.CropStartTimeEditor.setEnabled(True)
+        if not self.CropDataStartCheckBox.isChecked():
+            self.CropStartTimeEditor.setDisabled(True)
+
+    def crop_end_time_editor_changed(self):
+        if self.CropDataEndCheckBox.isChecked():
+            self.CropEndTimeEditor.setEnabled(True)
+        if not self.CropDataEndCheckBox.isChecked():
+            self.CropEndTimeEditor.setDisabled(True)
+
+    def fill_midata_params(self, midata):
+        """
+        Fill the midata params to the dialog, including time, channels, sf, etc.
+        """
+        self.channel_slm.setStringList(midata.channels)
+        self.ChannelListView.setModel(self.channel_slm)
+
+        self.CropStartTimeEditor.setDateTime(datetime.datetime.strptime(midata.time, "%Y%m%d-%H:%M:%S"))
+        # End time should add the midata.duration to format the time
+        end_time = datetime.datetime.strptime(midata.time, "%Y%m%d-%H:%M:%S") + datetime.timedelta(seconds=midata.duration)
+        self.CropEndTimeEditor.setDateTime(end_time)
 
     def okEvent(self):
         self.closed = False

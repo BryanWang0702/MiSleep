@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file '.\main_window.ui'
+# Form implementation generated from reading ui file 'misleep/gui/uis/main_window.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.9
 #
@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MiSleep(object):
     def setupUi(self, MiSleep):
         MiSleep.setObjectName("MiSleep")
-        MiSleep.resize(1445, 971)
+        MiSleep.resize(1451, 967)
         MiSleep.setFocusPolicy(QtCore.Qt.WheelFocus)
         icon = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap(":/logo/logo.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
@@ -35,7 +35,7 @@ class Ui_MiSleep(object):
         self.HypnoArea.setWidgetResizable(True)
         self.HypnoArea.setObjectName("HypnoArea")
         self.scrollAreaWidgetContents_2 = QtWidgets.QWidget()
-        self.scrollAreaWidgetContents_2.setGeometry(QtCore.QRect(0, 0, 1063, 128))
+        self.scrollAreaWidgetContents_2.setGeometry(QtCore.QRect(0, 0, 1069, 128))
         self.scrollAreaWidgetContents_2.setObjectName("scrollAreaWidgetContents_2")
         self.HypnoArea.setWidget(self.scrollAreaWidgetContents_2)
         self.gridLayout_3.addWidget(self.HypnoArea, 2, 0, 1, 1)
@@ -44,7 +44,7 @@ class Ui_MiSleep(object):
         self.SignalArea.setWidgetResizable(True)
         self.SignalArea.setObjectName("SignalArea")
         self.scrollAreaWidgetContents = QtWidgets.QWidget()
-        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 1063, 756))
+        self.scrollAreaWidgetContents.setGeometry(QtCore.QRect(0, 0, 1069, 764))
         self.scrollAreaWidgetContents.setObjectName("scrollAreaWidgetContents")
         self.SignalArea.setWidget(self.scrollAreaWidgetContents)
         self.gridLayout_3.addWidget(self.SignalArea, 0, 0, 1, 1)
@@ -291,7 +291,7 @@ class Ui_MiSleep(object):
         self.TimeDock.setWidget(self.dockWidgetContents_7)
         MiSleep.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.TimeDock)
         self.menuBar = QtWidgets.QMenuBar(MiSleep)
-        self.menuBar.setGeometry(QtCore.QRect(0, 0, 1445, 26))
+        self.menuBar.setGeometry(QtCore.QRect(0, 0, 1451, 22))
         self.menuBar.setObjectName("menuBar")
         self.menuFile = QtWidgets.QMenu(self.menuBar)
         self.menuFile.setObjectName("menuFile")
@@ -322,8 +322,14 @@ class Ui_MiSleep(object):
         self.actionSpindle_Detection.setObjectName("actionSpindle_Detection")
         self.actionAuto_Stage = QtWidgets.QAction(MiSleep)
         self.actionAuto_Stage.setObjectName("actionAuto_Stage")
+        self.actionLoad_AccuSleep_Data = QtWidgets.QAction(MiSleep)
+        self.actionLoad_AccuSleep_Data.setObjectName("actionLoad_AccuSleep_Data")
+        self.actionSaveData = QtWidgets.QAction(MiSleep)
+        self.actionSaveData.setObjectName("actionSaveData")
         self.menuFile.addAction(self.actionLoadData)
         self.menuFile.addAction(self.actionLoadAnnotation)
+        self.menuFile.addSeparator()
+        self.menuFile.addAction(self.actionSaveData)
         self.menuEvent_Detection.addAction(self.actionSWA_detection)
         self.menuEvent_Detection.addAction(self.actionSpindle_Detection)
         self.menuTools.addAction(self.actionAddLine)
@@ -399,4 +405,6 @@ class Ui_MiSleep(object):
         self.actionSWA_detection.setText(_translate("MiSleep", "SWA Detection"))
         self.actionSpindle_Detection.setText(_translate("MiSleep", "Spindle Detection"))
         self.actionAuto_Stage.setText(_translate("MiSleep", "Auto Stage"))
+        self.actionLoad_AccuSleep_Data.setText(_translate("MiSleep", "Load AccuSleep Data"))
+        self.actionSaveData.setText(_translate("MiSleep", "Save Data"))
 from misleep.gui.resources import misleep

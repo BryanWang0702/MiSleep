@@ -28,7 +28,7 @@ from misleep.gui.utils import create_new_mianno, identify_startend_color
 from misleep.utils.annotation import lst2group
 from misleep.gui.about import about_dialog
 from misleep.gui.dialog import label_dialog, transferResult_dialog, stateSpectral_dialog, \
-horizontalLine_dialog, SWADetectionDialog, SpindleDetectionDialog, AutoStageDialog
+horizontalLine_dialog, SWADetectionDialog, SpindleDetectionDialog, AutoStageDialog, SaveData_dialog
 from misleep.gui.spec_window import SpecWindow
 from misleep.gui.uis.main_window_ui import Ui_MiSleep
 from misleep.preprocessing.spectral import spectrogram, spectrum, band_power
@@ -129,6 +129,9 @@ class main_window(QMainWindow, Ui_MiSleep):
         # Initial state spectral dialog
         self.state_spectral_dialog = stateSpectral_dialog()
 
+        # Initial data saving dialog
+        self.save_data_dialog = SaveData_dialog()
+
         # Initial horizontal line dialog
         self.horizontal_line_dialog = horizontalLine_dialog()
         # The horizontal_line dict contains the line value, line color, line comment
@@ -166,6 +169,7 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.actionSWA_detection.triggered.connect(self.swa_detection)
         self.actionSpindle_Detection.triggered.connect(self.spindle_detection)
         self.actionAuto_Stage.triggered.connect(self.auto_stage)
+        self.actionSaveData.triggered.connect(self.save_data)
 
         # Spectrogram percentile change
         self.PercentileSpin.setValue(self.spectrogram_percentile)
@@ -1009,10 +1013,11 @@ class main_window(QMainWindow, Ui_MiSleep):
                 # Clear start end label
                 self.start_end = []
                 self.start_end.append(sec)
+            elif sec < self.start_end[0]:
+                # Clear start end label and add the second as start
+                self.start_end = []
+                self.start_end.append(sec)
             else:
-                if sec < self.start_end[0]:
-                    QMessageBox.about(self, "Error", "End should be larger than Start!")
-                    return
                 self.start_end.append(sec + 1)
 
             self.plot_start_end_line()
@@ -1365,28 +1370,36 @@ class main_window(QMainWindow, Ui_MiSleep):
             int(end_*self.midata.sf[channel])
         ]
         
-        freq, psd = spectrum(signal=signal_data,
-                             sf=self.midata.sf[channel],
-                             relative=True)
-        
-        f, t, Sxx = spectrogram(signal=signal_data,
+        try:
+            freq, psd = spectrum(signal=signal_data,
                                 sf=self.midata.sf[channel],
-                                step=1, window=5, norm=True)
+                                relative=True)
+            
+            f, t, Sxx = spectrogram(signal=signal_data,
+                                    sf=self.midata.sf[channel],
+                                    step=1, window=5, norm=True)
 
-        bandPower = band_power(psd=psd, freq=freq, 
-                               bands=[[0.5, 4, 'delta'], [4, 9, 'theta']])
-        
-        ratio = bandPower['delta'] / bandPower['theta']
-        
-        self.spec_window.show_(spectrum=[psd, freq], 
-                               spectrogram=[f, t, Sxx],
-                               percentile_=self.spectrogram_percentile,
-                               ratio=ratio, start_end=[start_, end_])
-        
-        self.spec_window.activateWindow()
-        self.spec_window.setWindowState(
-                self.spec_window.windowState() & ~Qt.WindowMinimized | Qt.WindowActive)
-        self.spec_window.showNormal()
+            bandPower = band_power(psd=psd, freq=freq, 
+                                bands=[[0.5, 4, 'delta'], [4, 9, 'theta']])
+            
+            ratio = bandPower['delta'] / bandPower['theta']
+            
+            self.spec_window.show_(spectrum=[psd, freq], 
+                                spectrogram=[f, t, Sxx],
+                                percentile_=self.spectrogram_percentile,
+                                ratio=ratio, start_end=[start_, end_])
+            
+            self.spec_window.activateWindow()
+            self.spec_window.setWindowState(
+                    self.spec_window.windowState() & ~Qt.WindowMinimized | Qt.WindowActive)
+            self.spec_window.showNormal()
+        except Exception as e:
+            QMessageBox.about(
+                self,
+                "Error",
+                "Filter error.",
+            )
+            return
 
     def set_show_duration(self, type_="Combo"):
         """Set show_duration with ShowRangeCombo or SecondNumSpin"""
@@ -1667,7 +1680,59 @@ class main_window(QMainWindow, Ui_MiSleep):
         save_thread.quit()
 
     def save_data(self):
-        """Save data into file"""        
+        """Save data into file"""
+        
+        # Pop up dialog to get save data options
+        self.save_data_dialog.fill_midata_params(midata=self.midata)
+        self.save_data_dialog.exec()
+        if self.save_data_dialog.closed:
+            return
+        
+        # Get the selected channels to save data
+        selected_channels = [each.row() for each in self.save_data_dialog.ChannelListView.selectedIndexes()]
+        # If did not select any channel, save all channels
+        if selected_channels == []:
+            selected_channels = list(range(self.midata.n_channels))
+        midata_to_save = self.midata.pick_chs([self.midata.channels[each] for each in selected_channels])
+
+        # Crop data with the checkbox and time editor
+        start_sec = 0
+        end_sec = self.midata.duration
+        
+        if self.save_data_dialog.CropDataStartCheckBox.isChecked():
+            start_time = self.save_data_dialog.CropStartTimeEditor.dateTime().toPyDateTime()
+            midata_to_save._time = start_time.strftime("%Y%m%d-%H:%M:%S")
+            start_sec = int(datetime.timedelta.total_seconds(start_time - self.ac_time))
+            if start_sec < 0:
+                start_sec = 0
+        
+        if self.save_data_dialog.CropDataEndCheckBox.isChecked():
+            end_time = self.save_data_dialog.CropEndTimeEditor.dateTime().toPyDateTime()
+            end_sec = int(datetime.timedelta.total_seconds(end_time - self.ac_time))
+            if end_sec > self.midata.duration:
+                end_sec = self.midata.duration
+
+        if end_sec <= start_sec:
+            start_sec = 0
+            end_sec = self.midata.duration
+            
+        midata_to_save = midata_to_save.crop([start_sec, end_sec])
+
+        data_path, _ = QFileDialog.getSaveFileName(
+            self, "Select a file to save data", 
+            f"{self.config['gui']['openpath']}_misleep_saved", 
+            "*mat Files (*.mat *.MAT);;*edf Files (*.edf *.EDF);"
+        )
+        if data_path == "":
+                return
+
+        save_thread = SaveThread(file=midata_to_save, file_path=data_path)
+        saved = save_thread.save_data()
+        if saved:
+            QMessageBox.about(self, "Info", f"Data Saved to {data_path}")
+        else:
+            QMessageBox.about(self, "Error", "Data save ERROR")
+        save_thread.quit()        
     
     def auto_save(self):
         """Auto save every 5 mins"""

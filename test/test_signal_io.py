@@ -8,32 +8,70 @@
 """
 
 import pytest
-from misleep.io.signal_io import load_mat, load_edf, write_mat
+from misleep.io.signal_io import load_mat, load_edf, write_mat, write_edf
 from time import time
+import os
 
 
 class TestSignalIO():
-    def test_load_mat_write_mat(self):
-        """Test load_mat and write_mat"""
-        mat_path = r'E:\workplace\EEGProcessing\00_DATA\20231117_test+vid_6pin\data_mini_saved_python.mat'
+    def test_load_mat(self):
+        """Test load_mat"""
+        mat_path = r'./test/test_data/10mins_example_mat.mat'
         s = time()
         midata = load_mat(data_path=mat_path)
         e = time()
         print(f"Load data from .mat file, cost {e-s} seconds\n"
-              f"Signals shape {len(midata.signals)}, channels: {midata.channels}, sampling frequency: {midata.sf}")
+              f"Signals shape {len(midata.signals)}, \nchannels: {midata.channels}, \nsampling frequency: {midata.sf}, \nacquisition time: {midata.time}")
 
-        write_mat(midata.signals, midata.channels, midata.sf, midata.time, 
-                  r'E:\workplace\EEGProcessing\00_DATA\20231117_test+vid_6pin\data_mini_saved_python.mat')
-        print('Saved to .mat successfully')
-
-    def test_load_edf_write_mat(self):
-        """Test load_edf and write_mat"""
-        edf_path = r'../datasets/learn-nsrr01.edf'
+    def test_load_edf(self):
+        """Test load_edf"""
+        edf_path = r'./test/test_data/10mins_example_edf.edf'
         s = time()
-        signals, channels, sf = load_edf(data_path=edf_path)
+        midata = load_edf(data_path=edf_path)
         e = time()
         print(f"Load data from .edf file, cost {e-s} seconds\n"
-              f"Signals shape {len(signals)}, channels: {channels}, sampling frequency: {sf}")
+              f"Signals shape {len(midata.signals)}, \nchannels: {midata.channels}, \nsampling frequency: {midata.sf}, \nacquisition time: {midata.time}")
 
-        write_mat(signals, channels, sf, r'../../../datasets/mat_from_edf.mat')
+    def test_write_mat(self):
+        """Test write_mat"""
+        mat_path = r'./test/test_data/10mins_example_mat.mat'
+        s = time()
+        midata = load_mat(data_path=mat_path)
+        e = time()
+        print(f"Load data from .mat file, cost {e-s} seconds\n"
+              f"Signals shape {len(midata.signals)}, \nchannels: {midata.channels}, \nsampling frequency: {midata.sf}, \nacquisition time: {midata.time}")
+
+        write_mat(midata.signals, midata.channels, midata.sf, midata.time, 
+                  r'./test/test_data/10mins_example_mat_saved_by_python.mat')
         print('Saved to .mat successfully')
+
+    def test_write_edf(self):
+        """Test write_edf"""
+        mat_path = r'./test/test_data/10mins_example_mat.mat'
+        s = time()
+        midata = load_mat(data_path=mat_path)
+        e = time()
+        print(f"Load data from .mat file, cost {e-s} seconds\n"
+              f"Signals shape {len(midata.signals)}, \nchannels: {midata.channels}, \nsampling frequency: {midata.sf}, \nacquisition time: {midata.time}")
+
+        write_edf(midata.signals, midata.channels, midata.sf, midata.time, 
+                  r'./test/test_data/10mins_example_mat_saved_by_python.edf')
+        print('Saved to .edf successfully')
+
+    def test_load_written_edf(self):
+        """Test load written edf"""
+        edf_path = r'./test/test_data/10mins_example_mat_saved_by_python.edf'
+        s = time()
+        midata = load_edf(data_path=edf_path)
+        e = time()
+        print(f"Load data from .mat file, cost {e-s} seconds\n"
+              f"Signals shape {len(midata.signals)}, \nchannels: {midata.channels}, \nsampling frequency: {midata.sf}, \nacquisition time: {midata.time}")
+        
+    def test_load_written_mat(self):
+        """Test load written mat"""
+        mat_path = r'./test/test_data/10mins_example_mat_saved_by_python.mat'
+        s = time()
+        midata = load_mat(data_path=mat_path)
+        e = time()
+        print(f"Load data from .mat file, cost {e-s} seconds\n"
+              f"Signals shape {len(midata.signals)}, \nchannels: {midata.channels}, \nsampling frequency: {midata.sf}, \nacquisition time: {midata.time}")

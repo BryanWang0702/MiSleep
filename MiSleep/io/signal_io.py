@@ -61,7 +61,7 @@ def load_mat(data_path):
         raw_data = raw_data[0][0]
         # Whether saved by python
         if 'save' in names:
-            channels = list(raw_data['channels'])
+            channels = list(names[:-4])
             sf = [float(each) for each in raw_data['sf'][0]]
             signals = [raw_data[each][0] for each in channels]
             time = raw_data['time'][0]
@@ -191,3 +191,96 @@ def load_edf(data_path):
                   channels=[each['label'] for each in signal_headers],
                   sf=[each['sample_frequency'] for each in signal_headers],
                   time=meta['startdate'].strftime('%Y%m%d-%H:%M:%S'))
+
+
+def write_edf(signals, channels, sf, time, edf_file=None):
+    """
+    Write data to an EDF (European Data Format) file.
+
+    This function saves the provided signal data, channel names, sampling frequencies, 
+    and start time into an EDF file at the specified file path.
+
+    Parameters
+    ----------
+    signals : list 
+        A list containing the signal data for each channel. Each element 
+        corresponds to the signal data for one channel.
+    channels : list of str
+        A list of channel names corresponding to the signal data.
+    sf : list of float
+        A list of sampling frequencies for each channel.
+    time : str
+        The start time of the recording in the format "YYYYMMDD-HH:MM:SS".
+    edf_file : str
+        The file path where the EDF file will be saved.
+
+    Returns
+    -------
+    None
+        The function writes the data to the specified file and does not return any value.
+
+    Notes
+    -----
+    - The function assumes that the length of `signals`, `channels`, and `sf` are the same.
+    - The `pyedflib` library is used to handle the EDF file writing process.
+    - Ensure that the `edf_file` is a valid path where the file can be created.
+
+    Example
+    -------
+    >>> signals = [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]
+    >>> channels = ["EEG1", "EEG2"]
+    >>> sf = [256.0, 256.0]
+    >>> time = "20250423-12:00:00"
+    >>> edf_file = "output.edf"
+    >>> write_edf(signals, channels, sf, time, edf_file)
+    """
+    import pyedflib
+
+    
+    if edf_file is None:
+        edf_file = f"./{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}_saved.edf"
+
+    # Create a dictionary for the EDF header
+    header = {'technician': '',
+              'recording_additional': '',
+              'patientname': 'MiSleep',
+              'patient_additional': '',
+              'patientcode': '',
+              'equipment': '',
+              'admincode': '',
+              'sex': '',
+              'startdate': datetime.datetime.strptime(time, "%Y%m%d-%H:%M:%S"),
+              'birthdate': '',
+              'gender': '',
+              'annotations': []
+            }
+    
+    signal_headers = [
+        {'label': each,
+            'dimension': 'uV',
+            'sample_rate': sf[idx],
+            'sample_frequency': sf[idx],
+            'physical_max': 10417.0,
+            'physical_min': -10417.0,
+            'digital_max': 32767,
+            'digital_min': -32768,
+            'prefilter': '',
+            'transducer': ''
+        } for idx, each in enumerate(channels)
+    ]
+
+    try:
+
+        with pyedflib.EdfWriter(edf_file, len(signals)) as edf_writer:
+            # Set the header information
+            edf_writer.setHeader(header)
+
+            # Add each signal to the EDF file
+            for i, signal in enumerate(signals):
+                edf_writer.setSignalHeader(i, signal_headers[i])
+            edf_writer.writeSamples(signals)
+    
+    except Exception as e:
+        logger.error(f"Write data ERROR: {e}")
+  
+

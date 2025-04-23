@@ -66,8 +66,11 @@ def signal_filter(data, sf=256., btype='lowpass', low=0.5, high=30.):
                          % btype)
 
     # Use irrfilter of scipy.signal to construct a filter
-    b, a = signal.iirfilter(N=3, Wn=fnorm, btype=btype, analog=False,
-                            output='ba', ftype='butter', fs=None)
+    try:
+        b, a = signal.iirfilter(N=3, Wn=fnorm, btype=btype, analog=False,
+                                output='ba', ftype='butter', fs=None)
+    except ValueError as e:
+        raise ValueError(e)
 
     filtered_data = signal.filtfilt(b=b, a=a, x=data)
 

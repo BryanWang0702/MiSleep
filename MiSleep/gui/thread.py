@@ -1,7 +1,7 @@
 from PyQt5.QtCore import QObject, QThread
 from misleep.gui.utils import second2time
 from misleep.utils.annotation import lst2group
-from misleep.io.signal_io import load_mat
+from misleep.io.signal_io import load_mat, write_edf, write_mat
 import datetime
 
 class SaveThread(QThread):
@@ -68,6 +68,20 @@ class SaveThread(QThread):
 
         with open(self.file_path, 'w') as f:
             f.write('\n'.join(annos))
+        return True
+    
+    def save_data(self):
+        """Data save function"""
+        midata= self.file
+        if midata is None:
+            return False
+
+        if self.file_path.endswith('.mat'):
+            write_mat(midata.signals, midata.channels, midata.sf, midata.time, self.file_path)
+        elif self.file_path.endswith('.edf'):
+            write_edf(midata.signals, midata.channels, midata.sf, midata.time, self.file_path)
+        else:
+            raise ValueError("File type not supported!")
         return True
 
 class LoadThread(QThread):
