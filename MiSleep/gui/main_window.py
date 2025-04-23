@@ -388,11 +388,16 @@ class main_window(QMainWindow, Ui_MiSleep):
 
     def load_anno(self):
         """Triggered by actionLoad_Annotation"""
-        anno_path, _ = QFileDialog.getOpenFileName(
+        anno_path, _ = QFileDialog.getSaveFileName(
             self, "Select annotation file", 
             f"{self.config['gui']['openpath']}", 
             "txt Files (*.txt *.TXT)"
         )
+
+        if not os.path.exists(anno_path):
+            # Create the file if it doesn't exist
+            with open(anno_path, 'w') as file:
+                file.write("")
 
         if anno_path == "":
             return
@@ -1659,11 +1664,16 @@ class main_window(QMainWindow, Ui_MiSleep):
             For when I only want to save a file but not cover the current labels
         """
         if self.anno_path == "":
-            anno_path, _ = QFileDialog.getOpenFileName(
+            anno_path, _ = QFileDialog.getSaveFileName(
             self, "Select annotation file", 
             f"{self.config['gui']['openpath']}", 
             "txt Files (*.txt *.TXT)"
             )
+
+            if not os.path.exists(anno_path):
+                # Create the file if it doesn't exist
+                with open(anno_path, 'w') as file:
+                    file.write("")
 
             if anno_path == "":
                 return
