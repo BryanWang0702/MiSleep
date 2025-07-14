@@ -394,13 +394,13 @@ class main_window(QMainWindow, Ui_MiSleep):
             "txt Files (*.txt *.TXT)"
         )
 
+        if anno_path == "":
+                    return
         if not os.path.exists(anno_path):
             # Create the file if it doesn't exist
             with open(anno_path, 'w') as file:
                 file.write("")
 
-        if anno_path == "":
-            return
         self.anno_path = anno_path
         _mianno = self.mianno
 

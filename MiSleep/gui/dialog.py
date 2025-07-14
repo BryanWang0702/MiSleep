@@ -27,7 +27,7 @@ from misleep.utils.signals import signal_filter
 from misleep.utils.annotation import lst2group
 from misleep.analysis.detection import SWA_detection, spindle_detection
 from misleep.analysis.auto_stage import auto_stage_gbm
-from misleep.gui.utils import cal_draw_spectrum
+from misleep.gui.utils import cal_draw_spectrum, get_base_path
 from misleep.preprocessing.signals import reject_artifact
 import pandas as pd
 from copy import deepcopy
@@ -221,7 +221,7 @@ class transferResult_dialog(QDialog, Ui_TransferResultDialog):
         df, analyse_df, start_end_df, marker_df = transfer_result(mianno=mianno, ac_time=ac_time)        
         
         fd, _ = QFileDialog.getSaveFileName(self, "Save transfered result",
-                                                f"{config['gui']['openpath']}", 
+                                                f"{get_base_path(config['gui']['openpath'])}", 
                                                 "*.xlsx;;")
         if fd == '':
             return

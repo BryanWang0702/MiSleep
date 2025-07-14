@@ -187,3 +187,13 @@ def identify_startend_color(dict_, state_name, end=False):
         return dict_[state_name]
     else:
         return "blue"
+    
+def get_base_path(file_path):
+    """
+    Remove the final .txt or .xlsx part from a file path and return the directory.
+    """
+    import os
+    base, ext = os.path.splitext(file_path)
+    if ext in ['.txt', '.xlsx', '.mat', '.edf', '.csv']:
+        return base
+    return file_path
