@@ -704,6 +704,7 @@ class main_window(QMainWindow, Ui_MiSleep):
     def plot_spectrogram(self, flush=False):
         """Redraw spectrogram"""
         self.signal_ax[0].clear()
+        freq_range = [float(x) for x in self.config['gui']['freq_range'].strip('[]').split(',')]
         f, t, Sxx = spectrogram(
             signal=self.midata.signals[self.current_spectrogram_idx][
                 int(
@@ -714,6 +715,7 @@ class main_window(QMainWindow, Ui_MiSleep):
                 )
             ],
             sf=self.midata.sf[self.current_spectrogram_idx],
+            band=freq_range,
             step=1,
             window=5,
             norm=True,
@@ -721,7 +723,7 @@ class main_window(QMainWindow, Ui_MiSleep):
         cmap = plt.cm.get_cmap("jet")
 
         self.signal_ax[0].set_xticks([])
-        self.signal_ax[0].set_ylim(0, 30)
+        self.signal_ax[0].set_ylim(freq_range)
         self.signal_ax[0].set_ylabel(
             f"{self.midata.channels[self.current_spectrogram_idx]}"
         )
@@ -1376,23 +1378,27 @@ class main_window(QMainWindow, Ui_MiSleep):
         ]
         
         try:
+            freq_range = [float(x) for x in self.config['gui']['freq_range'].strip('[]').split(',')]  
             freq, psd = spectrum(signal=signal_data,
                                 sf=self.midata.sf[channel],
+                                band=freq_range,
                                 relative=True)
             
             f, t, Sxx = spectrogram(signal=signal_data,
                                     sf=self.midata.sf[channel],
+                                    band=freq_range,
                                     step=1, window=5, norm=True)
 
             bandPower = band_power(psd=psd, freq=freq, 
                                 bands=[[0.5, 4, 'delta'], [4, 9, 'theta']])
             
             ratio = bandPower['delta'] / bandPower['theta']
-            
+
             self.spec_window.show_(spectrum=[psd, freq], 
                                 spectrogram=[f, t, Sxx],
                                 percentile_=self.spectrogram_percentile,
-                                ratio=ratio, start_end=[start_, end_])
+                                ratio=ratio, start_end=[start_, end_],
+                                freq_range=freq_range)
             
             self.spec_window.activateWindow()
             self.spec_window.setWindowState(

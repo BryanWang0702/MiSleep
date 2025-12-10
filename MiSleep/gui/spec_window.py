@@ -45,7 +45,7 @@ class SpecWindow(QMainWindow, Ui_spec_window):
         self.SpectrogramScrollArea.setWidget(self.spectrogram_canvas)
         self.SpectrogramSaveBt.clicked.connect(self.spectrogram_save)
 
-    def show_(self, spectrum, spectrogram, percentile_, ratio, start_end):
+    def show_(self, spectrum, spectrogram, percentile_, ratio, start_end, freq_range):
         """Pass in the spectrum and spectrogram
         Parameters
         ----------
@@ -60,6 +60,8 @@ class SpecWindow(QMainWindow, Ui_spec_window):
         start_end : list
             Start end for the spectral analysis, will be used for
             the window title and save params
+        freq_range : list
+            Frequency range for displaying the spectrum
         """
 
         self.setWindowTitle(f"{start_end[0]} ~ {start_end[1]}")
@@ -74,12 +76,11 @@ class SpecWindow(QMainWindow, Ui_spec_window):
         # plot
         self.spectrum_ax.plot(freq, psd)
         self.spectrum_ax.set_ylim(0, max(psd) * 1.1)
-        self.spectrum_ax.set_xlim(0, 30)
+        self.spectrum_ax.set_xlim(freq_range[0], freq_range[1])
         self.spectrum_ax.set_xlabel("Frequency (Hz)")
         self.spectrum_ax.set_ylabel("Power spectral density (Power/Hz)")
-        major_ticks_top = np.linspace(0, 30, 16)
-        minor_ticks_top = np.linspace(0, 30, 31)
-
+        major_ticks_top = np.linspace(freq_range[0], freq_range[1], 16)
+        minor_ticks_top = np.linspace(freq_range[0], freq_range[1], 31)
         self.spectrum_ax.xaxis.set_ticks(major_ticks_top)
         self.spectrum_ax.xaxis.set_ticks(minor_ticks_top, minor=True)
         self.spectrum_ax.grid(which="major", alpha=0.6)
@@ -88,7 +89,7 @@ class SpecWindow(QMainWindow, Ui_spec_window):
         # Fill the label of delta/theta ratio
         self.DeltaThetaRatioLabel.setText(f"Delta/theta ratio: {ratio}")
 
-        self.spectrogram_ax.set_ylim(0.5, 30)
+        self.spectrogram_ax.set_ylim(freq_range)
         cmap = plt.cm.get_cmap("jet")
         pcm = self.spectrogram_ax.pcolormesh(
             t, f, Sxx, cmap=cmap, vmax=np.percentile(Sxx, percentile_)
