@@ -128,16 +128,18 @@ def result_constraints(pred_prob):
 
     pred_prob = copy.deepcopy(pred_prob)
     pred_label = [each+1 for each in np.argmax(pred_prob, axis=1)]
-    pred_label = [2 if each[1] > 0.1 else pred_label[idx] for idx, each in enumerate(pred_prob)]  # REM threshold
+    pred_label = [2 if each[1] > 0.15 else pred_label[idx] for idx, each in enumerate(pred_prob)]  # Add probability threshold for REM sleep
         
-    # for idx in range(1, len(pred_label)-1):
-    #     label_ = pred_label[idx]
+    for idx in range(1, len(pred_label)-1):
+        label_ = pred_label[idx]
 
-    #     if label_ == 3 and pred_label[idx+1] == 2:  # REM after Wake
-    #         pred_label[idx+1] = 1
-    #     if pred_label[idx-1] ==pred_label[idx+1]:  # Same state previous and after
-    #         pred_label[idx] = pred_label[idx-1]
-    
+        if label_ == 4:
+            pred_label[idx] = 3
+        if label_ == 3 and pred_label[idx+1] == 2:  # REM after Wake
+            pred_label[idx+1] = 1
+        if pred_label[idx-1] == pred_label[idx+1] and pred_label[idx] != 3:  # Same state previous and after
+            pred_label[idx] = pred_label[idx-1]
+
     return pred_label
 
 
