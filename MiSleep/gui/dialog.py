@@ -10,6 +10,7 @@ from PyQt5.QtCore import QCoreApplication, Qt, QStringListModel
 from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QDialog, QMessageBox, QFileDialog, QColorDialog, QWidget
 import datetime
+from scipy.ndimage import gaussian_filter1d
 import numpy as np
 from misleep.utils.logger_handler import logger
 
@@ -19,18 +20,21 @@ from misleep.gui.uis.state_spectral_dialog_ui import Ui_StateSpectralDialog
 from misleep.gui.uis.horizontal_line_dialog_ui import Ui_horizontal_line_dialog
 from misleep.gui.uis.SWA_detect_dialog_ui import Ui_SWADetectDialog
 from misleep.gui.uis.spindle_detect_dialog_ui import Ui_SpindleDetectDialog
-from misleep.gui.uis.auto_stage_dialog_ui import Ui_AutoStageDialog
+from misleep.gui.uis.auto_stage_lightGBM_dialog_ui import Ui_AutoStageLightGBMDialog
+from misleep.gui.uis.auto_stage_causalTransformer_dialog_ui import Ui_AutoStageCausalTransformerDialog
+from misleep.analysis.auto_stage_causal_transformer.inference import AutoStageConfig, auto_stage_llm
 from misleep.gui.uis.save_data_dialog_ui import Ui_SaveDataDialog
 from misleep.gui.thread import SaveThread
 from misleep.io.annotation_io import transfer_result
 from misleep.utils.signals import signal_filter
 from misleep.utils.annotation import lst2group
 from misleep.analysis.detection import SWA_detection, spindle_detection
-from misleep.analysis.auto_stage import auto_stage_gbm
-from misleep.gui.utils import cal_draw_spectrum, get_base_path
+from misleep.analysis.auto_stage_lightGBM import auto_stage_gbm
+from misleep.gui.utils import cal_draw_spectrum, get_base_path, downsample_by_most_frequent
 from misleep.preprocessing.signals import reject_artifact
 import pandas as pd
 from copy import deepcopy
+import os
 
 
 class label_dialog(QDialog, Ui_Dialog):
@@ -259,7 +263,7 @@ class transferResult_dialog(QDialog, Ui_TransferResultDialog):
 
 
 class stateSpectral_dialog(QDialog, Ui_StateSpectralDialog):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, config=None):
         """
         Initialize the state spectral dialog of MiSleep
         """
@@ -276,6 +280,19 @@ class stateSpectral_dialog(QDialog, Ui_StateSpectralDialog):
         self.EndTimeEditor.setDisabled(True)
         self.StartTimeCheckBox.clicked.connect(self.start_time_editor_changed)
         self.EndTimeCheckBox.clicked.connect(self.end_time_editor_changed)
+        self.GaussianCheckBox.clicked.connect(self.gaussian_check_changed)
+        self.GaussianCheckBox.setChecked(False)
+        self.GaussianSpinBox.setDisabled(True)
+        self.GaussianSpinBox.setValue(float(config['spec']['gaussian_sigma']))
+        self.WinLengthCheckBox.clicked.connect(self.win_length_check_changed)
+        self.WinLengthCheckBox.setChecked(False)
+        self.WinLengthSpinBox.setDisabled(True)
+        self.WinLengthSpinBox.setValue(float(config['spec']['win_length_sec']))
+        self.nfftCheckBox.clicked.connect(self.nfft_check_changed)
+        self.nfftCheckBox.setChecked(False)
+        self.nfftSpinBox.setDisabled(True)
+        self.nfftSpinBox.setValue(int(float(config['spec']['nfft_sec'])))
+        
         
         self.OKBt.clicked.connect(self.okEvent)
         self.CancelBt.clicked.connect(self.cancelEvent)
@@ -306,6 +323,24 @@ class stateSpectral_dialog(QDialog, Ui_StateSpectralDialog):
             self.ArtThresholdSpinBox.setEnabled(True)
         if not self.RejectArtifactCheckBox.isChecked():
             self.ArtThresholdSpinBox.setDisabled(True)
+
+    def gaussian_check_changed(self):
+        if self.GaussianCheckBox.isChecked():
+            self.GaussianSpinBox.setEnabled(True)
+        if not self.GaussianCheckBox.isChecked():
+            self.GaussianSpinBox.setDisabled(True)
+
+    def win_length_check_changed(self):
+        if self.WinLengthCheckBox.isChecked():
+            self.WinLengthSpinBox.setEnabled(True)
+        if not self.WinLengthCheckBox.isChecked():
+            self.WinLengthSpinBox.setDisabled(True)
+
+    def nfft_check_changed(self):
+        if self.nfftCheckBox.isChecked():
+            self.nfftSpinBox.setEnabled(True)
+        if not self.nfftCheckBox.isChecked():
+            self.nfftSpinBox.setDisabled(True)
 
     def dialog_show(self, channels):
         """Show state spectral dialog, fill params"""
@@ -347,25 +382,41 @@ class stateSpectral_dialog(QDialog, Ui_StateSpectralDialog):
         sf = midata.sf[channel_idx]
 
         # Do filter if checked
+        freq_band = [self.BPLow.value(), self.BPHigh.value()]
         if self.BPFilterCheckBox.isChecked():
-            low = self.BPLow.value()
-            high = self.BPHigh.value()
             channel_data, _ = signal_filter(channel_data, sf=sf, btype='bandpass',
-                                         low=low, high=high)
-            
-        # Merge 4 states' data
-        NREM_data = [channel_data[int(each[0]*sf): int(each[1]*sf)] 
-                     for each in sleep_state if each[2] == 1]
-        NREM_data = [element for sublist in NREM_data for element in sublist]
-        REM_data = [channel_data[int(each[0]*sf): int(each[1]*sf)] 
-                     for each in sleep_state if each[2] == 2]
-        REM_data = [element for sublist in REM_data for element in sublist]
-        Wake_data = [channel_data[int(each[0]*sf): int(each[1]*sf)] 
-                     for each in sleep_state if each[2] == 3]
-        Wake_data = [element for sublist in Wake_data for element in sublist]
-        Init_data = [channel_data[int(each[0]*sf): int(each[1]*sf)] 
-                     for each in sleep_state if each[2] == 4]
-        Init_data = [element for sublist in Init_data for element in sublist]
+                                         low=freq_band[0], high=freq_band[1])
+
+        # apply window length (frequency resolution) if checked
+        if self.WinLengthCheckBox.isChecked():
+            win_length = self.WinLengthSpinBox.value()
+        else:
+            win_length = 10.0
+
+        nperseg = int(sf * win_length)
+
+        # apply nfft if checked, and check if nfft is larger than nperseg
+        if self.nfftCheckBox.isChecked():
+            nfft = int(self.nfftSpinBox.value()*sf)
+        else:
+            nfft = None
+        if nfft is not None and nfft < nperseg:
+            nfft = None
+
+        # apply gaussian smoothing if checked
+        if self.GaussianCheckBox.isChecked():
+            gaussian_sigma = self.GaussianSpinBox.value()
+        else:
+            gaussian_sigma = None
+
+        state_codes = sorted(set(mianno.sleep_state[start_sec:end_sec+1]))
+        state_data = {
+            state: np.concatenate([
+                channel_data[int(each[0]*sf):int(each[1]*sf)]
+                for each in sleep_state if each[2] == state
+            ])
+            for state in state_codes
+        }
 
         # Reject artifact if checked
         if self.RejectArtifactCheckBox.isChecked():
@@ -373,100 +424,70 @@ class stateSpectral_dialog(QDialog, Ui_StateSpectralDialog):
         else:
             threshold = 1.5
         if self.RejectArtifactCheckBox.isChecked():
-            NREM_data = reject_artifact(NREM_data, sf=sf, threshold=threshold)
-            REM_data = reject_artifact(REM_data, sf=sf, threshold=threshold)
-            Wake_data = reject_artifact(Wake_data, sf=sf, threshold=threshold)
-            Init_data = reject_artifact(Init_data, sf=sf, threshold=threshold)
+            state_data = {
+                state: reject_artifact(data, sf=sf, threshold=threshold)
+                for state, data in state_data.items()
+            }
 
-        nperseg = 10*sf
+        
         if self.RelativeCheckBox.isChecked():
             relative = True
         else:
             relative = False
-        NREM_spec, NREM_figure = cal_draw_spectrum(data=NREM_data, sf=sf, 
-                                                   nperseg=nperseg, relative=relative)
-        REM_spec, REM_figure = cal_draw_spectrum(data=REM_data, sf=sf, 
-                                                   nperseg=nperseg, relative=relative)
-        Wake_spec, Wake_figure = cal_draw_spectrum(data=Wake_data, sf=sf,
-                                                   nperseg=nperseg, relative=relative)
-
-        name_map = {
-            1: 'NREM',
-            2: 'REM',
-            3: 'Wake',
-            4: 'Init'
+        spectra = {
+            state: cal_draw_spectrum(data=data, sf=sf, nperseg=nperseg,
+                                     freq_band=freq_band, relative=relative, nfft=nfft, gaussian_sigma=gaussian_sigma)
+            for state, data in state_data.items()
         }
+
+        name_map = mianno.state_map
 
         # Check the hour segmentation checkbox, and calculate the spectrum for each hour, with the second
         # if enabled
-        NREM_hour_spec = []
-        REM_hour_spec = []
-        Wake_hour_spec = []
+        hour_spec = {state: [] for state in spectra}
         if self.HourSegmentCheckBox.isChecked():
             for sec in range(0, end_sec-start_sec, 3600):
-                sleep_state = mianno.sleep_state[start_sec+sec: start_sec+sec+3600]
-                sleep_state = lst2group([[idx+sec, each] for idx, each in enumerate(sleep_state)])
-
-                # Merge 4 states' data
-                NREM_data = [channel_data[int(each[0]*sf): int(each[1]*sf)] 
-                            for each in sleep_state if each[2] == 1]
-                NREM_data = [element for sublist in NREM_data for element in sublist]
-                REM_data = [channel_data[int(each[0]*sf): int(each[1]*sf)] 
-                            for each in sleep_state if each[2] == 2]
-                REM_data = [element for sublist in REM_data for element in sublist]
-                Wake_data = [channel_data[int(each[0]*sf): int(each[1]*sf)] 
-                            for each in sleep_state if each[2] == 3]
-                Wake_data = [element for sublist in Wake_data for element in sublist]
-                Init_data = [channel_data[int(each[0]*sf): int(each[1]*sf)] 
-                            for each in sleep_state if each[2] == 4]
-                Init_data = [element for sublist in Init_data for element in sublist]
-
-                if self.RejectArtifactCheckBox.isChecked():
-                    threshold = self.ArtThresholdSpinBox.value()
-                else:
-                    threshold = 1.5
-                if self.RejectArtifactCheckBox.isChecked():
-                    NREM_data = reject_artifact(NREM_data, sf=sf, threshold=threshold)
-                    REM_data = reject_artifact(REM_data, sf=sf, threshold=threshold)
-                    Wake_data = reject_artifact(Wake_data, sf=sf, threshold=threshold)
-                    Init_data = reject_artifact(Init_data, sf=sf, threshold=threshold)
-
-                NREM_hour_spec.append(cal_draw_spectrum(data=NREM_data, sf=sf, 
-                                                   nperseg=nperseg, relative=relative)[0][1])
-                REM_hour_spec.append(cal_draw_spectrum(data=REM_data, sf=sf, 
-                                                        nperseg=nperseg, relative=relative)[0][1])
-                Wake_hour_spec.append(cal_draw_spectrum(data=Wake_data, sf=sf,
-                                                        nperseg=nperseg, relative=relative)[0][1])
-        hour_spec = [NREM_hour_spec, REM_hour_spec, Wake_hour_spec]
+                hour_states = mianno.sleep_state[start_sec+sec:start_sec+sec+3600]
+                hour_states = lst2group([[idx+sec, each]
+                                         for idx, each in enumerate(hour_states)])
+                for state in spectra:
+                    data_parts = [channel_data[int(each[0]*sf):int(each[1]*sf)]
+                                  for each in hour_states if each[2] == state]
+                    data = np.concatenate(data_parts) if data_parts else np.array([])
+                    if self.RejectArtifactCheckBox.isChecked() and len(data):
+                        data = reject_artifact(data, sf=sf, threshold=threshold)
+                    if len(data) > sf*10:
+                        hour_spec[state].append(cal_draw_spectrum(
+                            data=data, sf=sf, nperseg=nperseg,
+                            freq_band=freq_band, relative=relative, nfft=nfft, gaussian_sigma=gaussian_sigma)[0][1])
                             
 
         fd = QFileDialog.getExistingDirectory(self, 
-                                              "Select a folder to save 4 stages' data", 
+                                              "Select a folder to save states' data",
                                               f"{config['gui']['openpath']}")
         if fd == '':
             return
 
-        # Save figure
-        NREM_figure.savefig(fd+'/NREM_spectrum.pdf')
-        REM_figure.savefig(fd+'/REM_spectrum.pdf')
-        Wake_figure.savefig(fd+'/Wake_spectrum.pdf')
-        writer = pd.ExcelWriter(fd+'/power_results.xlsx')
+        try:
+            writer = pd.ExcelWriter(fd+f"/{os.path.basename(config['gui']['openpath']).split('.')[0]}_power_results.xlsx")
 
-        # Write to excel file
-        for idx, spec in enumerate([NREM_spec, REM_spec, Wake_spec]):
-            _df = pd.DataFrame(data=spec.T, columns=['frequency', 'power'])
-            if hour_spec[idx] != []:
-                # Add the hour spectrum to the dataframe
-                _df[[str(each) for each in range(1, len(hour_spec[idx])+1)]] = pd.DataFrame(hour_spec[idx]).T
-            _df.to_excel(excel_writer=writer, sheet_name=name_map[idx+1], index=False)
-        if len(Init_data) > sf*10:
-            Init_spec, Init_figure = cal_draw_spectrum(data=Init_data, sf=sf,
-                                                   nperseg=nperseg, relative=relative)
-            _df = pd.DataFrame(data=Init_spec.T, columns=['frequency', 'power'])
-            _df.to_excel(excel_writer=writer, sheet_name=name_map[4], index=False)
-            Init_figure.savefig(fd + '/Init_spectrum.pdf')
+            # Write to excel file
+            for state, (spec, figure) in spectra.items():
+                state_name = str(name_map.get(state, state))
+                safe_name = ''.join(c if c not in '\\/:*?"<>|' else '_' for c in state_name)
+                figure.savefig(fd + '/' + safe_name + '_spectrum.pdf')
+                _df = pd.DataFrame(data=spec.T, columns=['frequency', 'power'])
+                if hour_spec[state]:
+                    # Add the hour spectrum to the dataframe
+                    _df[[str(each) for each in range(1, len(hour_spec[state])+1)]] = \
+                        pd.DataFrame(hour_spec[state]).T
+                _df.to_excel(excel_writer=writer, sheet_name=safe_name[:31], index=False)
 
-        writer.close()
+            writer.close()
+        except PermissionError as e:
+            logger.error(f"Permission error: {e}")
+            QMessageBox.about(self, "Error", "Close the PDF or EXCEL file under this folder first.")
+            return
         QMessageBox.about(self, "Info", "Spectral analysis finished")
 
     def okEvent(self):
@@ -813,7 +834,7 @@ class SpindleDetectionDialog(QDialog, Ui_SpindleDetectDialog):
                 if each[2] == 1 and each[1]-each[0] > 5:
                     data_ = signal_data[int(each[0]*signal_sf): int(each[1]*signal_sf)]
                     spindle_lst_ = spindle_detection(data_, signal_sf, freq_band=[freq_low, freq_high],
-                                             std_thresh=std_thres, duration_thresh=duration_thres,
+                                             std_thresh=std_thres_input, duration_thresh=duration_thres_input,
                                              start_time_sec=each[0])
 
                     if spindle_lst_ is None:
@@ -926,7 +947,7 @@ class SpindleDetectionDialog(QDialog, Ui_SpindleDetectDialog):
         self.hide()
 
 
-class AutoStageDialog(QDialog, Ui_AutoStageDialog):
+class AutoStageLightGBMDialog(QDialog, Ui_AutoStageLightGBMDialog):
     def __init__(self, parent=None):
         """
         Initialize auto stage dialog
@@ -961,6 +982,77 @@ class AutoStageDialog(QDialog, Ui_AutoStageDialog):
         mouse_age = ['adult', 'ado', 'P30'][self.AgeCombox.currentIndex()]
 
         pred_label = auto_stage_gbm(EEG=EEG, EMG=EMG, label=label, sf=sf, EEG_channel=EEG_site, mouse_age=mouse_age)
+        if self.SaveAnnoCheckbox.isChecked():
+            save_anno = True
+        else: 
+            save_anno = False
+
+        return pred_label, save_anno
+
+
+    def okEvent(self):
+        self.closed = False
+        self.hide()
+
+    def cancelEvent(self):
+        """Triggered by the `cancel` button"""
+        self.closed = True
+        self.hide()
+    
+    def closeEvent(self, event):
+        event.ignore()
+        self.closed = True
+        self.hide()
+
+
+class AutoStageCausalTransformerDialog(QDialog, Ui_AutoStageCausalTransformerDialog):
+    def __init__(self, parent=None):
+        """
+        Initialize auto stage dialog
+        """
+        super().__init__(parent)
+
+        self.setupUi(self)
+
+        self.OKBt.clicked.connect(self.okEvent)
+        self.CancelBt.clicked.connect(self.cancelEvent)
+
+    def show_chs(self, channels):
+        """Initial channel combox"""
+        self.EEGChannelCombox.clear()
+        self.EEGChannelCombox.addItems(channels)
+        self.EEGChannelCombox.setCurrentIndex(0)
+        self.EMGchannelCombox.clear()
+        self.EMGchannelCombox.addItems(channels)
+        self.EMGchannelCombox.setCurrentIndex(1)
+
+    def auto_stage(self, midata, mianno):
+        """Auto stage with misleep data"""
+
+        EEG_channel_idx = self.EEGChannelCombox.currentIndex()
+        EMG_channel_idx = self.EMGchannelCombox.currentIndex()
+        EEG = deepcopy(midata.signals[EEG_channel_idx])
+        EMG = deepcopy(midata.signals[EMG_channel_idx])
+        label = deepcopy(mianno._sleep_state)
+        sf = deepcopy(midata.sf[EEG_channel_idx])
+
+        auto_stage_causalTransformer_config = AutoStageConfig()
+        auto_stage_causalTransformer_config.sf = sf
+        auto_stage_causalTransformer_config.label_stride_seconds = 5
+        auto_stage_causalTransformer_config.output_stride_seconds = 5
+        label = downsample_by_most_frequent(label, 5)
+        pred_label = auto_stage_llm(EEG=EEG, EMG=EMG, label=label, config=auto_stage_causalTransformer_config)
+        pred_label = [[each]*5 for each in pred_label]
+        pred_label = [item for each in pred_label for item in each]
+        for idx in range(1, len(pred_label)-1):
+            label_ = pred_label[idx]
+
+            if label_ == 4:
+                pred_label[idx] = 3
+            if label_ == 3 and pred_label[idx+1] == 2:  # REM after Wake
+                pred_label[idx+1] = 1
+            if pred_label[idx-1] == pred_label[idx+1] and pred_label[idx] != 3:  # Same state previous and after
+                pred_label[idx] = pred_label[idx-1]
         if self.SaveAnnoCheckbox.isChecked():
             save_anno = True
         else: 

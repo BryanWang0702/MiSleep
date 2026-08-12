@@ -11,7 +11,7 @@ MAINTAINER_EMAIL = "swang@gmail.com"
 URL = "https://github.com/BryanWang0702/MiSleep/"
 LICENSE = "BSD (3-clause)"
 DOWNLOAD_URL = "https://github.com/BryanWang0702/MiSleep/"
-VERSION = "0.2.13"
+VERSION = "0.2.19"
 
 INSTALL_REQUIRES = [
     "numpy>=1.18.1",
@@ -24,7 +24,13 @@ INSTALL_REQUIRES = [
     "pandas",
     "openpyxl",
     "antropy",
-    "lightgbm"
+    "lightgbm",
+    "torch",
+    "joblib",
+    "scikit-learn",
+    "pillow",
+    'numba',
+
 ]
 
 PACKAGES = [

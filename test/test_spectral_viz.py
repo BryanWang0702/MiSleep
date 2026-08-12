@@ -29,7 +29,7 @@ class TestMiData(unittest.TestCase):
         # EEG_F_midata.filter(chans=['ch1'], btype='bandpass', low=0.5, high=30)
         cropped = EEG_F_midata.crop([0, 38200])
         f, t, Sxx = spectrogram(signal=cropped.signals[0],
-                                sf=cropped.sf[0], step=1, window=5, norm=True)
+                                sf=cropped.sf[0], step=1, win_sec=5, norm=True)
         fig, ax = plot_spectrogram(f, t, Sxx, percentile=99)
         ax.set_ylim(0.5, 30)
         fig.show()

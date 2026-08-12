@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1451</width>
-    <height>967</height>
+    <height>971</height>
    </rect>
   </property>
   <property name="focusPolicy">
@@ -86,7 +86,7 @@
          <x>0</x>
          <y>0</y>
          <width>1069</width>
-         <height>764</height>
+         <height>756</height>
         </rect>
        </property>
       </widget>
@@ -186,7 +186,7 @@
    <property name="minimumSize">
     <size>
      <width>318</width>
-     <height>474</height>
+     <height>487</height>
     </size>
    </property>
    <property name="layoutDirection">
@@ -203,28 +203,10 @@
    </attribute>
    <widget class="QWidget" name="dockWidgetContents_4">
     <layout class="QGridLayout" name="gridLayout">
-     <item row="2" column="0" colspan="3">
-      <widget class="QListView" name="ChListView">
-       <property name="showDropIndicator" stdset="0">
-        <bool>false</bool>
-       </property>
-       <property name="dragEnabled">
-        <bool>false</bool>
-       </property>
-       <property name="dragDropMode">
-        <enum>QAbstractItemView::NoDragDrop</enum>
-       </property>
-       <property name="defaultDropAction">
-        <enum>Qt::CopyAction</enum>
-       </property>
-       <property name="selectionMode">
-        <enum>QAbstractItemView::ExtendedSelection</enum>
-       </property>
-       <property name="selectionBehavior">
-        <enum>QAbstractItemView::SelectItems</enum>
-       </property>
-       <property name="verticalScrollMode">
-        <enum>QAbstractItemView::ScrollPerItem</enum>
+     <item row="10" column="0" colspan="3">
+      <widget class="Line" name="line_2">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
        </property>
       </widget>
      </item>
@@ -238,56 +220,57 @@
        </property>
       </widget>
      </item>
-     <item row="8" column="1">
-      <widget class="QPushButton" name="ScalerUpBt">
+     <item row="9" column="0" colspan="3">
+      <widget class="QPushButton" name="FilterConfirmBt">
        <property name="text">
-        <string>+</string>
+        <string>Filter</string>
        </property>
       </widget>
      </item>
-     <item row="12" column="0" colspan="3">
-      <widget class="QPushButton" name="PlotSpecBt">
-       <property name="text">
-        <string>Plot spectrum and spectrogram</string>
+     <item row="8" column="2">
+      <widget class="QDoubleSpinBox" name="FilterHighSpin">
+       <property name="keyboardTracking">
+        <bool>false</bool>
+       </property>
+       <property name="decimals">
+        <number>1</number>
+       </property>
+       <property name="minimum">
+        <double>0.200000000000000</double>
+       </property>
+       <property name="maximum">
+        <double>10000.000000000000000</double>
+       </property>
+       <property name="singleStep">
+        <double>0.100000000000000</double>
+       </property>
+       <property name="value">
+        <double>30.000000000000000</double>
        </property>
       </widget>
      </item>
-     <item row="10" column="1">
-      <widget class="QPushButton" name="ShiftUpBt">
-       <property name="text">
-        <string>UP</string>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="0">
-      <widget class="QLabel" name="label_3">
-       <property name="text">
-        <string>Percentile: </string>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="2">
-      <widget class="QPushButton" name="DeleteChBt">
-       <property name="text">
-        <string>Delete</string>
-       </property>
-      </widget>
-     </item>
-     <item row="10" column="2">
+     <item row="13" column="2">
       <widget class="QPushButton" name="ShiftDownBt">
        <property name="text">
         <string>Down</string>
        </property>
       </widget>
      </item>
-     <item row="8" column="2">
-      <widget class="QPushButton" name="ScalerDownBt">
+     <item row="13" column="0">
+      <widget class="QLabel" name="label_2">
        <property name="text">
-        <string>-</string>
+        <string>Shift:</string>
        </property>
       </widget>
      </item>
-     <item row="5" column="0">
+     <item row="14" column="0" colspan="3">
+      <widget class="Line" name="line_3">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+      </widget>
+     </item>
+     <item row="8" column="0">
       <widget class="QComboBox" name="FilterTypeCombo">
        <item>
         <property name="text">
@@ -311,78 +294,28 @@
        </item>
       </widget>
      </item>
-     <item row="10" column="0">
-      <widget class="QLabel" name="label_2">
+     <item row="15" column="0" colspan="3">
+      <widget class="QPushButton" name="PlotSpecBt">
        <property name="text">
-        <string>Shift:</string>
+        <string>Plot spectrum and spectrogram</string>
        </property>
       </widget>
      </item>
-     <item row="3" column="1">
-      <widget class="QPushButton" name="HideChBt">
+     <item row="11" column="2">
+      <widget class="QPushButton" name="ScalerDownBt">
        <property name="text">
-        <string>Hide</string>
+        <string>-</string>
        </property>
       </widget>
      </item>
-     <item row="3" column="0">
-      <widget class="QPushButton" name="ShowChBt">
+     <item row="13" column="1">
+      <widget class="QPushButton" name="ShiftUpBt">
        <property name="text">
-        <string>Show</string>
+        <string>UP</string>
        </property>
       </widget>
      </item>
-     <item row="4" column="0" colspan="3">
-      <widget class="Line" name="line">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-      </widget>
-     </item>
-     <item row="11" column="0" colspan="3">
-      <widget class="Line" name="line_3">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-      </widget>
-     </item>
-     <item row="9" column="2">
-      <widget class="QPushButton" name="MultipleScalerConfirmBt">
-       <property name="text">
-        <string>Apply</string>
-       </property>
-      </widget>
-     </item>
-     <item row="5" column="2">
-      <widget class="QDoubleSpinBox" name="FilterHighSpin">
-       <property name="keyboardTracking">
-        <bool>false</bool>
-       </property>
-       <property name="decimals">
-        <number>1</number>
-       </property>
-       <property name="minimum">
-        <double>0.200000000000000</double>
-       </property>
-       <property name="maximum">
-        <double>10000.000000000000000</double>
-       </property>
-       <property name="singleStep">
-        <double>0.100000000000000</double>
-       </property>
-       <property name="value">
-        <double>30.000000000000000</double>
-       </property>
-      </widget>
-     </item>
-     <item row="7" column="0" colspan="3">
-      <widget class="Line" name="line_2">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-      </widget>
-     </item>
-     <item row="5" column="1">
+     <item row="8" column="1">
       <widget class="QDoubleSpinBox" name="FilterLowSpin">
        <property name="keyboardTracking">
         <bool>false</bool>
@@ -401,10 +334,38 @@
        </property>
       </widget>
      </item>
-     <item row="6" column="0" colspan="3">
-      <widget class="QPushButton" name="FilterConfirmBt">
+     <item row="6" column="1">
+      <widget class="QPushButton" name="HideChBt">
        <property name="text">
-        <string>Filter</string>
+        <string>Hide</string>
+       </property>
+      </widget>
+     </item>
+     <item row="12" column="2">
+      <widget class="QPushButton" name="MultipleScalerConfirmBt">
+       <property name="text">
+        <string>Apply</string>
+       </property>
+      </widget>
+     </item>
+     <item row="11" column="1">
+      <widget class="QPushButton" name="ScalerUpBt">
+       <property name="text">
+        <string>+</string>
+       </property>
+      </widget>
+     </item>
+     <item row="6" column="2">
+      <widget class="QPushButton" name="DeleteChBt">
+       <property name="text">
+        <string>Delete</string>
+       </property>
+      </widget>
+     </item>
+     <item row="6" column="0">
+      <widget class="QPushButton" name="ShowChBt">
+       <property name="text">
+        <string>Show</string>
        </property>
       </widget>
      </item>
@@ -415,14 +376,28 @@
        </property>
       </widget>
      </item>
-     <item row="8" column="0">
+     <item row="1" column="0">
+      <widget class="QLabel" name="label_3">
+       <property name="text">
+        <string>Percentile: </string>
+       </property>
+      </widget>
+     </item>
+     <item row="11" column="0">
       <widget class="QLabel" name="label">
        <property name="text">
         <string>Scaler:</string>
        </property>
       </widget>
      </item>
-     <item row="9" column="1">
+     <item row="7" column="0" colspan="3">
+      <widget class="Line" name="line">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+      </widget>
+     </item>
+     <item row="12" column="1">
       <widget class="QDoubleSpinBox" name="multipleScalerEditor">
        <property name="decimals">
         <number>3</number>
@@ -435,6 +410,40 @@
        </property>
        <property name="value">
         <double>1.000000000000000</double>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="0" colspan="3">
+      <widget class="QListView" name="ChListView">
+       <property name="tabKeyNavigation">
+        <bool>false</bool>
+       </property>
+       <property name="showDropIndicator" stdset="0">
+        <bool>false</bool>
+       </property>
+       <property name="dragEnabled">
+        <bool>false</bool>
+       </property>
+       <property name="dragDropMode">
+        <enum>QAbstractItemView::NoDragDrop</enum>
+       </property>
+       <property name="defaultDropAction">
+        <enum>Qt::CopyAction</enum>
+       </property>
+       <property name="selectionMode">
+        <enum>QAbstractItemView::ExtendedSelection</enum>
+       </property>
+       <property name="selectionBehavior">
+        <enum>QAbstractItemView::SelectItems</enum>
+       </property>
+       <property name="verticalScrollMode">
+        <enum>QAbstractItemView::ScrollPerItem</enum>
+       </property>
+       <property name="movement">
+        <enum>QListView::Static</enum>
+       </property>
+       <property name="isWrapping" stdset="0">
+        <bool>false</bool>
        </property>
       </widget>
      </item>
@@ -638,7 +647,7 @@
      <x>0</x>
      <y>0</y>
      <width>1451</width>
-     <height>22</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -661,9 +670,16 @@
      <addaction name="actionSWA_detection"/>
      <addaction name="actionSpindle_Detection"/>
     </widget>
+    <widget class="QMenu" name="menuAuto_Stage">
+     <property name="title">
+      <string>Auto Stage</string>
+     </property>
+     <addaction name="actionLightGBM"/>
+     <addaction name="actionCausalTransformer"/>
+    </widget>
     <addaction name="actionAddLine"/>
     <addaction name="menuEvent_Detection"/>
-    <addaction name="actionAuto_Stage"/>
+    <addaction name="menuAuto_Stage"/>
    </widget>
    <widget class="QMenu" name="menuResult">
     <property name="title">
@@ -677,6 +693,7 @@
      <string>Help</string>
     </property>
     <addaction name="actionAbout"/>
+    <addaction name="actionConfig"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuTools"/>
@@ -723,11 +740,6 @@
     <string>Spindle Detection</string>
    </property>
   </action>
-  <action name="actionAuto_Stage">
-   <property name="text">
-    <string>Auto Stage</string>
-   </property>
-  </action>
   <action name="actionLoad_AccuSleep_Data">
    <property name="text">
     <string>Load AccuSleep Data</string>
@@ -736,6 +748,21 @@
   <action name="actionSaveData">
    <property name="text">
     <string>Save Data</string>
+   </property>
+  </action>
+  <action name="actionLightGBM">
+   <property name="text">
+    <string>LightGBM</string>
+   </property>
+  </action>
+  <action name="actionCausalTransformer">
+   <property name="text">
+    <string>CausalTransformer</string>
+   </property>
+  </action>
+  <action name="actionConfig">
+   <property name="text">
+    <string>Config</string>
    </property>
   </action>
  </widget>

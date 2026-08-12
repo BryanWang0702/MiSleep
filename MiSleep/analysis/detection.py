@@ -107,7 +107,7 @@ def spindle_detection(signal, sf, freq_band=[10, 15],  start_time_sec=0,
     """Spindle detection"""
     
     f, t, Sxx = spectrogram(signal, sf, band=freq_band, 
-                                    step=0.2, window=2, norm=False)
+                                    step=0.2, win_sec=2, norm=False)
     
     # Get squared spectrum
     Sxx = np.sum(Sxx, axis=0)

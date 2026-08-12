@@ -9,11 +9,12 @@
 import numpy as np
 from scipy.signal import welch, stft
 from scipy.integrate import simps
+from scipy.ndimage import gaussian_filter1d
 
 from misleep.utils.signals import signal_filter
 
 
-def spectrum(signal, sf, band=None, relative=True, win_sec=5):
+def spectrum(signal, sf, band=None, relative=True, win_sec=1, nfft=None, gaussian_sigma=None):
     """
     Calculate the Welch band power
     Parameters
@@ -27,6 +28,10 @@ def spectrum(signal, sf, band=None, relative=True, win_sec=5):
         Whether calculate the relative power of each frequency point
     win_sec : int
         The length of sliding window in fft calculation
+    nfft : int, optional
+        The number of fft points
+    gaussian_sigma : float, optional
+        The sigma for gaussian filter
     Returns
     -------
     freq : list
@@ -54,8 +59,9 @@ def spectrum(signal, sf, band=None, relative=True, win_sec=5):
         data=signal, sf=sf, btype="bandpass", low=band[0], high=band[1]
     )
 
-    freq, psd = welch(signal, sf, nperseg=int(sf * win_sec))
-    freq = np.array([round(each, 1) for each in freq])
+    freq, psd = welch(signal, sf, nperseg=int(sf * win_sec), nfft=nfft, scaling="density")
+    freq = np.array([round(each, 2) for each in freq])
+    psd = gaussian_filter1d(psd, sigma=gaussian_sigma) if gaussian_sigma is not None else psd
 
     idx_freq = np.logical_and(freq >= band[0], freq <= band[1])
     freq = freq[idx_freq]
@@ -69,7 +75,7 @@ def spectrum(signal, sf, band=None, relative=True, win_sec=5):
     return freq, psd
 
 
-def spectrogram(signal, sf, band=None, step=0.2, window=2, norm=False):
+def spectrogram(signal, sf, band=None, step=0.2, win_sec=2, norm=False, nfft=None):
     """
     Calculate the spectrogram with scipy.signal.stft
     Parameters
@@ -82,8 +88,8 @@ def spectrogram(signal, sf, band=None, step=0.2, window=2, norm=False):
         Frequency band of interests. Default is [0.5, 30]
     step : float
         Step in seconds for the STFT
-    window : int
-        Window size for stft
+    win_sec : int
+        Window size in seconds for stft
     norm : bool
         Whether normalize the power between frequencies in one time point
 
@@ -106,8 +112,8 @@ def spectrogram(signal, sf, band=None, step=0.2, window=2, norm=False):
             f"which stands for sample frequency, got {type(sf)}"
         )
 
-    if step > window:
-        raise ValueError(f"'step' ({step}) should smaller than 'window' ({window})")
+    if step > win_sec:
+        raise ValueError(f"'step' ({step}) should smaller than 'win_sec' ({win_sec})")
     step = 1 / sf if step <= 0 else step
 
     if not isinstance(norm, bool):
@@ -121,14 +127,14 @@ def spectrogram(signal, sf, band=None, step=0.2, window=2, norm=False):
         )
 
     # Define STFT parameters
-    nperseg = int(window * sf)
+    nperseg = int(win_sec * sf)
     noverlap = int(nperseg - (step * sf))
 
     f, t, Sxx = stft(
-        signal, sf, nperseg=nperseg, noverlap=noverlap, padded=False, boundary="zeros"
+        signal, sf, nperseg=nperseg, nfft=nfft, noverlap=noverlap, padded=False, boundary="zeros"
     )
 
-    f = np.array([round(each, 1) for each in f])
+    f = np.array([round(each, 2) for each in f])
 
     idx_f = np.logical_and(f >= band[0], f <= band[1])
     f = f[idx_f]

@@ -1,5 +1,7 @@
 from misleep.io.base import MiAnnotation
 import pandas as pd
+from collections import Counter
+from scipy.ndimage import gaussian_filter1d
 
 import datetime
 
@@ -116,7 +118,7 @@ def temp_loop4below_row(row, acquisition_time, columns):
 
     return previous_row, new_row, below_row
 
-def cal_draw_spectrum(data, sf, nperseg, freq_band=None, relative=None):
+def cal_draw_spectrum(data, sf, nperseg, freq_band=None, relative=None, nfft=None, gaussian_sigma=None):
     """
     Calculate the relative power spectrum of data, and plot
 
@@ -131,6 +133,10 @@ def cal_draw_spectrum(data, sf, nperseg, freq_band=None, relative=None):
     freq_band : list
         frequency band low and high frequency
     relative : bool
+    nfft : int
+        for welch fourier transform
+    gaussian_sigma : float
+        for gaussian smoothing, if None, no smoothing will be applied
 
     Returns
     -------
@@ -147,9 +153,12 @@ def cal_draw_spectrum(data, sf, nperseg, freq_band=None, relative=None):
 
     if freq_band is None:
         freq_band = [0.5, 30]
-    F, P = welch(data, sf, nperseg=nperseg)
+    F, P = welch(data, sf, nperseg=nperseg, nfft=nfft, scaling="density")
     
-    F = np.array([round(each, 1) for each in F])
+    F = np.array([round(each, 2) for each in F])
+    # Do smooth
+    if gaussian_sigma is not None:
+        P = gaussian_filter1d(P, sigma=gaussian_sigma)
 
     # find frequency band
     if freq_band is not None:
@@ -161,19 +170,16 @@ def cal_draw_spectrum(data, sf, nperseg, freq_band=None, relative=None):
     if relative:
         P = [each/sum(P) for each in P]
 
-    major_ticks_top = np.linspace(0, 50, 26)
-    minor_ticks_top = np.linspace(0, 50, 51)
+    major_ticks_top = np.linspace(0, freq_band[1]+0.1, 10)
 
     figure = plt.figure(figsize=(10, 7))
     ax = figure.subplots(nrows=1, ncols=1)
     plt.subplots_adjust(top=0.95, left=0.15, bottom=0.15, right=0.95)
 
     ax.xaxis.set_ticks(major_ticks_top)
-    ax.xaxis.set_ticks(minor_ticks_top, minor=True)
     ax.grid(which="major", alpha=0.6)
-    ax.grid(which="minor", alpha=0.3)
 
-    ax.set_xlim(freq_band[0], freq_band[1])
+    ax.set_xlim(freq_band[0], freq_band[1]+0.1)
     ax.plot(F, P)
     ax.set_xlabel("Frequency (Hz)")
     ax.set_ylabel("Power spectral density (Power/Hz)")
@@ -197,3 +203,20 @@ def get_base_path(file_path):
     if ext in ['.txt', '.xlsx', '.mat', '.edf', '.csv']:
         return base
     return file_path
+
+
+def downsample_by_most_frequent(lst, group_size=5):
+    """
+    Downsample a list by grouping elements into fixed-size chunks and selecting the most frequent element in each chunk.
+    """
+    result = []
+    
+    for i in range(0, len(lst), group_size):
+        group = lst[i:i+group_size]
+        
+        if group:
+            counter = Counter(group)
+            most_common = counter.most_common(1)[0][0]
+            result.append(most_common)
+    
+    return result

@@ -28,7 +28,7 @@ from misleep.gui.utils import create_new_mianno, identify_startend_color
 from misleep.utils.annotation import lst2group
 from misleep.gui.about import about_dialog
 from misleep.gui.dialog import label_dialog, transferResult_dialog, stateSpectral_dialog, \
-horizontalLine_dialog, SWADetectionDialog, SpindleDetectionDialog, AutoStageDialog, SaveData_dialog
+horizontalLine_dialog, SWADetectionDialog, SpindleDetectionDialog, AutoStageLightGBMDialog, AutoStageCausalTransformerDialog, SaveData_dialog
 from misleep.gui.spec_window import SpecWindow
 from misleep.gui.uis.main_window_ui import Ui_MiSleep
 from misleep.preprocessing.spectral import spectrogram, spectrum, band_power
@@ -127,7 +127,7 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.transfer_result_dialog = transferResult_dialog()
 
         # Initial state spectral dialog
-        self.state_spectral_dialog = stateSpectral_dialog()
+        self.state_spectral_dialog = stateSpectral_dialog(config=self.config)
 
         # Initial data saving dialog
         self.save_data_dialog = SaveData_dialog()
@@ -146,7 +146,9 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.spindel_detection_dialog = SpindleDetectionDialog()
 
         # Initial auto stage dialog
-        self.auto_stage_dialog = AutoStageDialog()
+        self.auto_stage_lightGBM_dialog = AutoStageLightGBMDialog()
+
+        self.auto_stage_causalTransformer_dialog = AutoStageCausalTransformerDialog()
 
         # Check wheher operation done and saved or not
         self.is_saved = True
@@ -161,6 +163,7 @@ class main_window(QMainWindow, Ui_MiSleep):
         """Initial actions for qt widgets"""
         # Set triggers for MenuBar
         self.actionAbout.triggered.connect(self.about_dialog.exec)
+        self.actionConfig.triggered.connect(self.pupup_config)
         self.actionLoadData.triggered.connect(self.load_data)
         self.actionLoadAnnotation.triggered.connect(self.load_anno)
         self.actionStateSpectral.triggered.connect(self.state_spectral)
@@ -168,7 +171,8 @@ class main_window(QMainWindow, Ui_MiSleep):
         self.actionAddLine.triggered.connect(self.add_horizontal_line)
         self.actionSWA_detection.triggered.connect(self.swa_detection)
         self.actionSpindle_Detection.triggered.connect(self.spindle_detection)
-        self.actionAuto_Stage.triggered.connect(self.auto_stage)
+        self.actionLightGBM.triggered.connect(self.auto_stage_LightGBM)
+        self.actionCausalTransformer.triggered.connect(self.auto_stage_CausalTransformer)
         self.actionSaveData.triggered.connect(self.save_data)
 
         # Spectrogram percentile change
@@ -717,7 +721,7 @@ class main_window(QMainWindow, Ui_MiSleep):
             sf=self.midata.sf[self.current_spectrogram_idx],
             band=freq_range,
             step=1,
-            window=5,
+            win_sec=5,
             norm=True,
         )
         cmap = plt.cm.get_cmap("jet")
@@ -1376,18 +1380,28 @@ class main_window(QMainWindow, Ui_MiSleep):
             int(start_*self.midata.sf[channel]) : 
             int(end_*self.midata.sf[channel])
         ]
-        
+
+        win_sec=int(float(self.config['spec']['win_length_sec']))
+        nfft=int(float(self.config['spec']['nfft_sec'])*self.midata.sf[channel])
+        if win_sec > (end_ - start_):
+            win_sec = end_ - start_
+        if nfft<int(win_sec*self.midata.sf[channel]):
+            nfft = int(win_sec*self.midata.sf[channel])
+
         try:
             freq_range = [float(x) for x in self.config['gui']['freq_range'].strip('[]').split(',')]  
             freq, psd = spectrum(signal=signal_data,
                                 sf=self.midata.sf[channel],
                                 band=freq_range,
-                                relative=True)
+                                nfft=nfft,
+                                gaussian_sigma=float(self.config['spec']['gaussian_sigma']),
+                                win_sec=win_sec,
+                                relative=False)
             
             f, t, Sxx = spectrogram(signal=signal_data,
                                     sf=self.midata.sf[channel],
                                     band=freq_range,
-                                    step=1, window=5, norm=True)
+                                    step=1, win_sec=win_sec, norm=False, nfft=nfft)
 
             bandPower = band_power(psd=psd, freq=freq, 
                                 bands=[[0.5, 4, 'delta'], [4, 9, 'theta']])
@@ -1398,7 +1412,8 @@ class main_window(QMainWindow, Ui_MiSleep):
                                 spectrogram=[f, t, Sxx],
                                 percentile_=self.spectrogram_percentile,
                                 ratio=ratio, start_end=[start_, end_],
-                                freq_range=freq_range)
+                                freq_range=freq_range,
+                                data_path=self.data_path)
             
             self.spec_window.activateWindow()
             self.spec_window.setWindowState(
@@ -1408,7 +1423,7 @@ class main_window(QMainWindow, Ui_MiSleep):
             QMessageBox.about(
                 self,
                 "Error",
-                "Filter error.",
+                "An error occurred while generating the spectral analysis.",
             )
             return
 
@@ -1641,14 +1656,37 @@ class main_window(QMainWindow, Ui_MiSleep):
             QMessageBox.about(self, "Error", "Spindle detection ERROR")
             return
     
-    def auto_stage(self):
+    def auto_stage_LightGBM(self):
         """Auto stage data"""
         try:
-            self.auto_stage_dialog.show_chs(self.midata.channels)
-            self.auto_stage_dialog.exec()
-            if self.auto_stage_dialog.closed:
+            self.auto_stage_lightGBM_dialog.show_chs(self.midata.channels)
+            self.auto_stage_lightGBM_dialog.exec()
+            if self.auto_stage_lightGBM_dialog.closed:
                 return
-            auto_stage_lst, save_anno = self.auto_stage_dialog.auto_stage(self.midata, self.mianno)
+            auto_stage_lst, save_anno = self.auto_stage_lightGBM_dialog.auto_stage(self.midata, self.mianno)
+            
+            # Not sure which one is shorter, so get the minimum one
+            self.mianno._sleep_state[:min(len(self.mianno._sleep_state),len(auto_stage_lst))] = auto_stage_lst[:min(len(self.mianno._sleep_state),len(auto_stage_lst))] 
+
+            if save_anno:
+                self.save_anno()
+            self.is_saved = False
+            self.AnnotationPathLabel.setText('*Annotation path:')
+            self.plot_signals()
+            self.plot_hypo()
+        except Exception as e:
+            logger.error(f"Auto stage ERROR: {e}")
+            QMessageBox.about(self, "Error", "Auto stage ERROR")
+            return
+        
+    def auto_stage_CausalTransformer(self):
+        """Auto stage data"""
+        try:
+            self.auto_stage_causalTransformer_dialog.show_chs(self.midata.channels)
+            self.auto_stage_causalTransformer_dialog.exec()
+            if self.auto_stage_causalTransformer_dialog.closed:
+                return
+            auto_stage_lst, save_anno = self.auto_stage_causalTransformer_dialog.auto_stage(self.midata, self.mianno)
             
             # Not sure which one is shorter, so get the minimum one
             self.mianno._sleep_state[:min(len(self.mianno._sleep_state),len(auto_stage_lst))] = auto_stage_lst[:min(len(self.mianno._sleep_state),len(auto_stage_lst))] 
@@ -1676,17 +1714,12 @@ class main_window(QMainWindow, Ui_MiSleep):
             "txt Files (*.txt *.TXT)"
             )
 
-            if not os.path.exists(anno_path):
-                # Create the file if it doesn't exist
-                with open(anno_path, 'w') as file:
-                    file.write("")
-
             if anno_path == "":
                 return
             if not just_save:
                 self.anno_path = anno_path
                 self.AnnoPathEdit.setText(self.anno_path)
-
+        
         save_thread = SaveThread(file=[self.mianno, self.midata], 
                                  file_path=self.anno_path)
         saved = save_thread.save_anno()
@@ -1748,7 +1781,30 @@ class main_window(QMainWindow, Ui_MiSleep):
             QMessageBox.about(self, "Info", f"Data Saved to {data_path}")
         else:
             QMessageBox.about(self, "Error", "Data save ERROR")
-        save_thread.quit()        
+        save_thread.quit()   
+
+    def pupup_config(self):
+        """Pop up config file directly with system editor"""
+        import os
+        import platform
+        import subprocess
+
+        try:
+            path = os.path.abspath(r'./misleep/config.ini')
+
+            system = platform.system()
+
+            if system == "Windows":
+                os.startfile(path)
+
+            elif system == "Darwin":
+                subprocess.run(["open", path])
+
+            elif system == "Linux":
+                subprocess.run(["xdg-open", path])
+        except Exception as e:
+            logger.error(f"Open config.ini ERROR: {e}")
+            QMessageBox.about(self, "Error", f"Open config.ini ERROR: {e}")
     
     def auto_save(self):
         """Auto save every 5 mins"""

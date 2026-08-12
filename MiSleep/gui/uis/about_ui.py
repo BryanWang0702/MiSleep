@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file './misleep/gui/uis/about.ui'
+# Form implementation generated from reading ui file '.\about.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.10
 #
@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_AboutDialog(object):
     def setupUi(self, AboutDialog):
         AboutDialog.setObjectName("AboutDialog")
-        AboutDialog.resize(480, 262)
+        AboutDialog.resize(480, 342)
         icon = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap(":/logo/logo.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         AboutDialog.setWindowIcon(icon)
@@ -55,5 +55,5 @@ class Ui_AboutDialog(object):
         self.groupBox.setTitle(_translate("AboutDialog", "MiSleep"))
         self.VersionLabel.setText(_translate("AboutDialog", "Version: 0.0.1"))
         self.UpdateLabel.setText(_translate("AboutDialog", "Update: 2024/03/08"))
-        self.CopyrightLabel.setText(_translate("AboutDialog", "Copyright © 2023–2024 Xueqiang Wang."))
+        self.CopyrightLabel.setText(_translate("AboutDialog", "Copyright © 2023–2026 Xueqiang Wang."))
 from misleep.gui.resources import misleep
