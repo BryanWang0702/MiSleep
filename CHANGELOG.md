@@ -19,15 +19,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   with `Ctrl+Shift+T` or *Settings → General → Theme* (persists in the
   user config). Dark mode also sets a matching QPalette so style-drawn
   elements (arrows, separators, calendar, state buttons) stay readable.
-- **Data presentation**: hypnogram drawn as thick per-state blocks (easy
-  to read on long recordings); every signal panel gets a visible frame;
-  the spectrogram colormap stays `jet` by default (configurable in
-  Settings).
+- **Data presentation**: hypnogram drawn as thick per-state blocks with
+  edges touching (easy to read on long recordings); every signal panel
+  gets a visible frame; the spectrogram colormap stays `jet` by default
+  (configurable in Settings) and the strip's width is pinned to the shown
+  window.
 - **Performance**: page flips are much faster — the whole-file
   spectrogram is cached per channel (sliced per window), the hypnogram
   base is cached and reused, signal axes are reused instead of recreated,
-  state backgrounds are drawn as cheap rectangles, and dense traces are
-  downsampled to 8k points.
+  state backgrounds are drawn as cheap rectangles; short windows keep
+  every sample, long windows use a min/max envelope (no visible
+  thinning).
+- **Appearance**: sharper, higher-contrast look — square corners and
+  deeper palette in both themes; sidebar rows are vertically aligned
+  (uniform control widths, equal state-button columns).
 
 ## [0.3.0] — 2025
 

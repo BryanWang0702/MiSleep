@@ -42,89 +42,89 @@ THEMES = {
     "light": {
         "name": "Light",
         # surfaces
-        "window": "#f3f5fa",
+        "window": "#eaeef5",
         "surface": "#ffffff",
-        "surface_alt": "#eef1f8",
+        "surface_alt": "#e2e8f2",
         "input": "#ffffff",
-        "disabled_bg": "#f1f3f8",
+        "disabled_bg": "#eef1f6",
         # lines
-        "border": "#dde3ee",
-        "border_strong": "#c6cfdf",
+        "border": "#c9d3e1",
+        "border_strong": "#a9b6c9",
         # text
-        "text": "#202b3c",
-        "text_secondary": "#5d6b80",
-        "text_disabled": "#a4aebb",
+        "text": "#141d2b",
+        "text_secondary": "#4a5a70",
+        "text_disabled": "#97a3b3",
         # accent (indigo)
-        "accent": "#5560e8",
-        "accent_hover": "#4652d4",
-        "accent_pressed": "#3943b4",
-        "accent_soft": "#eaeefe",
-        "accent_soft_2": "#dfe4fc",
+        "accent": "#4b56d9",
+        "accent_hover": "#3d47c2",
+        "accent_pressed": "#333ba6",
+        "accent_soft": "#e2e7fc",
+        "accent_soft_2": "#d4dbfa",
         # semantic
-        "danger": "#e5484d",
-        "danger_hover": "#d23b40",
-        "success": "#17a673",
+        "danger": "#dc3d43",
+        "danger_hover": "#c43339",
+        "success": "#148a5e",
         # misc
-        "tooltip_bg": "#223042",
-        "tooltip_text": "#f2f5fa",
-        "scroll_handle": "#c3cbda",
-        "scroll_handle_hover": "#93a0b8",
-        "slider_groove": "#d8deea",
+        "tooltip_bg": "#1c2736",
+        "tooltip_text": "#f4f7fb",
+        "scroll_handle": "#aeb9cb",
+        "scroll_handle_hover": "#8b9ab2",
+        "slider_groove": "#cfd8e6",
         # matplotlib / plot area
-        "plot": {"trace": "#101624", "grid": "#37a57f", "bg": "#ffffff"},
+        "plot": {"trace": "#0d1524", "grid": "#2f9d74", "bg": "#ffffff"},
         "mpl": {
-            "figure.facecolor": "#f3f5fa",
+            "figure.facecolor": "#eaeef5",
             "axes.facecolor": "#ffffff",
-            "axes.edgecolor": "#c6cfdf",
-            "axes.labelcolor": "#202b3c",
-            "xtick.color": "#5d6b80",
-            "ytick.color": "#5d6b80",
-            "text.color": "#202b3c",
-            "grid.color": "#e2e7f0",
+            "axes.edgecolor": "#a9b6c9",
+            "axes.labelcolor": "#141d2b",
+            "xtick.color": "#4a5a70",
+            "ytick.color": "#4a5a70",
+            "text.color": "#141d2b",
+            "grid.color": "#dbe2ec",
             "savefig.facecolor": "#ffffff",
         },
     },
     "dark": {
         "name": "Dark",
         # surfaces
-        "window": "#141923",
-        "surface": "#1b2230",
-        "surface_alt": "#212a3a",
-        "input": "#171e2a",
-        "disabled_bg": "#1b2230",
+        "window": "#10151f",
+        "surface": "#171e2b",
+        "surface_alt": "#1e2736",
+        "input": "#131a25",
+        "disabled_bg": "#171e2b",
         # lines
-        "border": "#2b3547",
-        "border_strong": "#3d4a63",
+        "border": "#2c374a",
+        "border_strong": "#414e68",
         # text
-        "text": "#e8edf6",
-        "text_secondary": "#98a6ba",
-        "text_disabled": "#5d6c80",
+        "text": "#eef2f9",
+        "text_secondary": "#9aa8bc",
+        "text_disabled": "#5b6a80",
         # accent (indigo)
-        "accent": "#7d86f0",
-        "accent_hover": "#99a0f8",
-        "accent_pressed": "#646edf",
-        "accent_soft": "#2a3157",
-        "accent_soft_2": "#343c6b",
+        "accent": "#7a84f0",
+        "accent_hover": "#959df5",
+        "accent_pressed": "#616bd9",
+        "accent_soft": "#28304f",
+        "accent_soft_2": "#313b60",
         # semantic
         "danger": "#f0606b",
         "danger_hover": "#f27c85",
         "success": "#2bc48a",
         # misc
-        "tooltip_bg": "#2b3547",
-        "tooltip_text": "#e8edf6",
-        "scroll_handle": "#3d4a63",
-        "scroll_handle_hover": "#55698a",
-        "slider_groove": "#2b3547",
+        "tooltip_bg": "#2c374a",
+        "tooltip_text": "#eef2f9",
+        "scroll_handle": "#414e68",
+        "scroll_handle_hover": "#5a6a8a",
+        "slider_groove": "#2c374a",
         # matplotlib / plot area
         "plot": {"trace": "#d9e3f2", "grid": "#3fae85", "bg": "#101824"},
         "mpl": {
-            "figure.facecolor": "#141923",
+            "figure.facecolor": "#10151f",
             "axes.facecolor": "#101824",
-            "axes.edgecolor": "#3d4a63",
-            "axes.labelcolor": "#e8edf6",
-            "xtick.color": "#98a6ba",
-            "ytick.color": "#98a6ba",
-            "text.color": "#e8edf6",
+            "axes.edgecolor": "#414e68",
+            "axes.labelcolor": "#eef2f9",
+            "xtick.color": "#9aa8bc",
+            "ytick.color": "#9aa8bc",
+            "text.color": "#eef2f9",
             "grid.color": "#232f41",
             "savefig.facecolor": "#101824",
         },
@@ -180,7 +180,7 @@ QMenuBar {
 QMenuBar::item {
     background: transparent;
     padding: 4px 10px;
-    border-radius: 6px;
+    border-radius: 0px;
     color: $text;
 }
 QMenuBar::item:selected {
@@ -194,12 +194,12 @@ QMenuBar::item:pressed {
 QMenu {
     background-color: $surface;
     border: 1px solid $border;
-    border-radius: 8px;
+    border-radius: 0px;
     padding: 5px;
 }
 QMenu::item {
     padding: 5px 26px 5px 10px;
-    border-radius: 5px;
+    border-radius: 0px;
     color: $text;
 }
 QMenu::item:selected {
@@ -234,7 +234,7 @@ QToolBar::separator {
 QToolButton {
     background: transparent;
     border: 1px solid transparent;
-    border-radius: 6px;
+    border-radius: 0px;
     padding: 4px 8px;
     color: $text;
 }
@@ -253,7 +253,7 @@ QToolButton:disabled {
 QPushButton {
     background-color: $surface;
     border: 1px solid $border_strong;
-    border-radius: 6px;
+    border-radius: 0px;
     padding: 4px 12px;
     color: $text;
     min-height: 26px;
@@ -346,7 +346,7 @@ QComboBox, QSpinBox, QDoubleSpinBox, QLineEdit, QDateTimeEdit,
 QTimeEdit, QDateEdit, QPlainTextEdit, QTextEdit {
     background-color: $input;
     border: 1px solid $border_strong;
-    border-radius: 6px;
+    border-radius: 0px;
     padding: 3px 8px;
     selection-background-color: $accent;
     selection-color: #ffffff;
@@ -371,7 +371,7 @@ QComboBox::drop-down {
 QComboBox QAbstractItemView {
     background-color: $surface;
     border: 1px solid $border;
-    border-radius: 6px;
+    border-radius: 0px;
     padding: 4px;
     selection-background-color: $accent_soft;
     selection-color: $text;
@@ -388,13 +388,13 @@ QSpinBox::down-button, QDoubleSpinBox::down-button, QDateTimeEdit::down-button {
 QListView, QListWidget, QTreeView, QTableView, QTreeWidget {
     background-color: $surface;
     border: 1px solid $border;
-    border-radius: 6px;
+    border-radius: 0px;
     alternate-background-color: $surface_alt;
     outline: none;
 }
 QListView::item, QListWidget::item, QTreeView::item, QTableView::item {
     padding: 4px 6px;
-    border-radius: 4px;
+    border-radius: 0px;
 }
 QListView::item:selected, QListWidget::item:selected,
 QTreeView::item:selected, QTableView::item:selected {
@@ -422,12 +422,12 @@ QScrollArea {
 QScrollBar:horizontal {
     background: transparent;
     height: 12px;
-    border-radius: 6px;
+    border-radius: 0px;
     margin: 0;
 }
 QScrollBar::handle:horizontal {
     background: $scroll_handle;
-    border-radius: 6px;
+    border-radius: 0px;
     min-width: 32px;
 }
 QScrollBar::handle:horizontal:hover {
@@ -436,12 +436,12 @@ QScrollBar::handle:horizontal:hover {
 QScrollBar:vertical {
     background: transparent;
     width: 12px;
-    border-radius: 6px;
+    border-radius: 0px;
     margin: 0;
 }
 QScrollBar::handle:vertical {
     background: $scroll_handle;
-    border-radius: 6px;
+    border-radius: 0px;
     min-height: 32px;
 }
 QScrollBar::handle:vertical:hover {
@@ -465,7 +465,7 @@ QToolButton#SidebarSectionHeader {
     border-bottom: 1px solid $border;
     border-radius: 0;
     text-align: left;
-    padding: 7px 10px;
+    padding: 7px 8px;
     font-weight: 600;
     font-size: 9pt;
     color: $text_secondary;
@@ -492,7 +492,7 @@ QSplitter::handle {
 /* ---------------- groups & tabs ---------------- */
 QGroupBox {
     border: 1px solid $border;
-    border-radius: 8px;
+    border-radius: 0px;
     margin-top: 10px;
     padding-top: 8px;
     background: transparent;
@@ -506,7 +506,7 @@ QGroupBox::title {
 }
 QTabWidget::pane {
     border: 1px solid $border;
-    border-radius: 6px;
+    border-radius: 0px;
     background: $surface;
     top: -1px;
 }
@@ -531,16 +531,16 @@ QTabBar::tab:hover:!selected {
 QSlider::groove:horizontal {
     height: 4px;
     background: $slider_groove;
-    border-radius: 2px;
+    border-radius: 0px;
 }
 QSlider::sub-page:horizontal {
     background: $accent;
-    border-radius: 2px;
+    border-radius: 0px;
 }
 QSlider::handle:horizontal {
     width: 14px;
     margin: -5px 0;
-    border-radius: 7px;
+    border-radius: 0px;
     background: $surface;
     border: 2px solid $accent;
 }
@@ -550,16 +550,16 @@ QSlider::handle:horizontal:hover {
 QSlider::groove:vertical {
     width: 4px;
     background: $slider_groove;
-    border-radius: 2px;
+    border-radius: 0px;
 }
 QSlider::sub-page:vertical {
     background: $accent;
-    border-radius: 2px;
+    border-radius: 0px;
 }
 QSlider::handle:vertical {
     height: 14px;
     margin: 0 -5px;
-    border-radius: 7px;
+    border-radius: 0px;
     background: $surface;
     border: 2px solid $accent;
 }
@@ -578,10 +578,10 @@ QCheckBox::indicator, QRadioButton::indicator {
     background: $surface;
 }
 QCheckBox::indicator {
-    border-radius: 4px;
+    border-radius: 0px;
 }
 QRadioButton::indicator {
-    border-radius: 8px;
+    border-radius: 0px;
 }
 QCheckBox::indicator:hover, QRadioButton::indicator:hover {
     border-color: $accent;
@@ -612,19 +612,19 @@ QToolTip {
     color: $tooltip_text;
     border: none;
     padding: 4px 8px;
-    border-radius: 4px;
+    border-radius: 0px;
     font-size: 9pt;
 }
 QProgressBar {
     border: 1px solid $border;
-    border-radius: 5px;
+    border-radius: 0px;
     text-align: center;
     background: $surface;
     color: $text;
 }
 QProgressBar::chunk {
     background: $accent;
-    border-radius: 4px;
+    border-radius: 0px;
 }
 
 /* ---------------- calendar popup ---------------- */
@@ -634,7 +634,7 @@ QCalendarWidget QWidget#qt_calendar_navigationbar {
 QCalendarWidget QToolButton {
     background: transparent;
     border: none;
-    border-radius: 4px;
+    border-radius: 0px;
     padding: 2px 6px;
     color: $text;
 }

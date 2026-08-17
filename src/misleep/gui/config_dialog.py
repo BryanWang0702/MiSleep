@@ -71,7 +71,7 @@ class ColorButton(QPushButton):
                 background-color: {self._color.name()};
                 color: {_contrast_text(self._color)};
                 border: 2px solid rgba(0, 0, 0, 60%);
-                border-radius: 6px;
+                border-radius: 0px;
                 font-size: 8pt;
                 font-weight: bold;
                 padding: 0px;

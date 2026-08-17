@@ -551,7 +551,7 @@ class HorizontalLineDialog(QDialog, Ui_horizontal_line_dialog):
         fg = "#000000" if lum > 150 else "#ffffff"
         self.SetColorBt.setStyleSheet(
             f"QPushButton {{ background-color: {self.color}; color: {fg};"
-            f" border: 1px solid {self.color}; border-radius: 6px;"
+            f" border: 1px solid {self.color}; border-radius: 0px;"
             f" font-weight: 600; padding: 2px 8px; min-height: 24px; }}")
 
     def ok_event(self):

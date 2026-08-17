@@ -27,6 +27,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QScrollArea,
+    QSizePolicy,
     QVBoxLayout,
     QWidget,
 )
@@ -296,6 +297,16 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         # the channel list takes the section's extra height
         self.gridLayout.setRowStretch(4, 1)
 
+        # vertical alignment in the Annotation section: the state buttons
+        # share equal columns, and the save/marker/list row stretches evenly
+        self.gridLayout_2.setColumnStretch(2, 1)
+        self.gridLayout_2.setColumnStretch(3, 1)
+        self.gridLayout_2.setColumnMinimumWidth(2, 72)
+        self.gridLayout_2.setColumnMinimumWidth(3, 72)
+        for bt in (self.SaveLabelBt, self.MarkerListBt, self.StartEndListBt):
+            bt.setSizePolicy(QSizePolicy.Policy.Expanding,
+                             QSizePolicy.Policy.Fixed)
+
         # The old docks are hidden - their widgets now live in the sidebar.
         for dock in (self.MetaDock, self.ChannelDock,
                      self.AnnotationDock, self.TimeDock):
@@ -303,16 +314,17 @@ class MainWindow(QMainWindow, Ui_MiSleep):
             dock.hide()
 
     def _thin_inputs(self):
-        """Make spin boxes / combos in the docks narrower."""
+        """Give spin boxes / combos in the sidebar consistent widths so
+        the rows line up vertically."""
         for name in ("FilterLowSpin", "FilterHighSpin", "PercentileSpin",
-                     "SecondSpin", "SecondNumSpin"):
+                     "SecondSpin", "SecondNumSpin", "multipleScalerEditor"):
             spin = getattr(self, name, None)
             if spin is not None:
-                spin.setFixedWidth(64)
+                spin.setFixedWidth(74)
         for name in ("FilterTypeCombo", "ShowRangeCombo"):
             combo = getattr(self, name, None)
             if combo is not None:
-                combo.setFixedWidth(100)
+                combo.setFixedWidth(112)
 
     # ------------------------------------------------------------------
     # Initialization
@@ -924,15 +936,17 @@ class MainWindow(QMainWindow, Ui_MiSleep):
             seg = self.midata.signals[each][
                 int(self.current_sec * sf): int(
                     (self.current_sec + self.show_duration) * sf)]
-            # Downsample dense traces for fast drawing (8k points is far
-            # beyond screen resolution yet keeps page flips snappy)
-            max_points = 8000
-            step = max(1, -(-len(seg) // max_points))  # ceil division
-            if step > 1:
-                line, = ax.plot(np.arange(0, len(seg), step), seg[::step],
-                                color=self._plot_trace, linewidth=0.5)
+            # Short windows (up to ~3 min at 300 Hz) keep every sample;
+            # long windows use a min/max envelope so the waveform keeps its
+            # shape without the obvious thinning of every-Nth decimation.
+            if len(seg) <= 60000:
+                xs, ys = None, seg
             else:
-                line, = ax.plot(seg, color=self._plot_trace, linewidth=0.5)
+                xs, ys = self._decimate_trace(seg)
+            if xs is None:
+                line, = ax.plot(ys, color=self._plot_trace, linewidth=0.5)
+            else:
+                line, = ax.plot(xs, ys, color=self._plot_trace, linewidth=0.5)
             self._signal_artists.setdefault(i + 1, []).append(line)
             ax.set_ylim(ymin=-y_lim + y_shift, ymax=y_lim + y_shift)
             ax.set_xlim(xmin=0, xmax=self.show_duration * sf)
@@ -1002,6 +1016,28 @@ class MainWindow(QMainWindow, Ui_MiSleep):
                 spine.set_visible(True)
                 spine.set_edgecolor(edge)
                 spine.set_linewidth(0.9)
+
+    @staticmethod
+    def _decimate_trace(sig, bins=12000):
+        """Min/max envelope decimation that preserves the signal shape.
+
+        Naive every-Nth sampling makes dense EEG look visibly thinned and
+        can alias rhythmic features; plotting the min/max of each bin keeps
+        the waveform envelope intact while bounding the draw cost.
+        """
+        n = len(sig)
+        if n <= bins * 2:
+            return np.arange(n), sig
+        step = int(np.ceil(n / bins))
+        n_bins = n // step
+        trimmed = sig[: n_bins * step].reshape(n_bins, step)
+        mn = trimmed.min(axis=1)
+        mx = trimmed.max(axis=1)
+        xs = np.repeat(np.arange(n_bins) * step, 2)
+        ys = np.empty(2 * n_bins)
+        ys[0::2] = mn
+        ys[1::2] = mx
+        return xs, ys
 
     def replot_sleep_state_bg(self, state):
         """Replot the sleep-state background of the selected start-end area."""
@@ -1082,6 +1118,12 @@ class MainWindow(QMainWindow, Ui_MiSleep):
                         (self.current_sec + self.show_duration) * sf)],
                 sf=sf, band=freq_range, step=1, win_sec=5, norm=True)
 
+        # Long windows: cap the number of time columns drawn
+        if t.size > 2000:
+            step_t = max(1, -(-t.size // 2000))
+            t = t[::step_t]
+            Sxx = Sxx[:, ::step_t]
+
         cmap_name = self.config.get("gui", "spectrogram_cmap", fallback="jet")
         try:
             cmap = plt.get_cmap(cmap_name)
@@ -1089,6 +1131,10 @@ class MainWindow(QMainWindow, Ui_MiSleep):
             cmap = plt.get_cmap("jet")
 
         self.signal_ax[0].set_xticks([])
+        # Pin the horizontal extent explicitly: with reused axes the
+        # auto-limit can stay stuck at a previous (longer) window, which
+        # compresses the strip to a fraction of its width.
+        self.signal_ax[0].set_xlim(t.min(), t.max())
         self.signal_ax[0].set_ylim(freq_range)
         self.signal_ax[0].set_ylabel(f"{self.midata.channels[ch]}")
         self._spec_artist = self.signal_ax[0].pcolormesh(
@@ -1237,9 +1283,10 @@ class MainWindow(QMainWindow, Ui_MiSleep):
             self.hypo_ax.clear()
             self._hypo_transient = []
             # One thick filled bar per consecutive run of the same state,
-            # spanning most of the state band vertically - clearly readable
-            # even when a whole night is squeezed into a few thousand px.
-            band = 0.28  # half height of each bar (state +/- band)
+            # spanning the full state band (edges touch between states) -
+            # clearly readable even when a whole night is squeezed into a
+            # few thousand pixels.
+            band = 0.5  # half height of each bar (state +/- band)
             runs = lst2group([i, each] for i, each in enumerate(self.mianno.sleep_state))
             for start, end, state in runs:
                 if end <= start:
@@ -1456,7 +1503,7 @@ class MainWindow(QMainWindow, Ui_MiSleep):
             fg = _text_on(color)
             bt.setStyleSheet(
                 f"QPushButton {{ background-color: {color}; color: {fg};"
-                f" border: 1px solid {color}; border-radius: 6px;"
+                f" border: 1px solid {color}; border-radius: 0px;"
                 f" padding: 3px 8px; min-height: 22px; font-weight: 600; }}"
                 f" QPushButton:hover {{ border-color: rgba(255,255,255,140); }}"
                 f" QPushButton:pressed {{ background-color: {color}; }}"
