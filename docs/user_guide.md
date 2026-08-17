@@ -14,7 +14,8 @@ The main window follows the classic scoring workflow:
      (LightGBM, Transformer)
    * **Result** — State Spectral, Transfer Result
    * **Settings** — the in-application settings dialog (own menu)
-   * **View** — show/hide the Meta, Channel, Annotation and Time docks
+   * **View** — expand/collapse the Data, Channels, Scoring and Display
+     sidebar sections
    * **Help** — About
    The window starts **maximized**, so the signal area uses all the
    available width (no horizontal scrolling).
@@ -25,17 +26,18 @@ The main window follows the classic scoring workflow:
      the figure fills the whole signal widget, the panels are tightly
      packed, and everything adapts when you resize the window,
    * the **hypnogram** at the bottom, with the **scroll bar** below.
-3. **Tool area (right)** — the Meta, Channel, Annotation and Time docks
-   with balanced, compact sizes. The **Meta** dock starts **stacked**
-   (collapsed to its title bar; click the ▼/▲ button to expand it), and
-   the others have sensible minimum heights so they never crowd the
-   signal area.
+3. **Tool area (right)** — one tidy **sidebar** with four collapsible
+   sections: **Data** (paths, acquisition time; starts collapsed), the
+   **Channels** list, **Scoring** and **Display**. Click a section header
+   to expand/collapse it; the panel keeps a fixed width so the signal
+   area stays dominant.
 
 Usability details:
 
 * The **mouse wheel** flips the signal window **only** when hovering over
-  the signal or hypnogram panels; over docks, tools or editors it never
-  moves the signal, and it never changes spin/combo/date values either.
+  the signal or hypnogram panels; over the sidebar, tools or editors it
+  never moves the signal, and it never changes spin/combo/date values
+  either.
 * Long display windows (30 min / 1 h) are **automatically downsampled**
   for fast redraws, and the x-axis tick density is reduced automatically.
 * **Add Line** supports relative lines: enter a number N, choose
@@ -117,7 +119,7 @@ Navigation:
 * `Up`/`Down` — previous/next 5 s epoch,
 * mouse wheel — page up/down.
 
-### Channel dock
+### Channel list (Channels section)
 
 * **▲ / ▼ arrow buttons** sit **horizontally in the same row as the
   spectrogram percentile box** (compact, 24×24) and move the selected
@@ -126,21 +128,21 @@ Navigation:
 * To **rename** a channel, double-click its name in the list.
 * **Show / Hide / Delete** — control which channels are displayed; delete
   removes them from the in-memory data.
-* The right-side docks are kept **narrow and compact** (smaller minimum
-  widths, shorter labels) so the signal area stays dominant.
+* The sidebar keeps a **fixed, compact width** so the signal area stays
+  dominant.
 
 ### Hypnogram
 
-The per-second sleep state as a step plot. Click anywhere on it to jump
-to that time.
+The per-second sleep state as a colored step plot (one color per state).
+Click anywhere on it to jump to that time.
 
-## Tool docks
+## Right-hand sidebar
 
-### Meta dock
+### Data section
 
 Shows the data path, annotation path, and acquisition time.
 
-### Channel dock
+### Channels section
 
 * **Show / Hide / Delete** — control which channels are displayed; delete
   removes them from the in-memory data.
@@ -153,7 +155,7 @@ Shows the data path, annotation path, and acquisition time.
   (> 5 s) in the annotation area, opens the spectrum/spectrogram window
   for the selected channel.
 
-### Annotation dock
+### Scoring section
 
 Three scoring modes (radio buttons) plus the **Marker list** / **Start-End
 list** buttons which open a viewer of all already-labeled events:
@@ -176,13 +178,13 @@ Scoring itself works as before:
 * **Sleep state** — click twice to define an interval, then press one of
   the **state buttons** or the number key for that state (`1`–`9`, and
   `0` for state 10) to score it. The default has four states (1 NREM,
-  2 REM, 3 Wake, 4 Init) whose buttons live in the Annotation dock; add
+  2 REM, 3 Wake, 4 Init) whose buttons live in the Scoring section; add
   up to **10 states** in *Settings → Sleep states* and extra buttons
   appear below them, colored automatically.
 
 Right-click removes markers / start-end selections.
 
-### Time dock
+### Display section
 
 Jump to a specific time with the spin box or the date-time editor; choose
 the display duration from the combo box (30 s – 1 h) or a custom value
@@ -218,8 +220,8 @@ the display duration from the combo box (30 s – 1 h) or a custom value
 
 ### Help
 
-* **View** — check/uncheck to show or hide the Meta, Channel, Annotation
-  and Time docks (the Annotation and Time docks share one tabbed area).
+* **View** — check/uncheck to expand or collapse the Data, Channels,
+  Scoring and Display sidebar sections (same as clicking their headers).
 * **About** — version and update info.
 * **Settings** — opens the in-application settings dialog. Changes are
   **applied immediately** without restarting MiSleep:
@@ -230,7 +232,8 @@ the display duration from the combo box (30 s – 1 h) or a custom value
   * *Labels* — edit the marker and start-end label lists,
   * *Spectral* — default frequency range, FFT window length, nfft and
     Gaussian smoothing σ,
-  * *General* — state background transparency and the default open path.
+  * *General* — state background transparency, the **theme** (light/dark),
+    the **spectrogram colormap**, and the default open path.
   An **"Open file…"** button opens the raw configuration file in your
   system editor for advanced edits (changes then require a restart).
 
@@ -252,6 +255,7 @@ the display duration from the combo box (30 s – 1 h) or a custom value
 | `a` | append start-end label |
 | `s` | open spectrum/spectrogram window |
 | `1`–`6` | score the selected area with state 1–6 |
+| `Ctrl+Shift+T` | toggle the light / dark theme |
 | `Left` / `Right` | previous / next page |
 | `Up` / `Down` | previous / next 5 s epoch |
 | mouse wheel | page up / down |

@@ -5,6 +5,28 @@ All notable changes to MiSleep are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **GUI redesign**: the four right-side docks were replaced by one tidy
+  **sidebar** with collapsible sections (Data / Channels / Scoring /
+  Display); the bottom **status bar was removed**; all sizes are DPI-aware
+  (`pt`-based) with per-platform fonts, so the GUI scales cleanly on any
+  screen.
+- **Theme system**: light and dark themes driven by one palette that
+  styles the Qt widgets *and* the matplotlib canvases together; toggle
+  with `Ctrl+Shift+T` or *Settings → General → Theme* (persists in the
+  user config).
+- **Data presentation**: hypnogram is now colored per sleep state;
+  spectrogram colormap is configurable (default `turbo` instead of
+  `jet`); signal traces, grids and labels follow the active theme.
+- **Performance**: page flips are much faster — the whole-file
+  spectrogram is cached per channel (sliced per window), the hypnogram
+  base is cached and reused, signal axes are reused instead of recreated,
+  state backgrounds are drawn as cheap rectangles, and dense traces are
+  downsampled to 8k points.
+
 ## [0.3.0] — 2025
 
 This is a major restructuring of the project (previously *MiSleep_v2*).
