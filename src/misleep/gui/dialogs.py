@@ -457,7 +457,7 @@ class HorizontalLineDialog(QDialog, Ui_horizontal_line_dialog):
 
         self.color = "#ff0000"
         self.SetColorBt.setText(self.color)
-        self.SetColorBt.setStyleSheet("background-color:red")
+        self._style_color_bt()
         self.SetColorBt.clicked.connect(self.select_color)
 
         self.AddLineBt.clicked.connect(self.add_line)
@@ -542,7 +542,17 @@ class HorizontalLineDialog(QDialog, Ui_horizontal_line_dialog):
         if self.color == "#000000":
             self.color = "#ff0000"
         self.SetColorBt.setText(self.color)
-        self.SetColorBt.setStyleSheet(f"background-color:{self.color}")
+        self._style_color_bt()
+
+    def _style_color_bt(self):
+        """Style the swatch with readable text on any theme/color."""
+        c = QColor(self.color)
+        lum = 0.299 * c.red() + 0.587 * c.green() + 0.114 * c.blue()
+        fg = "#000000" if lum > 150 else "#ffffff"
+        self.SetColorBt.setStyleSheet(
+            f"QPushButton {{ background-color: {self.color}; color: {fg};"
+            f" border: 1px solid {self.color}; border-radius: 6px;"
+            f" font-weight: 600; padding: 2px 8px; min-height: 24px; }}")
 
     def ok_event(self):
         self.closed = False

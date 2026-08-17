@@ -84,11 +84,11 @@ class SpecWindow(QMainWindow, Ui_spec_window):
         self.spectrogram_ax.set_ylim(freq_range[0], freq_range[1] + 0.1)
         from misleep.config import load_config
 
-        cmap_name = load_config().get("gui", "spectrogram_cmap", fallback="turbo")
+        cmap_name = load_config().get("gui", "spectrogram_cmap", fallback="jet")
         try:
             cmap = plt.get_cmap(cmap_name)
         except ValueError:
-            cmap = plt.get_cmap("turbo")
+            cmap = plt.get_cmap("jet")
         pcm = self.spectrogram_ax.pcolormesh(
             t, f, Sxx, cmap=cmap, vmax=np.percentile(Sxx, percentile_))
         self.spectrogram_figure.colorbar(pcm, ax=self.spectrogram_ax)

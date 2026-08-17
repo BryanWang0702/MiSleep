@@ -319,7 +319,7 @@ class SettingsDialog(QDialog):
 
         self._cmap_combo = QComboBox()
         self._cmap_combo.addItems(
-            ["turbo", "viridis", "jet", "plasma", "magma", "inferno", "cividis"])
+            ["jet", "turbo", "viridis", "plasma", "magma", "inferno", "cividis"])
         self._cmap_combo.setToolTip(
             "Colormap used for the spectrograms (main window and spectrum window).")
         form.addRow("Spectrogram colormap:", self._cmap_combo)
@@ -370,7 +370,7 @@ class SettingsDialog(QDialog):
         self._bg_alpha.setValue(float(gui["statecolorbgalpha"]))
         self._openpath.setText(gui["openpath"])
         self._theme_combo.setCurrentText(gui.get("theme", "light"))
-        self._cmap_combo.setCurrentText(gui.get("spectrogram_cmap", "turbo"))
+        self._cmap_combo.setCurrentText(gui.get("spectrogram_cmap", "jet"))
         self._marker_line_bt.set_color(gui.get("markerlinecolor", "red"))
         self._start_end_line_bt.set_color(gui.get("startendlinecolor", "blue"))
 

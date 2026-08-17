@@ -15,7 +15,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from PySide6.QtCore import QEvent, QTimer, Qt
-from PySide6.QtGui import QKeySequence, QShortcut
+from PySide6.QtGui import QColor, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QAbstractSpinBox,
@@ -65,6 +65,13 @@ from misleep.io.mat import load_mat
 from misleep.logger import logger
 from misleep.preprocessing.spectral import band_power, spectrogram, spectrum
 from misleep.utils.annotation import lst2group
+
+
+def _text_on(color_hex: str) -> str:
+    """Return black or white text for a background color (any theme)."""
+    c = QColor(color_hex)
+    lum = 0.299 * c.red() + 0.587 * c.green() + 0.114 * c.blue()
+    return "#000000" if lum > 150 else "#ffffff"
 
 
 class MainWindow(QMainWindow, Ui_MiSleep):
@@ -257,10 +264,12 @@ class MainWindow(QMainWindow, Ui_MiSleep):
             self._sections.append(sec)
             return sec
 
-        add_section("Data", self.MetaDock.widget(), collapsed=True)
-        add_section("Channels", self.ChannelDock.widget(), stretch=1)
-        add_section("Scoring", self.AnnotationDock.widget())
-        add_section("Display", self.TimeDock.widget())
+        # Section titles keep the original dock names (Meta / Channel /
+        # Annotation / Time), so the sidebar reads exactly like the old GUI.
+        add_section("Meta", self.MetaDock.widget(), collapsed=True)
+        add_section("Channel", self.ChannelDock.widget(), stretch=1)
+        add_section("Annotation", self.AnnotationDock.widget())
+        add_section("Time", self.TimeDock.widget())
 
         # The sidebar lives in a scroll area (never clips on small screens)
         # and keeps a fixed, comfortable width next to the plot area.
@@ -272,10 +281,20 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         scroll.setWidget(sidebar)
         scroll.setFixedWidth(318)
         scroll.setMinimumHeight(120)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.sidebar_scroll = scroll
         self.gridLayout_3.addWidget(scroll, 0, 1, 3, 1)
         self.gridLayout_3.setColumnStretch(0, 1)
         self.gridLayout_3.setColumnStretch(1, 0)
+
+        # tidy, even spacing inside every dock-content grid
+        for grid in (self.gridLayout, self.gridLayout_2, self.gridLayout_4):
+            grid.setSpacing(6)
+            grid.setContentsMargins(8, 6, 8, 8)
+        self.formLayout.setSpacing(6)
+        self.formLayout.setContentsMargins(8, 6, 8, 8)
+        # the channel list takes the section's extra height
+        self.gridLayout.setRowStretch(4, 1)
 
         # The old docks are hidden - their widgets now live in the sidebar.
         for dock in (self.MetaDock, self.ChannelDock,
@@ -350,6 +369,12 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         # Channel move arrows (declared in the .ui beside the percentile box)
         self.MoveUpBt.clicked.connect(lambda: self.move_channel("up"))
         self.MoveDownBt.clicked.connect(lambda: self.move_channel("down"))
+        # Make sure the move arrows always show their glyph (and an icon),
+        # even if a .ui rebuild ever drops the translated text.
+        if not self.MoveUpBt.text():
+            self.MoveUpBt.setText("\u25b2")
+        if not self.MoveDownBt.text():
+            self.MoveDownBt.setText("\u25bc")
 
         # Filter
         self.FilterTypeCombo.currentIndexChanged.connect(self.FilterTypeCombo_change)
@@ -880,6 +905,8 @@ class MainWindow(QMainWindow, Ui_MiSleep):
                         pass
             self._signal_artists = {}
         self.plot_spectrogram()
+        # visible frames around every panel (spectrogram strip + boxes)
+        self._style_signal_boxes()
 
         # Sleep-state groups inside the current window
         sleep_state = self.mianno.sleep_state[
@@ -966,6 +993,16 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         except Exception as e:  # pragma: no cover
             logger.debug(f"signal layout skipped: {e}")
 
+    def _style_signal_boxes(self):
+        """Give every signal panel a visible frame so the channels don't
+        look like they float together (all four spines on, theme edge)."""
+        edge = THEMES[self._theme_name]["mpl"]["axes.edgecolor"]
+        for ax in self.signal_ax:
+            for spine in ax.spines.values():
+                spine.set_visible(True)
+                spine.set_edgecolor(edge)
+                spine.set_linewidth(0.9)
+
     def replot_sleep_state_bg(self, state):
         """Replot the sleep-state background of the selected start-end area."""
         replot_start = 0 if self.current_sec >= self.start_end[0] \
@@ -1045,11 +1082,11 @@ class MainWindow(QMainWindow, Ui_MiSleep):
                         (self.current_sec + self.show_duration) * sf)],
                 sf=sf, band=freq_range, step=1, win_sec=5, norm=True)
 
-        cmap_name = self.config.get("gui", "spectrogram_cmap", fallback="turbo")
+        cmap_name = self.config.get("gui", "spectrogram_cmap", fallback="jet")
         try:
             cmap = plt.get_cmap(cmap_name)
         except ValueError:
-            cmap = plt.get_cmap("turbo")
+            cmap = plt.get_cmap("jet")
 
         self.signal_ax[0].set_xticks([])
         self.signal_ax[0].set_ylim(freq_range)
@@ -1199,16 +1236,18 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         if key != self._hypo_key:
             self.hypo_ax.clear()
             self._hypo_transient = []
-            # One step segment per consecutive run of the same state, colored
-            # with the configured state color for an at-a-glance hypnogram.
+            # One thick filled bar per consecutive run of the same state,
+            # spanning most of the state band vertically - clearly readable
+            # even when a whole night is squeezed into a few thousand px.
+            band = 0.28  # half height of each bar (state +/- band)
             runs = lst2group([i, each] for i, each in enumerate(self.mianno.sleep_state))
             for start, end, state in runs:
                 if end <= start:
                     continue
                 color = self.state_color_dict.get(state, "#8892a0")
-                self._hypo_steps.append(self.hypo_ax.step(
-                    range(start, end), [state] * (end - start),
-                    where="mid", color=color, linewidth=1.3))
+                self._hypo_steps.append(self.hypo_ax.fill_between(
+                    [start, end], state - band, state + band,
+                    facecolor=color, edgecolor="none"))
 
             self.hypo_ax.set_ylim(0, len(list(self.state_map_dict.keys())) + 0.5)
             self.hypo_ax.set_xlim(0, self.total_seconds)
@@ -1411,7 +1450,18 @@ class MainWindow(QMainWindow, Ui_MiSleep):
                     lambda _=False, c=code: self.sleep_state_label(state_code=c))
                 extra_grid.addWidget(bt, row, col)
             bt.setText(f"{code}:{name}")
-            bt.setStyleSheet(f"background-color:{color}")
+            # Full local style: readable text on any state color (works in
+            # light and dark themes - e.g. a white 'Init' button needs dark
+            # text, and a dark state color needs white text).
+            fg = _text_on(color)
+            bt.setStyleSheet(
+                f"QPushButton {{ background-color: {color}; color: {fg};"
+                f" border: 1px solid {color}; border-radius: 6px;"
+                f" padding: 3px 8px; min-height: 22px; font-weight: 600; }}"
+                f" QPushButton:hover {{ border-color: rgba(255,255,255,140); }}"
+                f" QPushButton:pressed {{ background-color: {color}; }}"
+                f" QPushButton:disabled {{ color: rgba(255,255,255,120);"
+                f" border-color: rgba(255,255,255,60); }}")
             bt.setToolTip(
                 f"Label the selected area as {name} "
                 f"(shortcut key {code if code < 10 else 0})")
