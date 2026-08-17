@@ -42,24 +42,24 @@ THEMES = {
     "light": {
         "name": "Light",
         # surfaces
-        "window": "#eef1f7",
+        "window": "#f3f5fa",
         "surface": "#ffffff",
-        "surface_alt": "#e8edf5",
+        "surface_alt": "#eef1f8",
         "input": "#ffffff",
-        "disabled_bg": "#f0f3f8",
+        "disabled_bg": "#f1f3f8",
         # lines
-        "border": "#d5dcea",
-        "border_strong": "#b9c4d6",
+        "border": "#dde3ee",
+        "border_strong": "#c6cfdf",
         # text
-        "text": "#1c2736",
-        "text_secondary": "#5a6a7e",
-        "text_disabled": "#a3aebb",
-        # accent
-        "accent": "#2f6bff",
-        "accent_hover": "#2258e6",
-        "accent_pressed": "#1a49c4",
-        "accent_soft": "#e3ebff",
-        "accent_soft_2": "#d3e0fb",
+        "text": "#202b3c",
+        "text_secondary": "#5d6b80",
+        "text_disabled": "#a4aebb",
+        # accent (indigo)
+        "accent": "#5560e8",
+        "accent_hover": "#4652d4",
+        "accent_pressed": "#3943b4",
+        "accent_soft": "#eaeefe",
+        "accent_soft_2": "#dfe4fc",
         # semantic
         "danger": "#e5484d",
         "danger_hover": "#d23b40",
@@ -67,64 +67,64 @@ THEMES = {
         # misc
         "tooltip_bg": "#223042",
         "tooltip_text": "#f2f5fa",
-        "scroll_handle": "#b9c4d6",
-        "scroll_handle_hover": "#8fa0b8",
-        "slider_groove": "#d5dcea",
+        "scroll_handle": "#c3cbda",
+        "scroll_handle_hover": "#93a0b8",
+        "slider_groove": "#d8deea",
         # matplotlib / plot area
-        "plot": {"trace": "#0e1520", "grid": "#37a57f", "bg": "#ffffff"},
+        "plot": {"trace": "#101624", "grid": "#37a57f", "bg": "#ffffff"},
         "mpl": {
-            "figure.facecolor": "#eef1f7",
+            "figure.facecolor": "#f3f5fa",
             "axes.facecolor": "#ffffff",
-            "axes.edgecolor": "#b9c4d6",
-            "axes.labelcolor": "#1c2736",
-            "xtick.color": "#5a6a7e",
-            "ytick.color": "#5a6a7e",
-            "text.color": "#1c2736",
-            "grid.color": "#dfe5ee",
+            "axes.edgecolor": "#c6cfdf",
+            "axes.labelcolor": "#202b3c",
+            "xtick.color": "#5d6b80",
+            "ytick.color": "#5d6b80",
+            "text.color": "#202b3c",
+            "grid.color": "#e2e7f0",
             "savefig.facecolor": "#ffffff",
         },
     },
     "dark": {
         "name": "Dark",
         # surfaces
-        "window": "#131a24",
-        "surface": "#1a2330",
-        "surface_alt": "#212c3c",
-        "input": "#161f2b",
-        "disabled_bg": "#1a2330",
+        "window": "#141923",
+        "surface": "#1b2230",
+        "surface_alt": "#212a3a",
+        "input": "#171e2a",
+        "disabled_bg": "#1b2230",
         # lines
-        "border": "#2a3648",
-        "border_strong": "#3b4a63",
+        "border": "#2b3547",
+        "border_strong": "#3d4a63",
         # text
-        "text": "#e7edf6",
-        "text_secondary": "#9aa8bb",
+        "text": "#e8edf6",
+        "text_secondary": "#98a6ba",
         "text_disabled": "#5d6c80",
-        # accent
-        "accent": "#4d8dff",
-        "accent_hover": "#6ba1ff",
-        "accent_pressed": "#3a74e6",
-        "accent_soft": "#24395e",
-        "accent_soft_2": "#2c4470",
+        # accent (indigo)
+        "accent": "#7d86f0",
+        "accent_hover": "#99a0f8",
+        "accent_pressed": "#646edf",
+        "accent_soft": "#2a3157",
+        "accent_soft_2": "#343c6b",
         # semantic
         "danger": "#f0606b",
         "danger_hover": "#f27c85",
         "success": "#2bc48a",
         # misc
-        "tooltip_bg": "#2b3648",
-        "tooltip_text": "#e7edf6",
-        "scroll_handle": "#3b4a63",
+        "tooltip_bg": "#2b3547",
+        "tooltip_text": "#e8edf6",
+        "scroll_handle": "#3d4a63",
         "scroll_handle_hover": "#55698a",
-        "slider_groove": "#2a3648",
+        "slider_groove": "#2b3547",
         # matplotlib / plot area
         "plot": {"trace": "#d9e3f2", "grid": "#3fae85", "bg": "#101824"},
         "mpl": {
-            "figure.facecolor": "#131a24",
+            "figure.facecolor": "#141923",
             "axes.facecolor": "#101824",
-            "axes.edgecolor": "#3b4a63",
-            "axes.labelcolor": "#e7edf6",
-            "xtick.color": "#9aa8bb",
-            "ytick.color": "#9aa8bb",
-            "text.color": "#e7edf6",
+            "axes.edgecolor": "#3d4a63",
+            "axes.labelcolor": "#e8edf6",
+            "xtick.color": "#98a6ba",
+            "ytick.color": "#98a6ba",
+            "text.color": "#e8edf6",
             "grid.color": "#232f41",
             "savefig.facecolor": "#101824",
         },
@@ -444,20 +444,30 @@ QScrollBar::add-page, QScrollBar::sub-page {
     background: transparent;
 }
 
-/* ---------------- docks ---------------- */
-QDockWidget {
-    color: $text;
+/* ---------------- sidebar ---------------- */
+#Sidebar, #SidebarScroll, #SidebarScroll > QWidget {
+    background: $surface;
+}
+QToolButton#SidebarSectionHeader {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid $border;
+    border-radius: 0;
+    text-align: left;
+    padding: 7px 10px;
     font-weight: 600;
     font-size: 9pt;
+    color: $text_secondary;
 }
-QDockWidget::title {
-    background: $surface;
-    border-bottom: 1px solid $border;
-    padding: 5px 8px;
-    text-align: left;
+QToolButton#SidebarSectionHeader:hover {
+    background: $accent_soft;
+    color: $text;
 }
-QDockWidget > QWidget {
-    background: $window;
+QToolButton#SidebarSectionHeader:pressed {
+    background: $accent_soft_2;
+}
+QToolButton#SidebarSectionHeader:checked {
+    color: $accent;
 }
 QMainWindow::separator {
     background: $border;
@@ -603,19 +613,6 @@ QProgressBar {
 }
 QProgressBar::chunk {
     background: $accent;
-    border-radius: 4px;
-}
-
-/* small icon-ish toggle used in dock title bars */
-#MetaToggleBt {
-    border: none;
-    background: transparent;
-    padding: 2px 6px;
-    font-size: 9pt;
-    font-weight: 400;
-}
-#MetaToggleBt:hover {
-    background: $accent_soft;
     border-radius: 4px;
 }
 """)

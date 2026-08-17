@@ -9,6 +9,12 @@ there is a single source of truth.
 import numpy as np
 from PySide6.QtCore import QAbstractListModel, QModelIndex, Qt
 from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import (
+    QSizePolicy,
+    QToolButton,
+    QVBoxLayout,
+    QWidget,
+)
 from scipy.ndimage import gaussian_filter1d
 from scipy.signal import welch
 
@@ -16,6 +22,82 @@ from scipy.signal import welch
 def app_icon() -> QIcon:
     """Return the MiSleep application icon from the Qt resources."""
     return QIcon(":/logo/logo.png")
+
+
+class CollapsibleSection(QWidget):
+    """A titled, collapsible panel used in the right-hand sidebar.
+
+    One header row with a fold/unfold arrow plus a content widget that can
+    be hidden. Replaces the old draggable docks with a tidy, fixed panel.
+    """
+
+    def __init__(self, title, content=None, parent=None, collapsed=False):
+        super().__init__(parent)
+        self._title = title
+        self._content = None
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+
+        self.header = QToolButton()
+        self.header.setObjectName("SidebarSectionHeader")
+        self.header.setCheckable(True)
+        self.header.setChecked(not collapsed)
+        self.header.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.header.setSizePolicy(QSizePolicy.Policy.Expanding,
+                                  QSizePolicy.Policy.Fixed)
+        self.header.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        self.header.setToolTip("Click to expand / collapse")
+        self.header.clicked.connect(self._on_header_clicked)
+        layout.addWidget(self.header)
+
+        if content is not None:
+            self.set_content(content, collapsed=collapsed)
+        self._update_arrow()
+
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
+    def set_content(self, widget, collapsed=None):
+        """Attach the content widget (re-parents it into this section)."""
+        if self._content is not None:
+            self._content.setParent(None)
+        self._content = widget
+        if widget is not None:
+            self.layout().addWidget(widget)
+            if collapsed is not None:
+                self.header.setChecked(not collapsed)
+                widget.setVisible(not collapsed)
+        self._update_arrow()
+
+    def set_expanded(self, expanded):
+        """Programmatically expand (True) or collapse (False) the section."""
+        self.header.setChecked(expanded)
+        if self._content is not None:
+            self._content.setVisible(expanded)
+        self._update_arrow()
+
+    def is_expanded(self):
+        return self.header.isChecked()
+
+    @property
+    def title(self):
+        return self._title
+
+    # ------------------------------------------------------------------
+    # Internals
+    # ------------------------------------------------------------------
+    def _on_header_clicked(self):
+        if self._content is not None:
+            self._content.setVisible(self.header.isChecked())
+        self._update_arrow()
+
+    def _update_arrow(self):
+        self.header.setArrowType(
+            Qt.ArrowType.DownArrow if self.header.isChecked()
+            else Qt.ArrowType.RightArrow)
+        self.header.setText(self._title)
 
 
 class ChannelListModel(QAbstractListModel):
