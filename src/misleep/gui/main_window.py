@@ -15,7 +15,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from PySide6.QtCore import QEvent, QTimer, Qt
-from PySide6.QtGui import QColor, QIcon, QKeySequence, QPainter, QPixmap, QShortcut
+from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QAbstractSpinBox,
@@ -23,8 +23,6 @@ from PySide6.QtWidgets import (
     QComboBox,
     QFileDialog,
     QGridLayout,
-    QHBoxLayout,
-    QLabel,
     QMainWindow,
     QMessageBox,
     QPushButton,
@@ -52,6 +50,7 @@ from misleep.gui.dialogs import (
 from misleep.gui.event_filters import WheelInputGuard
 from misleep.gui.qt_utils import (
     ChannelListModel,
+    CollapsibleSection,
     app_icon,
     create_new_mianno,
     identify_startend_color,
@@ -147,6 +146,16 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         self.hypo_axvline = self.hypo_ax.axvline(
             self.current_sec, color="gray", alpha=0.8)
 
+        # Caches for fast page flips (spectrogram / hypnogram are static
+        # between flips, so they are computed once and reused).
+        self._spec_full_cache = {}           # channel idx -> (f, t, Sxx) of whole file
+        self._spec_cache_max_sec = 4 * 3600  # longer files compute per window
+        self._hypo_key = None                # fingerprint of the drawn hypnogram base
+        self._hypo_steps = []                # base step artists of the hypnogram
+        self._hypo_transient = []            # per-flip overlay artists
+        self._signal_artists = {}            # signal-axes idx -> artists we own
+        self._spec_artist = None             # current spectrogram QuadMesh
+
         # Initial params for widgets
         self.channel_slm = ChannelListModel()
 
@@ -176,8 +185,7 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         self.save_timer = QTimer()
         self.save_timer.timeout.connect(self.auto_save)
 
-        # High-DPI / resolution: canvases track the scroll areas, dock
-        # contents become scrollable when the window is too small
+        # High-DPI / resolution: canvases track the scroll areas
         self.SignalArea.installEventFilter(self)
         self.HypnoArea.installEventFilter(self)
         self.signal_canvas.installEventFilter(self)
@@ -185,21 +193,11 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         # The mouse wheel over the signal / hypnogram panels flips pages
         self.SignalArea.viewport().installEventFilter(self)
         self.HypnoArea.viewport().installEventFilter(self)
-        for dock in (self.MetaDock, self.ChannelDock,
-                     self.AnnotationDock, self.TimeDock):
-            self._wrap_dock_in_scroll(dock)
-        self.setMinimumSize(960, 600)
 
-        # Compact right-side docks: narrower minimums, shorter labels
-        self._compact_docks()
+        # Unified right-hand sidebar (replaces the four separate docks)
+        self._build_sidebar()
         self._thin_inputs()
-        self._make_meta_collapsible()
-
-        # Initial dock heights: smallest for Meta/Annotation/Time,
-        # the Channel dock gets the longest share for the best display.
-        self.resizeDocks([self.MetaDock, self.ChannelDock,
-                          self.AnnotationDock, self.TimeDock],
-                         [28, 600, 130, 90], Qt.Orientation.Vertical)
+        self.setMinimumSize(960, 600)
         self.setWindowIcon(app_icon())
 
         self.init_qt()
@@ -236,60 +234,54 @@ class MainWindow(QMainWindow, Ui_MiSleep):
             self.redraw_all(second=self.current_sec)
         else:
             self.clear_refresh(clf=True)
-        self.statusBar().showMessage(
-            f"Theme switched to {THEMES[self._theme_name]['name']}")
+        logger.info("Theme switched to %s", THEMES[self._theme_name]["name"])
 
-    def _compact_docks(self):
-        """Make the right-side docks narrower and tidier."""
-        # narrower minimum widths
-        for dock, width in ((self.MetaDock, 270), (self.ChannelDock, 250),
-                            (self.AnnotationDock, 270), (self.TimeDock, 200)):
-            dock.setMinimumWidth(width)
-        # sensible minimum heights (the Meta dock collapses to its bar)
-        self.MetaDock.setMinimumHeight(0)
-        self.ChannelDock.setMinimumHeight(180)
-        self.AnnotationDock.setMinimumHeight(110)
-        self.TimeDock.setMinimumHeight(70)
+    def _build_sidebar(self):
+        """Replace the four right docks with one tidy, fixed sidebar.
 
-    def _make_meta_collapsible(self):
-        """Give the Meta dock a title bar with a collapse/expand toggle.
-
-        The Meta information starts **stacked** (collapsed to its bar);
-        click the ▼/▲ button to expand it (the dock gets a comfortable
-        height). The dock itself is never removed, so it can always be
-        restored.
+        The dock contents are re-parented into collapsible sections
+        (Data / Channels / Scoring / Display) stacked in a single panel,
+        so the right side always looks clean regardless of window size.
         """
-        bar = QWidget()
-        h = QHBoxLayout(bar)
-        h.setContentsMargins(6, 2, 6, 2)
-        h.setSpacing(4)
-        title = QLabel("Meta")
-        toggle = QPushButton("▼")
-        toggle.setObjectName("MetaToggleBt")
-        toggle.setFixedSize(24, 20)
-        toggle.setCheckable(True)
-        toggle.setChecked(False)  # collapsed by default
-        toggle.setToolTip("Expand / collapse the meta information")
+        self._sections = []
+        sidebar = QWidget()
+        sidebar.setObjectName("Sidebar")
+        sidebar.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        vbox = QVBoxLayout(sidebar)
+        vbox.setContentsMargins(0, 0, 0, 0)
+        vbox.setSpacing(8)
 
-        def on_toggle(checked):
-            content = self.MetaDock.widget()
-            if content is not None:
-                content.setVisible(checked)
-            toggle.setText("▲" if checked else "▼")
-            # give the expanded dock a comfortable height
-            self.resizeDocks(
-                [self.MetaDock],
-                [130 if checked else 28],
-                Qt.Orientation.Vertical)
+        def add_section(title, content, collapsed=False, stretch=0):
+            sec = CollapsibleSection(title, content, collapsed=collapsed)
+            vbox.addWidget(sec, stretch)
+            self._sections.append(sec)
+            return sec
 
-        toggle.toggled.connect(on_toggle)
-        h.addWidget(title)
-        h.addStretch(1)
-        h.addWidget(toggle)
-        self.MetaDock.setTitleBarWidget(bar)
-        content = self.MetaDock.widget()
-        if content is not None:
-            content.hide()  # stacked (collapsed) at startup
+        add_section("Data", self.MetaDock.widget(), collapsed=True)
+        add_section("Channels", self.ChannelDock.widget(), stretch=1)
+        add_section("Scoring", self.AnnotationDock.widget())
+        add_section("Display", self.TimeDock.widget())
+
+        # The sidebar lives in a scroll area (never clips on small screens)
+        # and keeps a fixed, comfortable width next to the plot area.
+        self.sidebar = sidebar
+        scroll = QScrollArea()
+        scroll.setObjectName("SidebarScroll")
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QScrollArea.Shape.NoFrame)
+        scroll.setWidget(sidebar)
+        scroll.setFixedWidth(318)
+        scroll.setMinimumHeight(120)
+        self.sidebar_scroll = scroll
+        self.gridLayout_3.addWidget(scroll, 0, 1, 3, 1)
+        self.gridLayout_3.setColumnStretch(0, 1)
+        self.gridLayout_3.setColumnStretch(1, 0)
+
+        # The old docks are hidden - their widgets now live in the sidebar.
+        for dock in (self.MetaDock, self.ChannelDock,
+                     self.AnnotationDock, self.TimeDock):
+            self.removeDockWidget(dock)
+            dock.hide()
 
     def _thin_inputs(self):
         """Make spin boxes / combos in the docks narrower."""
@@ -302,17 +294,6 @@ class MainWindow(QMainWindow, Ui_MiSleep):
             combo = getattr(self, name, None)
             if combo is not None:
                 combo.setFixedWidth(100)
-
-    @staticmethod
-    def _wrap_dock_in_scroll(dock):
-        """Put a dock's contents into a scroll area so they never clip."""
-        if dock.widget() is None or isinstance(dock.widget(), QScrollArea):
-            return
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QScrollArea.NoFrame)
-        scroll.setWidget(dock.widget())
-        dock.setWidget(scroll)
 
     # ------------------------------------------------------------------
     # Initialization
@@ -439,29 +420,18 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         # Marker / start-end event list viewers (declared in the .ui beside Save)
         self.MarkerListBt.clicked.connect(self.show_marker_list)
         self.StartEndListBt.clicked.connect(self.show_start_end_list)
-        self.statusBar().showMessage("Ready — open a data file to start")
+        logger.info("MiSleep ready - open a data file to start")
 
         # Wheel over spin boxes / combos must not change their values
         app = QApplication.instance()
         if app is not None:
             app.installEventFilter(WheelInputGuard(app))
 
-    @staticmethod
-    def _make_dot_icon(color, size=24):
-        """A small colored-dot icon used for toolbar actions."""
-        pm = QPixmap(size, size)
-        pm.fill(Qt.GlobalColor.transparent)
-        p = QPainter(pm)
-        p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        p.setPen(Qt.PenStyle.NoPen)
-        p.setBrush(QColor(color))
-        p.drawEllipse(3, 3, size - 6, size - 6)
-        p.end()
-        return QIcon(pm)
-
     def change_Bts_status(self, status=True):
         """Enable/disable buttons according to whether data is loaded."""
-        self.MetaDock.setDisabled(status)
+        meta_content = self.MetaDock.widget()
+        if meta_content is not None:
+            meta_content.setDisabled(status)
         self.AcTimeEdit.setDisabled(status)
         self.DeleteChBt.setDisabled(status)
         self.HideChBt.setDisabled(status)
@@ -523,15 +493,14 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         self.theme_action.setShortcut(QKeySequence("Ctrl+Shift+T"))
         self._update_theme_action()
 
-        # View: dock visibility toggles
+        # View: sidebar section visibility toggles (mirrors the headers)
         view_menu = self.menuBar.addMenu("&View")
-        for dock, color in ((self.MetaDock, "#95a5a6"),
-                            (self.ChannelDock, "#27ae60"),
-                            (self.AnnotationDock, "#e67e22"),
-                            (self.TimeDock, "#8e44ad")):
-            action = dock.toggleViewAction()
-            action.setIcon(self._make_dot_icon(color))
-            view_menu.addAction(action)
+        for sec in self._sections:
+            action = view_menu.addAction(sec.title)
+            action.setCheckable(True)
+            action.setChecked(sec.is_expanded())
+            action.toggled.connect(sec.set_expanded)
+            sec.header.toggled.connect(action.setChecked)
 
     # ------------------------------------------------------------------
     # Data / annotation loading
@@ -600,6 +569,9 @@ class MainWindow(QMainWindow, Ui_MiSleep):
 
         # Save config
         self.save_config({"openpath": self.data_path})
+
+        # New file: drop the cached whole-file spectrograms
+        self._spec_full_cache = {}
 
         # Set meta info
         self.DataPathEdit.setText(self.data_path)
@@ -730,6 +702,10 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         self.reset_sec_limit()
 
         self.hypo_ax = self.hypo_figure.subplots(nrows=1, ncols=1)
+        # new axes: the cached hypnogram base must be rebuilt
+        self._hypo_key = None
+        self._hypo_steps = []
+        self._hypo_transient = []
 
         # Set canvases for the plot areas
         self.SignalArea.setWidget(self.signal_canvas)
@@ -750,10 +726,11 @@ class MainWindow(QMainWindow, Ui_MiSleep):
 
         logger.info(f"Load SUCCEED: data - {self.data_path}, anno - {self.anno_path}")
 
-        # Status bar feedback
-        self.statusBar().showMessage(
-            f"Loaded: {os.path.basename(self.data_path)} — "
-            f"{self.midata.n_channels} channel(s), {self.total_seconds} s")
+        # Load feedback
+        logger.info(
+            "Loaded: %s - %d channel(s), %d s",
+            os.path.basename(self.data_path),
+            self.midata.n_channels, self.total_seconds)
 
         # Start the auto-save timer (5 min)
         self.save_timer.start(60 * 5 * 1000)
@@ -780,6 +757,13 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         if clf:
             self.signal_figure.clf()
             self.hypo_figure.clf()
+            # the old axes are gone; force a rebuild on the next plot
+            self.signal_ax = None
+            self._signal_artists = {}
+            self._spec_artist = None
+            self._hypo_key = None
+            self._hypo_steps = []
+            self._hypo_transient = []
 
         self.hypo_figure.canvas.draw()
         self.hypo_figure.canvas.flush_events()
@@ -873,12 +857,28 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         clf, replot_axes : kept for API compatibility (always full redraw).
         """
         n = len(self.show_idx)
-        # Spectrogram strip on top, one box per channel below
-        self.signal_figure.clf()
-        self.signal_ax = self.signal_figure.subplots(
-            nrows=n + 1, ncols=1,
-            gridspec_kw={"height_ratios": [0.8] + [1.0] * n})
-        self.signal_ax = list(self.signal_ax)
+        need = n + 1  # spectrogram strip + one box per channel
+        # Reuse the existing axes when the channel count is unchanged - much
+        # faster than recreating them on every page flip.
+        current = getattr(self, "signal_ax", None)
+        if current is None or not isinstance(current, (list, tuple)) \
+                or len(current) != need:
+            self.signal_figure.clf()
+            self.signal_ax = list(self.signal_figure.subplots(
+                nrows=need, ncols=1,
+                gridspec_kw={"height_ratios": [0.8] + [1.0] * n}))
+            self._signal_artists = {}
+            self._spec_artist = None
+        else:
+            # Remove only the artists we own from the previous flip - far
+            # cheaper than clearing the whole axes.
+            for ax_idx, artists in self._signal_artists.items():
+                for art in artists:
+                    try:
+                        art.remove()
+                    except Exception:
+                        pass
+            self._signal_artists = {}
         self.plot_spectrogram()
 
         # Sleep-state groups inside the current window
@@ -897,14 +897,16 @@ class MainWindow(QMainWindow, Ui_MiSleep):
             seg = self.midata.signals[each][
                 int(self.current_sec * sf): int(
                     (self.current_sec + self.show_duration) * sf)]
-            # Downsample long windows (30 min / 1 h) for fast display
-            max_points = 60000
+            # Downsample dense traces for fast drawing (8k points is far
+            # beyond screen resolution yet keeps page flips snappy)
+            max_points = 8000
             step = max(1, -(-len(seg) // max_points))  # ceil division
             if step > 1:
-                ax.plot(np.arange(0, len(seg), step), seg[::step],
-                        color=self._plot_trace, linewidth=0.5)
+                line, = ax.plot(np.arange(0, len(seg), step), seg[::step],
+                                color=self._plot_trace, linewidth=0.5)
             else:
-                ax.plot(seg, color=self._plot_trace, linewidth=0.5)
+                line, = ax.plot(seg, color=self._plot_trace, linewidth=0.5)
+            self._signal_artists.setdefault(i + 1, []).append(line)
             ax.set_ylim(ymin=-y_lim + y_shift, ymax=y_lim + y_shift)
             ax.set_xlim(xmin=0, xmax=self.show_duration * sf)
             ax.xaxis.set_ticks([])
@@ -914,16 +916,19 @@ class MainWindow(QMainWindow, Ui_MiSleep):
             # grid lines: 5 s for short windows, tick step for long ones
             grid_step = 5 if self.show_duration < 300 else tick_step
             for pos_ in range(0, self.show_duration, grid_step):
-                ax.axvline(pos_ * sf, color=self._plot_grid,
-                           linestyle="--", linewidth=1, alpha=0.45)
+                grid_line = ax.axvline(pos_ * sf, color=self._plot_grid,
+                                       linestyle="--", linewidth=1, alpha=0.45)
+                self._signal_artists[i + 1].append(grid_line)
 
-            # Sleep-state background
+            # Sleep-state background: one rectangle per run (the fill spans
+            # the full height, so two x-points are exact and cheap to draw)
             for state in sleep_state:
-                ax.fill_between(
-                    range(int(state[0] * sf), int(state[1] * sf)),
+                fill = ax.fill_between(
+                    [int(state[0] * sf), int(state[1] * sf)],
                     -y_lim + y_shift, y_lim + y_shift,
                     facecolor=self.state_color_dict[state[2]],
                     alpha=float(self.config["gui"]["statecolorbgalpha"]))
+                self._signal_artists[i + 1].append(fill)
 
         # Time ticks only on the last channel box (auto-reduced for long windows)
         last_sf = self.midata.sf[self.show_idx[-1]]
@@ -944,8 +949,10 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         self.plot_start_end_label_line(flush=False)
         self.plot_horizontal_line(flush=False)
 
-        # Keep the panels tightly packed (no gaps between boxes)
-        self._apply_signal_layout()
+        # Keep the panels tightly packed (no gaps between boxes); the full
+        # tight_layout runs on resize only (see _fit_canvases), not on every
+        # page flip - that alone shaves ~20 ms off each flip.
+        self.signal_figure.subplots_adjust(hspace=0)
 
         if flush:
             self.signal_figure.canvas.draw()
@@ -972,13 +979,14 @@ class MainWindow(QMainWindow, Ui_MiSleep):
             y_shift = self.y_shift[each]
             sf = self.midata.sf[each]
             x = range(int(replot_start * sf), int(replot_end * sf))
-            self.signal_ax[i + 1].fill_between(
+            cover = self.signal_ax[i + 1].fill_between(
                 x, -y_lim + y_shift, y_lim + y_shift,
-                facecolor="white", alpha=1)
-            self.signal_ax[i + 1].fill_between(
+                facecolor=THEMES[self._theme_name]["plot"]["bg"], alpha=1)
+            fill = self.signal_ax[i + 1].fill_between(
                 x, -y_lim + y_shift, y_lim + y_shift,
                 facecolor=self.state_color_dict[state],
                 alpha=float(self.config["gui"]["statecolorbgalpha"]))
+            self._signal_artists.setdefault(i + 1, []).extend([cover, fill])
         self.signal_figure.canvas.draw()
         self.signal_figure.canvas.flush_events()
 
@@ -999,17 +1007,44 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         self.plot_spectrogram(flush=True)
 
     def plot_spectrogram(self, flush=False):
-        """Redraw the spectrogram strip."""
+        """Redraw the spectrogram strip (cached whole-file STFT when possible)."""
         if self.midata is None:
             return
-        self.signal_ax[0].clear()
+        # remove the previous spectrogram artist (cheaper than clearing axes)
+        if getattr(self, "_spec_artist", None) is not None:
+            try:
+                self._spec_artist.remove()
+            except Exception:
+                pass
+            self._spec_artist = None
         freq_range = [float(x) for x in self.config["gui"]["freq_range"].strip("[]").split(",")]
-        f, t, Sxx = spectrogram(
-            signal=self.midata.signals[self.current_spectrogram_idx][
-                int(self.current_sec * self.midata.sf[self.current_spectrogram_idx]): int(
-                    (self.current_sec + self.show_duration) * self.midata.sf[self.current_spectrogram_idx])],
-            sf=self.midata.sf[self.current_spectrogram_idx],
-            band=freq_range, step=1, win_sec=5, norm=True)
+        ch = self.current_spectrogram_idx
+        sf = self.midata.sf[ch]
+
+        # Cache the STFT of the whole file per channel; page flips then only
+        # slice the cached spectrogram instead of recomputing it.
+        if ch not in self._spec_full_cache:
+            if self.midata.duration <= self._spec_cache_max_sec:
+                f, t, Sxx = spectrogram(
+                    signal=self.midata.signals[ch], sf=sf,
+                    band=freq_range, step=1, win_sec=5, norm=True)
+                self._spec_full_cache[ch] = (f, t, Sxx)
+            else:
+                self._spec_full_cache[ch] = None  # too long: per-window
+
+        cached = self._spec_full_cache.get(ch)
+        if cached is not None:
+            f, t, Sxx = cached
+            sel = (t >= self.current_sec) & (t <= self.current_sec + self.show_duration)
+            t = t[sel]
+            Sxx = Sxx[:, sel]
+        else:
+            f, t, Sxx = spectrogram(
+                signal=self.midata.signals[ch][
+                    int(self.current_sec * sf): int(
+                        (self.current_sec + self.show_duration) * sf)],
+                sf=sf, band=freq_range, step=1, win_sec=5, norm=True)
+
         cmap_name = self.config.get("gui", "spectrogram_cmap", fallback="turbo")
         try:
             cmap = plt.get_cmap(cmap_name)
@@ -1018,8 +1053,8 @@ class MainWindow(QMainWindow, Ui_MiSleep):
 
         self.signal_ax[0].set_xticks([])
         self.signal_ax[0].set_ylim(freq_range)
-        self.signal_ax[0].set_ylabel(f"{self.midata.channels[self.current_spectrogram_idx]}")
-        self.signal_ax[0].pcolormesh(
+        self.signal_ax[0].set_ylabel(f"{self.midata.channels[ch]}")
+        self._spec_artist = self.signal_ax[0].pcolormesh(
             t, f, Sxx, cmap=cmap, vmax=np.percentile(Sxx, self.spectrogram_percentile))
 
         if flush:
@@ -1093,29 +1128,39 @@ class MainWindow(QMainWindow, Ui_MiSleep):
 
     def plot_start_end_label_line(self, flush=True):
         """Plot the start/end annotation label lines."""
+        for art in getattr(self, "signal_se_label_axvline", []):
+            try:
+                art.remove()
+            except Exception:
+                pass
+        self.signal_se_label_axvline = []
         for each in self.mianno.start_end:
             if self.current_sec <= each[0] <= self.current_sec + self.show_duration:
                 for idx, show_ in enumerate(self.show_idx):
-                    self.signal_ax[idx + 1].axvline(
-                        int((each[0] - self.current_sec) * self.midata.sf[show_]),
-                        color=identify_startend_color(self.start_end_color_dict, each[2]),
-                        alpha=1)
-                self.signal_ax[1].text(
-                    x=int((each[0] - self.current_sec) * self.midata.sf[self.show_idx[0]]),
-                    y=self.y_lims[self.show_idx[0]] + self.y_shift[self.show_idx[0]],
-                    s=each[2] + "-S", verticalalignment="top",
-                    color=identify_startend_color(self.start_end_color_dict, each[2]))
+                    self.signal_se_label_axvline.append(
+                        self.signal_ax[idx + 1].axvline(
+                            int((each[0] - self.current_sec) * self.midata.sf[show_]),
+                            color=identify_startend_color(self.start_end_color_dict, each[2]),
+                            alpha=1))
+                self.signal_se_label_axvline.append(
+                    self.signal_ax[1].text(
+                        x=int((each[0] - self.current_sec) * self.midata.sf[self.show_idx[0]]),
+                        y=self.y_lims[self.show_idx[0]] + self.y_shift[self.show_idx[0]],
+                        s=each[2] + "-S", verticalalignment="top",
+                        color=identify_startend_color(self.start_end_color_dict, each[2])))
 
             if self.current_sec <= each[1] <= self.current_sec + self.show_duration:
                 for idx, show_ in enumerate(self.show_idx):
-                    self.signal_ax[idx + 1].axvline(
-                        int((each[1] - self.current_sec) * self.midata.sf[show_]),
-                        color="orange", alpha=1)
-                self.signal_ax[1].text(
-                    x=int((each[1] - self.current_sec) * self.midata.sf[self.show_idx[0]]),
-                    y=self.y_lims[self.show_idx[0]] + self.y_shift[self.show_idx[0]],
-                    s=each[2] + "-E", verticalalignment="top",
-                    horizontalalignment="right", color="orange")
+                    self.signal_se_label_axvline.append(
+                        self.signal_ax[idx + 1].axvline(
+                            int((each[1] - self.current_sec) * self.midata.sf[show_]),
+                            color="orange", alpha=1))
+                self.signal_se_label_axvline.append(
+                    self.signal_ax[1].text(
+                        x=int((each[1] - self.current_sec) * self.midata.sf[self.show_idx[0]]),
+                        y=self.y_lims[self.show_idx[0]] + self.y_shift[self.show_idx[0]],
+                        s=each[2] + "-E", verticalalignment="top",
+                        horizontalalignment="right", color="orange"))
 
         if flush:
             self.signal_figure.canvas.draw()
@@ -1146,41 +1191,61 @@ class MainWindow(QMainWindow, Ui_MiSleep):
 
     def plot_hypo(self):
         """Redraw the hypnogram area (one colored segment per sleep state)."""
-        self.hypo_ax.clear()
+        # The state-step background only changes when the annotation changes;
+        # rebuild it lazily and reuse it across page flips.
+        key = None
+        if self.mianno is not None:
+            key = (id(self.mianno), hash(tuple(self.mianno.sleep_state)))
+        if key != self._hypo_key:
+            self.hypo_ax.clear()
+            self._hypo_transient = []
+            # One step segment per consecutive run of the same state, colored
+            # with the configured state color for an at-a-glance hypnogram.
+            runs = lst2group([i, each] for i, each in enumerate(self.mianno.sleep_state))
+            for start, end, state in runs:
+                if end <= start:
+                    continue
+                color = self.state_color_dict.get(state, "#8892a0")
+                self._hypo_steps.append(self.hypo_ax.step(
+                    range(start, end), [state] * (end - start),
+                    where="mid", color=color, linewidth=1.3))
+
+            self.hypo_ax.set_ylim(0, len(list(self.state_map_dict.keys())) + 0.5)
+            self.hypo_ax.set_xlim(0, self.total_seconds)
+            self.hypo_ax.yaxis.set_ticks(
+                list(self.state_map_dict.keys()), list(self.state_map_dict.values()))
+            self.hypo_ax.set_xlabel("Time (s)")
+            # faint horizontal guides at each state level
+            self.hypo_ax.grid(axis="y", alpha=0.25)
+            self._hypo_key = key
+
+        # remove the per-flip overlay artists (current-time / event lines)
+        for art in self._hypo_transient:
+            try:
+                art.remove()
+            except Exception:
+                pass
+        self._hypo_transient = []
+
         try:
             self.hypo_axvline.remove()
         except Exception:
             pass  # axes may have been recreated; a new line is drawn below
         self.hypo_axvline = self.hypo_ax.axvline(
             self.current_sec, color="gray", alpha=0.8)
-
-        # One step segment per consecutive run of the same state, colored
-        # with the configured state color for an at-a-glance hypnogram.
-        runs = lst2group([i, each] for i, each in enumerate(self.mianno.sleep_state))
-        for start, end, state in runs:
-            if end <= start:
-                continue
-            color = self.state_color_dict.get(state, "#8892a0")
-            self.hypo_ax.step(
-                range(start, end), [state] * (end - start),
-                where="mid", color=color, linewidth=1.3)
-
-        self.hypo_ax.set_ylim(0, len(list(self.state_map_dict.keys())) + 0.5)
-        self.hypo_ax.set_xlim(0, self.total_seconds)
-        self.hypo_ax.yaxis.set_ticks(
-            list(self.state_map_dict.keys()), list(self.state_map_dict.values()))
-        self.hypo_ax.set_xlabel("Time (s)")
-        # faint horizontal guides at each state level
-        self.hypo_ax.grid(axis="y", alpha=0.25)
+        self._hypo_transient.append(self.hypo_axvline)
 
         if self.StartEndRadio.isChecked():
             for each in self.start_end_ms:
-                self.hypo_ax.axvline(each, color="lime", alpha=1)
+                self._hypo_transient.append(
+                    self.hypo_ax.axvline(each, color="lime", alpha=1))
         if self.SleepStateRadio.isChecked():
             for each in self.start_end:
-                self.hypo_ax.axvline(each, color="lime", alpha=1)
+                self._hypo_transient.append(
+                    self.hypo_ax.axvline(each, color="lime", alpha=1))
         for each in self.mianno.marker:
-            self.hypo_ax.axvline(each[0], color="Red", alpha=1)
+            self._hypo_transient.append(
+                self.hypo_ax.axvline(each[0], color="Red", alpha=1))
 
         self.hypo_figure.canvas.draw()
         self.hypo_figure.canvas.flush_events()

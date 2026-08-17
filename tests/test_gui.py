@@ -290,7 +290,7 @@ def test_gui_move_channel_buttons():
 
 @pytest.mark.skipif(not _pyside6_available(), reason="PySide6 not installed")
 def test_gui_menu_meta_docks():
-    """Menu bar visible; Meta dock on the right; wheel guard works."""
+    """Menu bar visible; unified sidebar replaces the docks; wheel guard works."""
     from PySide6.QtCore import QPoint, QPointF, Qt
     from PySide6.QtGui import QWheelEvent
     from PySide6.QtWidgets import QApplication
@@ -305,11 +305,12 @@ def test_gui_menu_meta_docks():
     app.processEvents()
     # menu bar is back on top
     assert not window.menuBar.isHidden()
-    # meta info stays in its dock on the right side
-    assert not window.MetaDock.isHidden()
+    # the unified sidebar replaces the four old docks
+    assert window.sidebar_scroll.widget() is window.sidebar
+    assert len(window._sections) == 4
     for dock in (window.MetaDock, window.ChannelDock,
                  window.AnnotationDock, window.TimeDock):
-        assert str(window.dockWidgetArea(dock)).startswith("DockWidgetArea.Right")
+        assert dock.isHidden()
     # the app icon is applied
     assert not window.windowIcon().isNull()
 
