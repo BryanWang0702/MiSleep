@@ -256,6 +256,7 @@ QPushButton {
     border-radius: 6px;
     padding: 4px 12px;
     color: $text;
+    min-height: 26px;
 }
 QPushButton:hover {
     background-color: $surface_alt;
@@ -289,6 +290,16 @@ QPushButton[default="true"]:hover {
 QPushButton[default="true"]:pressed {
     background-color: $accent_pressed;
     border-color: $accent_pressed;
+}
+
+/* the small 24x24 channel-move arrows keep their compact size */
+#MoveUpBt, #MoveDownBt {
+    min-height: 24px;
+    max-height: 24px;
+    min-width: 24px;
+    max-width: 24px;
+    padding: 0px;
+    font-size: 10pt;
 }
 
 /* primary actions */
@@ -615,6 +626,31 @@ QProgressBar::chunk {
     background: $accent;
     border-radius: 4px;
 }
+
+/* ---------------- calendar popup ---------------- */
+QCalendarWidget QWidget#qt_calendar_navigationbar {
+    background: $surface_alt;
+}
+QCalendarWidget QToolButton {
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    padding: 2px 6px;
+    color: $text;
+}
+QCalendarWidget QToolButton:hover {
+    background: $accent_soft;
+}
+QCalendarWidget QAbstractItemView {
+    background: $surface;
+    color: $text;
+    selection-background-color: $accent;
+    selection-color: #ffffff;
+    outline: none;
+}
+QCalendarWidget QSpinBox {
+    background: $input;
+}
 """)
 
 
@@ -657,8 +693,53 @@ _MPL_SHARED = {
     "axes.spines.right": False,
     "lines.linewidth": 1.0,
     "grid.linewidth": 0.8,
-    "image.cmap": "turbo",
+    "image.cmap": "jet",
 }
+
+
+def build_palette(theme_name: str = "light"):
+    """Return a QPalette matching the theme.
+
+    The stylesheet covers most widgets, but a few things are drawn by the
+    style itself (combo/spin arrows, check indicators in menus, separators,
+    the calendar popup, ...) and pick their colors from the palette - so
+    both themes need a consistent palette or those elements stay light (and
+    nearly invisible) in dark mode.
+    """
+    from PySide6.QtGui import QPalette
+    from PySide6.QtGui import QColor
+
+    theme_name = theme_name if theme_name in THEMES else "light"
+    p = THEMES[theme_name]
+
+    pal = QPalette()
+    pal.setColor(QPalette.ColorRole.Window, QColor(p["window"]))
+    pal.setColor(QPalette.ColorRole.WindowText, QColor(p["text"]))
+    pal.setColor(QPalette.ColorRole.Base, QColor(p["input"]))
+    pal.setColor(QPalette.ColorRole.AlternateBase, QColor(p["surface_alt"]))
+    pal.setColor(QPalette.ColorRole.ToolTipBase, QColor(p["tooltip_bg"]))
+    pal.setColor(QPalette.ColorRole.ToolTipText, QColor(p["tooltip_text"]))
+    pal.setColor(QPalette.ColorRole.Text, QColor(p["text"]))
+    pal.setColor(QPalette.ColorRole.PlaceholderText, QColor(p["text_disabled"]))
+    pal.setColor(QPalette.ColorRole.Button, QColor(p["surface"]))
+    pal.setColor(QPalette.ColorRole.ButtonText, QColor(p["text"]))
+    pal.setColor(QPalette.ColorRole.BrightText, QColor("#ffffff"))
+    pal.setColor(QPalette.ColorRole.Highlight, QColor(p["accent"]))
+    pal.setColor(QPalette.ColorRole.HighlightedText, QColor("#ffffff"))
+    pal.setColor(QPalette.ColorRole.Link, QColor(p["accent"]))
+    pal.setColor(QPalette.ColorRole.Mid, QColor(p["border"]))
+    pal.setColor(QPalette.ColorRole.Midlight, QColor(p["border"]))
+    pal.setColor(QPalette.ColorRole.Dark, QColor(p["border_strong"]))
+    pal.setColor(QPalette.ColorRole.Shadow, QColor(p["border_strong"]))
+    pal.setColor(QPalette.ColorRole.Light, QColor(p["surface"]))
+
+    disabled = QPalette.ColorGroup.Disabled
+    pal.setColor(disabled, QPalette.ColorRole.WindowText, QColor(p["text_disabled"]))
+    pal.setColor(disabled, QPalette.ColorRole.Text, QColor(p["text_disabled"]))
+    pal.setColor(disabled, QPalette.ColorRole.ButtonText, QColor(p["text_disabled"]))
+    pal.setColor(disabled, QPalette.ColorRole.Base, QColor(p["disabled_bg"]))
+    pal.setColor(disabled, QPalette.ColorRole.Button, QColor(p["disabled_bg"]))
+    return pal
 
 
 def apply_matplotlib_theme(theme_name: str = "light") -> None:
@@ -739,6 +820,7 @@ def apply_theme(app: QApplication, theme_name: str = "light") -> str:
         pass
 
     _setup_app_font(app)
+    app.setPalette(build_palette(theme_name))
     app.setStyleSheet(build_stylesheet(theme_name))
     apply_matplotlib_theme(theme_name)
     return theme_name
