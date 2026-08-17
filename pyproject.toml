@@ -1,0 +1,116 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "misleep"
+version = "0.3.0"
+description = "MiSleep: Mice sleep EEG/EMG visualization, scoring, and analysis"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { file = "LICENSE" }
+authors = [
+    { name = "Xueqiang Wang", email = "swang9194@gmail.com" },
+]
+maintainers = [
+    { name = "Xueqiang Wang", email = "swang9194@gmail.com" },
+]
+keywords = [
+    "sleep", "EEG", "EMG", "mice", "neuroscience", "scoring",
+    "hypnogram", "spectrogram", "signal-processing", "pyside6",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Topic :: Scientific/Engineering :: Medical Science Apps.",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+]
+dependencies = [
+    "numpy>=1.20",
+    "scipy>=1.8",
+    "matplotlib>=3.5",
+    "pandas>=1.4",
+    "pyedflib>=0.1.30",
+    "mat73>=0.60",
+    "openpyxl>=3.0",
+    "joblib>=1.1",
+    "scikit-learn>=1.0",
+]
+
+[project.optional-dependencies]
+# PySide6-based graphical user interface
+gui = [
+    "PySide6>=6.6",
+]
+# Automatic sleep staging with the LightGBM model
+analysis = [
+    "lightgbm>=3.3",
+]
+# Causal-transformer auto staging (requires PyTorch, not available on all platforms)
+transformer = [
+    "torch>=2.0",
+]
+# Everything needed for a full MiSleep experience
+full = [
+    "PySide6>=6.6",
+    "lightgbm>=3.3",
+]
+# Tooling for developers / contributors
+dev = [
+    "pytest>=7.0",
+    "pytest-cov",
+]
+
+[project.urls]
+Homepage = "https://github.com/BryanWang0702/MiSleep"
+Repository = "https://github.com/BryanWang0702/MiSleep"
+Documentation = "https://bryanwang.cn/MiSleep/"
+"Bug Tracker" = "https://github.com/BryanWang0702/MiSleep/issues"
+
+[project.scripts]
+misleep = "misleep.gui.app:main"
+
+[project.entry-points."misleep.signal_readers"]
+mat = "misleep.io.mat:load_mat"
+edf = "misleep.io.edf:load_edf"
+
+[project.entry-points."misleep.signal_writers"]
+mat = "misleep.io.mat:write_mat"
+edf = "misleep.io.edf:write_edf"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["misleep*"]
+
+[tool.setuptools.package-data]
+"misleep" = ["config/*.ini"]
+"misleep.analysis.models" = ["*.pkl"]
+"misleep.analysis.transformer.checkpoints" = ["*.pt"]
+"misleep.gui.resources" = ["*.png", "*.ico", "*.qrc"]
+"misleep.gui.uis" = ["*.ui"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+filterwarnings = [
+    "ignore::DeprecationWarning:matplotlib.*",
+]
+
+[tool.coverage.run]
+source = ["misleep"]
+omit = ["misleep/gui/uis/*"]

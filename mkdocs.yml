@@ -1,0 +1,36 @@
+# MiSleep documentation site configuration (mkdocs)
+#
+# Preview locally with:  mkdocs serve
+# Build with:            mkdocs build
+
+site_name: MiSleep
+site_description: Mice sleep EEG/EMG visualization, scoring and analysis
+repo_url: https://github.com/BryanWang0702/MiSleep
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      toggle:
+        icon: material/toggle-switch-off-outline
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      toggle:
+        icon: material/toggle-switch
+        name: Switch to light mode
+
+nav:
+  - Home: index.md
+  - Getting started: getting_started.md
+  - User guide: user_guide.md
+  - Data formats: data_formats.md
+  - Configuration: config_file.md
+  - API reference: api_reference.md
+  - Developer guide: developer_guide.md
+
+markdown_extensions:
+  - admonition
+  - codehilite
+  - toc:
+      permalink: true

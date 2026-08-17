@@ -1,0 +1,10 @@
+include LICENSE
+include README.md
+include CHANGELOG.md
+recursive-include src/misleep/config *.ini
+recursive-include src/misleep/analysis/models *.pkl
+recursive-include src/misleep/analysis/transformer/checkpoints *.pt
+recursive-include src/misleep/gui/resources *.png *.ico *.qrc
+recursive-include src/misleep/gui/uis *.ui
+recursive-include docs *.md *.png *.gif
+recursive-include examples *.py

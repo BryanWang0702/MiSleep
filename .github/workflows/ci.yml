@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Python ${{ matrix.python-version }} (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.10", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install package (core + GUI + analysis)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[gui,analysis,dev]"
+
+      - name: Run tests
+        run: |
+          pytest tests -q
+
+  lint:
+    name: Import smoke test (no optional deps)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install core only
+        run: |
+          pip install -e .
+      - name: Verify core imports without PySide6 / torch
+        run: |
+          python -c "import misleep; print(misleep.__version__)"
+          python -c "import misleep.analysis.transformer" || true
