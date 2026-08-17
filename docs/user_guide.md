@@ -14,7 +14,7 @@ The main window follows the classic scoring workflow:
      (LightGBM, Transformer)
    * **Result** — State Spectral, Transfer Result
    * **Settings** — the in-application settings dialog (own menu)
-   * **View** — expand/collapse the Data, Channels, Scoring and Display
+   * **View** — expand/collapse the Meta, Channel, Annotation and Time
      sidebar sections
    * **Help** — About
    The window starts **maximized**, so the signal area uses all the
@@ -27,10 +27,10 @@ The main window follows the classic scoring workflow:
      packed, and everything adapts when you resize the window,
    * the **hypnogram** at the bottom, with the **scroll bar** below.
 3. **Tool area (right)** — one tidy **sidebar** with four collapsible
-   sections: **Data** (paths, acquisition time; starts collapsed), the
-   **Channels** list, **Scoring** and **Display**. Click a section header
-   to expand/collapse it; the panel keeps a fixed width so the signal
-   area stays dominant.
+   sections named as before: **Meta** (paths, acquisition time; starts
+   collapsed), **Channel**, **Annotation** and **Time**. Click a section
+   header to expand/collapse it; the panel keeps a fixed width so the
+   signal area stays dominant.
 
 Usability details:
 
@@ -119,7 +119,7 @@ Navigation:
 * `Up`/`Down` — previous/next 5 s epoch,
 * mouse wheel — page up/down.
 
-### Channel list (Channels section)
+### Channel list (Channel section)
 
 * **▲ / ▼ arrow buttons** sit **horizontally in the same row as the
   spectrogram percentile box** (compact, 24×24) and move the selected
@@ -138,11 +138,11 @@ Click anywhere on it to jump to that time.
 
 ## Right-hand sidebar
 
-### Data section
+### Meta section
 
 Shows the data path, annotation path, and acquisition time.
 
-### Channels section
+### Channel section
 
 * **Show / Hide / Delete** — control which channels are displayed; delete
   removes them from the in-memory data.
@@ -155,7 +155,7 @@ Shows the data path, annotation path, and acquisition time.
   (> 5 s) in the annotation area, opens the spectrum/spectrogram window
   for the selected channel.
 
-### Scoring section
+### Annotation section
 
 Three scoring modes (radio buttons) plus the **Marker list** / **Start-End
 list** buttons which open a viewer of all already-labeled events:
@@ -178,13 +178,13 @@ Scoring itself works as before:
 * **Sleep state** — click twice to define an interval, then press one of
   the **state buttons** or the number key for that state (`1`–`9`, and
   `0` for state 10) to score it. The default has four states (1 NREM,
-  2 REM, 3 Wake, 4 Init) whose buttons live in the Scoring section; add
+  2 REM, 3 Wake, 4 Init) whose buttons live in the Annotation section; add
   up to **10 states** in *Settings → Sleep states* and extra buttons
   appear below them, colored automatically.
 
 Right-click removes markers / start-end selections.
 
-### Display section
+### Time section
 
 Jump to a specific time with the spin box or the date-time editor; choose
 the display duration from the combo box (30 s – 1 h) or a custom value
@@ -220,8 +220,8 @@ the display duration from the combo box (30 s – 1 h) or a custom value
 
 ### Help
 
-* **View** — check/uncheck to expand or collapse the Data, Channels,
-  Scoring and Display sidebar sections (same as clicking their headers).
+* **View** — check/uncheck to expand or collapse the Meta, Channel,
+  Annotation and Time sidebar sections (same as clicking their headers).
 * **About** — version and update info.
 * **Settings** — opens the in-application settings dialog. Changes are
   **applied immediately** without restarting MiSleep:

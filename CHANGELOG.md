@@ -10,17 +10,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **GUI redesign**: the four right-side docks were replaced by one tidy
-  **sidebar** with collapsible sections (Data / Channels / Scoring /
-  Display); the bottom **status bar was removed**; all sizes are DPI-aware
-  (`pt`-based) with per-platform fonts, so the GUI scales cleanly on any
-  screen.
+  **sidebar** with collapsible sections (named as before: Meta / Channel /
+  Annotation / Time); the bottom **status bar was removed**; all sizes are
+  DPI-aware (`pt`-based) with per-platform fonts, so the GUI scales
+  cleanly on any screen.
 - **Theme system**: light and dark themes driven by one palette that
   styles the Qt widgets *and* the matplotlib canvases together; toggle
   with `Ctrl+Shift+T` or *Settings → General → Theme* (persists in the
-  user config).
-- **Data presentation**: hypnogram is now colored per sleep state;
-  spectrogram colormap is configurable (default `turbo` instead of
-  `jet`); signal traces, grids and labels follow the active theme.
+  user config). Dark mode also sets a matching QPalette so style-drawn
+  elements (arrows, separators, calendar, state buttons) stay readable.
+- **Data presentation**: hypnogram drawn as thick per-state blocks (easy
+  to read on long recordings); every signal panel gets a visible frame;
+  the spectrogram colormap stays `jet` by default (configurable in
+  Settings).
 - **Performance**: page flips are much faster — the whole-file
   spectrogram is cached per channel (sliced per window), the hypnogram
   base is cached and reused, signal axes are reused instead of recreated,
