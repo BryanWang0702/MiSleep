@@ -7,6 +7,7 @@ from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from PySide6.QtWidgets import QFileDialog, QMainWindow, QMessageBox
 
 from misleep.gui.uis.spec_window_ui import Ui_spec_window
+from misleep.viz.spectral import spectrogram_color_limits
 
 
 class SpecWindow(QMainWindow, Ui_spec_window):
@@ -89,8 +90,10 @@ class SpecWindow(QMainWindow, Ui_spec_window):
             cmap = plt.get_cmap(cmap_name)
         except ValueError:
             cmap = plt.get_cmap("jet")
+        vmin, vmax = spectrogram_color_limits(Sxx, percentile_)
+        self.spectrogram_ax.set_facecolor(cmap(0.0))
         pcm = self.spectrogram_ax.pcolormesh(
-            t, f, Sxx, cmap=cmap, vmax=np.percentile(Sxx, percentile_))
+            t, f, Sxx, cmap=cmap, vmin=vmin, vmax=vmax, shading="auto")
         self.spectrogram_figure.colorbar(pcm, ax=self.spectrogram_ax)
         self.spectrogram_ax.set_xlabel("Time (s)")
         self.spectrogram_ax.set_ylabel("Frequency (Hz)")

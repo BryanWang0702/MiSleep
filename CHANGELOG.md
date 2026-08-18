@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Spectrogram clarity**: restored v2-style 5 s / 1 s normalized power
+  rendering with a stable zero-to-percentile color range and a colormap-low
+  background, preventing theme-colored gaps from washing out the display.
+- **Immediate state refresh**: applying sleep-state names/colors now
+  invalidates and rebuilds the hypnogram immediately; cached spectrograms are
+  also refreshed when spectral settings change.
+- **Compact classical controls**: buttons and single-line editors now have
+  bounded heights, tighter padding, stronger borders and subtle vertical
+  shading across the main window and dialogs.
+
 - **File formats**: added pickle-free NumPy NPY/NPZ, CSV/TSV signal input,
   NPZ output, BDF input, and JSON/CSV/TSV annotation input. The GUI now
   uses the extension registry, so built-in and third-party readers appear

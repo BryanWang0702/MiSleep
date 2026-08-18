@@ -50,7 +50,7 @@ class ColorButton(QPushButton):
         super().__init__(parent)
         self._color = QColor(color)
         self.setCursor(Qt.PointingHandCursor)
-        self.setFixedSize(64, 30)
+        self.setFixedSize(64, 26)
         self.setToolTip("Click to choose a color")
         self.set_color(self._color)
         self.clicked.connect(self._pick)
@@ -71,7 +71,7 @@ class ColorButton(QPushButton):
                 background-color: {self._color.name()};
                 color: {_contrast_text(self._color)};
                 border: 2px solid rgba(0, 0, 0, 60%);
-                border-radius: 6px;
+                border-radius: 4px;
                 font-size: 8pt;
                 font-weight: bold;
                 padding: 0px;

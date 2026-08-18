@@ -49,7 +49,9 @@ THEMES = {
         "disabled_bg": "#eef1f6",
         # lines
         "border": "#c9d3e1",
-        "border_strong": "#a9b6c9",
+        "border_strong": "#8796aa",
+        "button_top": "#ffffff",
+        "button_bottom": "#e4eaf2",
         # text
         "text": "#141d2b",
         "text_secondary": "#4a5a70",
@@ -94,7 +96,9 @@ THEMES = {
         "disabled_bg": "#171e2b",
         # lines
         "border": "#2c374a",
-        "border_strong": "#414e68",
+        "border_strong": "#596984",
+        "button_top": "#273247",
+        "button_bottom": "#192230",
         # text
         "text": "#eef2f9",
         "text_secondary": "#9aa8bc",
@@ -232,10 +236,11 @@ QToolBar::separator {
     margin: 5px 8px;
 }
 QToolButton {
-    background: transparent;
-    border: 1px solid transparent;
-    border-radius: 6px;
-    padding: 4px 8px;
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                stop:0 $button_top, stop:1 $button_bottom);
+    border: 1px solid $border_strong;
+    border-radius: 4px;
+    padding: 3px 8px;
     color: $text;
 }
 QToolButton:hover {
@@ -251,12 +256,14 @@ QToolButton:disabled {
 
 /* ---------------- buttons ---------------- */
 QPushButton {
-    background-color: $surface;
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                stop:0 $button_top, stop:1 $button_bottom);
     border: 1px solid $border_strong;
-    border-radius: 6px;
-    padding: 5px 12px;
+    border-radius: 4px;
+    padding: 2px 9px;
     color: $text;
-    min-height: 28px;
+    min-height: 20px;
+    max-height: 24px;
 }
 QPushButton:hover {
     background-color: $surface_alt;
@@ -346,12 +353,16 @@ QComboBox, QSpinBox, QDoubleSpinBox, QLineEdit, QDateTimeEdit,
 QTimeEdit, QDateEdit, QPlainTextEdit, QTextEdit {
     background-color: $input;
     border: 1px solid $border_strong;
-    border-radius: 6px;
-    padding: 4px 8px;
-    min-height: 27px;
+    border-radius: 4px;
+    padding: 2px 7px;
     selection-background-color: $accent;
     selection-color: #ffffff;
     color: $text;
+}
+QComboBox, QSpinBox, QDoubleSpinBox, QLineEdit, QDateTimeEdit,
+QTimeEdit, QDateEdit {
+    min-height: 20px;
+    max-height: 24px;
 }
 QComboBox:focus, QSpinBox:focus, QDoubleSpinBox:focus, QLineEdit:focus,
 QDateTimeEdit:focus, QTimeEdit:focus, QDateEdit:focus,

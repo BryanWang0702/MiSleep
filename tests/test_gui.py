@@ -523,7 +523,12 @@ def test_gui_state_buttons_and_shortcuts(monkeypatch, tmp_path):
         dialog._add_state()
     assert len(dialog._state_rows) == 10
     dialog._ok()
+    app.processEvents()
     assert len(window._state_btns) == 10 and 10 in window._state_btns
+    # Settings -> Apply/OK must rebuild the hypnogram immediately, before
+    # any new label is drawn.
+    tick_labels = [label.get_text() for label in window.hypo_ax.get_yticklabels()]
+    assert "State 10" in tick_labels
 
     window.start_end = [20, 30]
     ev0 = QKeyEvent(QKeyEvent.Type.KeyPress, Qt.Key.Key_0,
@@ -531,6 +536,30 @@ def test_gui_state_buttons_and_shortcuts(monkeypatch, tmp_path):
     window.keyPressEvent(ev0)
     assert window.mianno.sleep_state[25] == 10
 
+    window.is_saved = True
+    window.close()
+
+
+@pytest.mark.skipif(not _pyside6_available(), reason="PySide6 not installed")
+def test_compact_control_geometry():
+    """Main-window and dialog controls stay compact under the app theme."""
+    from PySide6.QtWidgets import QApplication, QPushButton
+
+    app = QApplication.instance() or QApplication([])
+    from misleep.gui.config_dialog import SettingsDialog
+    from misleep.gui.main_window import MainWindow
+
+    window = MainWindow()
+    dialog = SettingsDialog(window)
+    window.show()
+    dialog.show()
+    app.processEvents()
+
+    assert window.SaveLabelBt.height() <= 32
+    assert window.FilterLowSpin.height() <= 32
+    assert dialog.findChildren(QPushButton)[0].height() <= 32
+
+    dialog.close()
     window.is_saved = True
     window.close()
 

@@ -65,6 +65,7 @@ from misleep.io import available_readers, available_writers, load_signal
 from misleep.logger import logger
 from misleep.preprocessing.spectral import band_power, spectrogram, spectrum
 from misleep.utils.annotation import lst2group
+from misleep.viz.spectral import spectrogram_color_limits
 
 
 def _text_on(color_hex: str) -> str:
@@ -1122,6 +1123,7 @@ class MainWindow(QMainWindow, Ui_MiSleep):
             cmap = plt.get_cmap(cmap_name)
         except ValueError:
             cmap = plt.get_cmap("jet")
+        vmin, vmax = spectrogram_color_limits(Sxx, self.spectrogram_percentile)
 
         self.signal_ax[0].set_xticks([])
         # Pin the horizontal extent explicitly: with reused axes the
@@ -1130,8 +1132,11 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         self.signal_ax[0].set_xlim(t.min(), t.max())
         self.signal_ax[0].set_ylim(freq_range)
         self.signal_ax[0].set_ylabel(f"{self.midata.channels[ch]}")
+        # Match v2's dark low-power background even in the light theme and
+        # eliminate axes-color seams around the pcolormesh.
+        self.signal_ax[0].set_facecolor(cmap(0.0))
         self._spec_artist = self.signal_ax[0].pcolormesh(
-            t, f, Sxx, cmap=cmap, vmax=np.percentile(Sxx, self.spectrogram_percentile))
+            t, f, Sxx, cmap=cmap, vmin=vmin, vmax=vmax, shading="auto")
 
         if flush:
             self.signal_figure.canvas.draw()
@@ -1271,7 +1276,12 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         # rebuild it lazily and reuse it across page flips.
         key = None
         if self.mianno is not None:
-            key = (id(self.mianno), hash(tuple(self.mianno.sleep_state)))
+            key = (
+                id(self.mianno),
+                hash(tuple(self.mianno.sleep_state)),
+                tuple(sorted(self.state_map_dict.items())),
+                tuple(sorted(self.state_color_dict.items())),
+            )
         if key != self._hypo_key:
             self.hypo_ax.clear()
             self._hypo_transient = []
@@ -1496,9 +1506,10 @@ class MainWindow(QMainWindow, Ui_MiSleep):
             fg = _text_on(color)
             bt.setStyleSheet(
                 f"QPushButton {{ background-color: {color}; color: {fg};"
-                f" border: 1px solid {color}; border-radius: 0px;"
-                f" padding: 3px 8px; min-height: 22px; font-weight: 600; }}"
-                f" QPushButton:hover {{ border-color: rgba(255,255,255,140); }}"
+                f" border: 1px solid rgba(0,0,0,150); border-radius: 3px;"
+                f" padding: 2px 7px; min-height: 19px; max-height: 22px;"
+                f" font-weight: 600; }}"
+                f" QPushButton:hover {{ border: 1px solid rgba(255,255,255,190); }}"
                 f" QPushButton:pressed {{ background-color: {color}; }}"
                 f" QPushButton:disabled {{ color: rgba(255,255,255,120);"
                 f" border-color: rgba(255,255,255,60); }}")
@@ -2294,6 +2305,14 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         # Update the annotation state map if one is loaded
         if isinstance(self.mianno, MiAnnotation):
             self.mianno._state_map = self.state_map_dict
+
+        # State names/colors are part of the hypnogram itself. Force a base
+        # rebuild now instead of waiting for the next annotation edit.
+        self._hypo_key = None
+        self._hypo_steps = []
+        self._hypo_transient = []
+        # Frequency range changes also invalidate the cached whole-file STFT.
+        self._spec_full_cache = {}
 
         # Redraw with the new colors / frequency range (skip before data loads)
         if self.midata is not None and self.mianno is not None:

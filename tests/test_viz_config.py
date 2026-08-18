@@ -35,6 +35,9 @@ def test_plot_spectrogram():
     t = np.linspace(0, 10, 50)
     Sxx = np.random.default_rng(0).random((40, 50))
     fig, ax = plot_spectrogram(f, t, Sxx, percentile=95, band=[0.5, 30], color_bar=True)
+    mesh = ax.collections[0]
+    assert mesh.get_clim()[0] == 0.0
+    assert np.isclose(mesh.get_clim()[1], np.percentile(Sxx, 95))
     import matplotlib.pyplot as plt
 
     plt.close(fig)
