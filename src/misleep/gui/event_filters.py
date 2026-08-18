@@ -16,6 +16,11 @@ class WheelInputGuard(QObject):
     def eventFilter(self, obj, event):
         if event.type() == QEvent.Type.Wheel:
             widget = QApplication.widgetAt(event.globalPosition().toPoint())
-            if widget is not None and isinstance(widget, (QAbstractSpinBox, QComboBox)):
-                return True  # consume: do not change the value
+            # A wheel event can land on the spin-box line edit or one of its
+            # step sub-controls.  Walk up the parent chain so every editor is
+            # protected, not just its outer frame.
+            while widget is not None:
+                if isinstance(widget, (QAbstractSpinBox, QComboBox)):
+                    return True  # consume: do not change the value
+                widget = widget.parentWidget()
         return False

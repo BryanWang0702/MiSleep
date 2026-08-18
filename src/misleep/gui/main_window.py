@@ -10,6 +10,7 @@ import copy
 import datetime
 import json
 import os
+from contextlib import contextmanager
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -25,6 +26,7 @@ from PySide6.QtWidgets import (
     QGridLayout,
     QMainWindow,
     QMessageBox,
+    QProgressDialog,
     QPushButton,
     QScrollArea,
     QSizePolicy,
@@ -204,6 +206,7 @@ class MainWindow(QMainWindow, Ui_MiSleep):
 
         # Unified right-hand sidebar (replaces the four separate docks)
         self._build_sidebar()
+        self._rebuild_compact_tool_layouts()
         self._constrain_inputs()
         self.setMinimumSize(960, 600)
         self.setWindowIcon(app_icon())
@@ -255,6 +258,9 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         sidebar = QWidget()
         sidebar.setObjectName("Sidebar")
         sidebar.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        sidebar.setMinimumWidth(0)
+        sidebar.setSizePolicy(QSizePolicy.Policy.Ignored,
+                              QSizePolicy.Policy.Preferred)
         vbox = QVBoxLayout(sidebar)
         vbox.setContentsMargins(0, 0, 0, 0)
         vbox.setSpacing(8)
@@ -316,6 +322,47 @@ class MainWindow(QMainWindow, Ui_MiSleep):
             self.removeDockWidget(dock)
             dock.hide()
 
+    def _rebuild_compact_tool_layouts(self):
+        """Arrange the frequently used tools in predictable equal columns."""
+        # Annotation: three mutually-exclusive modes on one row, followed by
+        # one two-column state grid, two list buttons, and a full-width save.
+        anno = self.gridLayout_2
+        self.SleepStateRadio.setText("State")
+        self.LabelBt.hide()
+        self.line_4.hide()
+        for col, radio in enumerate(
+                (self.MarkerRadio, self.StartEndRadio, self.SleepStateRadio)):
+            anno.addWidget(radio, 0, col, 1, 1)
+            anno.setColumnStretch(col, 1)
+        anno.setColumnStretch(3, 0)
+        anno.setColumnMinimumWidth(3, 0)
+
+        anno.addWidget(self.ExtraStatePanel, 1, 0, 1, 3)
+        anno.addWidget(self.line_5, 2, 0, 1, 3)
+        save_row = self.SaveRowPanel.layout()
+        save_row.removeWidget(self.SaveLabelBt)
+        save_row.setStretch(0, 1)
+        save_row.setStretch(1, 1)
+        anno.addWidget(self.SaveRowPanel, 3, 0, 1, 3)
+        anno.addWidget(self.SaveLabelBt, 4, 0, 1, 3)
+
+        # Channel move controls get their own row below Percentile and line up
+        # with the three action buttons below the channel list.
+        channel = self.gridLayout
+        channel.addWidget(self.MoveChPanel, 2, 0, 1, 3)
+        move_row = self.MoveChPanel.layout()
+        move_row.setContentsMargins(0, 0, 0, 0)
+        move_row.setSpacing(6)
+        self.MoveLabel.setText("Move channel:")
+        for widget in (self.MoveLabel, self.MoveUpBt, self.MoveDownBt):
+            widget.setMinimumWidth(0)
+            widget.setMaximumWidth(16777215)
+            widget.setSizePolicy(QSizePolicy.Policy.Expanding,
+                                 QSizePolicy.Policy.Fixed)
+        move_row.setStretch(0, 1)
+        move_row.setStretch(1, 1)
+        move_row.setStretch(2, 1)
+
     def _constrain_inputs(self):
         """Align sidebar editors without forcing cramped fixed widths."""
         for name in ("FilterLowSpin", "FilterHighSpin", "PercentileSpin",
@@ -324,11 +371,15 @@ class MainWindow(QMainWindow, Ui_MiSleep):
             if spin is not None:
                 spin.setMinimumWidth(76)
                 spin.setMaximumWidth(104)
-        for name in ("FilterTypeCombo", "ShowRangeCombo"):
+        for name in ("FilterTypeCombo",):
             combo = getattr(self, name, None)
             if combo is not None:
                 combo.setMinimumWidth(112)
                 combo.setMaximumWidth(156)
+        self.ShowRangeCombo.setMinimumWidth(0)
+        self.ShowRangeCombo.setMaximumWidth(16777215)
+        self.ShowRangeCombo.setSizePolicy(QSizePolicy.Policy.Expanding,
+                                          QSizePolicy.Policy.Fixed)
         for edit in (self.DataPathEdit, self.AnnoPathEdit):
             edit.setMinimumWidth(150)
             edit.setToolTip(edit.text())
@@ -414,6 +465,7 @@ class MainWindow(QMainWindow, Ui_MiSleep):
 
         # Label radio: start_end by default
         self.SleepStateRadio.setChecked(True)
+        self.MarkerRadio.toggled.connect(lambda: self.radio_recheck(self.MarkerRadio))
         self.SleepStateRadio.toggled.connect(lambda: self.radio_recheck(self.SleepStateRadio))
         self.StartEndRadio.toggled.connect(lambda: self.radio_recheck(self.StartEndRadio))
 
@@ -422,7 +474,6 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         self.REMBt.clicked.connect(self.rem_label)
         self.WakeBt.clicked.connect(self.wake_label)
         self.InitBt.clicked.connect(self.init_label)
-        self.LabelBt.clicked.connect(self.append_start_end)
 
         # Shortcuts
         self.labelSc = QShortcut(QKeySequence("a"), self)
@@ -470,7 +521,8 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         # Wheel over spin boxes / combos must not change their values
         app = QApplication.instance()
         if app is not None:
-            app.installEventFilter(WheelInputGuard(app))
+            self._wheel_input_guard = WheelInputGuard(app)
+            app.installEventFilter(self._wheel_input_guard)
 
     def change_Bts_status(self, status=True):
         """Enable/disable buttons according to whether data is loaded."""
@@ -514,6 +566,40 @@ class MainWindow(QMainWindow, Ui_MiSleep):
 
         self.menuTools.setDisabled(status)
         self.menuResult.setDisabled(status)
+        self._update_annotation_mode()
+        self._update_channel_action_states()
+
+    def _selected_channel_rows(self):
+        """Return unique selected channel rows in view order."""
+        return sorted({index.row() for index in self.ChListView.selectedIndexes()})
+
+    def _update_channel_action_states(self, *_args):
+        """Keep all channel actions synchronized with the list selection."""
+        loaded = self.midata is not None
+        selected = self._selected_channel_rows() if loaded else []
+        has_selection = bool(selected)
+        one_selected = len(selected) == 1
+        for widget in (
+                self.ShowChBt, self.HideChBt, self.DeleteChBt,
+                self.ScalerUpBt, self.ScalerDownBt, self.ShiftUpBt,
+                self.ShiftDownBt, self.multipleScalerEditor,
+                self.MultipleScalerConfirmBt, self.FilterTypeCombo,
+                self.FilterLowSpin, self.FilterHighSpin):
+            widget.setEnabled(loaded and has_selection)
+        self.FilterConfirmBt.setEnabled(loaded and one_selected)
+        self.DefaultCh4SpecBt.setEnabled(loaded and one_selected)
+        self.PlotSpecBt.setEnabled(loaded and one_selected)
+        self.MoveUpBt.setEnabled(loaded and one_selected and selected[0] > 0)
+        self.MoveDownBt.setEnabled(
+            loaded and one_selected and selected[0] < self.midata.n_channels - 1)
+        if loaded and has_selection:
+            self.FilterTypeCombo_change()
+
+    def _update_annotation_mode(self, *_args):
+        """Enable state choices only while the State mode is active."""
+        active = self.midata is not None and self.SleepStateRadio.isChecked()
+        for bt in getattr(self, "_state_btns", {}).values():
+            bt.setEnabled(active)
 
     def _build_menus(self):
         """Polish the menu bar: File extras, Settings rename, View dock menu."""
@@ -546,6 +632,36 @@ class MainWindow(QMainWindow, Ui_MiSleep):
             action.setChecked(sec.is_expanded())
             action.toggled.connect(sec.set_expanded)
             sec.header.toggled.connect(action.setChecked)
+
+    @contextmanager
+    def _processing(self, message="Processing…"):
+        """Paint a modal busy indicator around a known blocking operation.
+
+        A Qt timer cannot detect a frozen GUI thread until the work has
+        already finished.  Showing and painting this dialog *before* the
+        synchronous call is deterministic and also blocks every main-window
+        control for the duration of the operation.
+        """
+        progress = QProgressDialog(message, None, 0, 0, self)
+        progress.setObjectName("ProcessingDialog")
+        progress.setWindowTitle("MiSleep")
+        # Window-modal blocks the main UI but still permits a save-folder
+        # chooser opened by an export routine to receive input.
+        progress.setWindowModality(Qt.WindowModality.WindowModal)
+        progress.setMinimumDuration(0)
+        progress.setAutoClose(False)
+        progress.setAutoReset(False)
+        progress.setMinimumWidth(300)
+        progress.show()
+        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+        QApplication.processEvents()
+        try:
+            yield
+        finally:
+            QApplication.restoreOverrideCursor()
+            progress.close()
+            progress.deleteLater()
+            QApplication.processEvents()
 
     # ------------------------------------------------------------------
     # Data / annotation loading
@@ -739,6 +855,11 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         self._hypo_transient = []
 
         # Set canvases for the plot areas
+        # Keep the canvases hidden until their final axes and DPI-aware size
+        # are ready.  Otherwise Qt briefly paints the tiny default figure and
+        # users see it grow after loading or adding a filtered channel.
+        self.signal_canvas.hide()
+        self.hypo_canvas.hide()
         self.SignalArea.setWidget(self.signal_canvas)
         self.HypnoArea.setWidget(self.hypo_canvas)
 
@@ -768,6 +889,8 @@ class MainWindow(QMainWindow, Ui_MiSleep):
 
         # Fit the canvases to the (high-DPI aware) window size
         self._fit_canvases()
+        self.signal_canvas.show()
+        self.hypo_canvas.show()
 
     def reset_sec_limit(self):
         """Update scrollbar / spin / datetime limits when show duration changes."""
@@ -892,8 +1015,12 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         # Reuse the existing axes when the channel count is unchanged - much
         # faster than recreating them on every page flip.
         current = getattr(self, "signal_ax", None)
-        if current is None or not isinstance(current, (list, tuple)) \
-                or len(current) != need:
+        structure_changed = current is None or not isinstance(current, (list, tuple)) \
+                or len(current) != need
+        if structure_changed:
+            # No event-loop turn occurs between hide/show, so the user sees
+            # only the completed layout, never matplotlib's resize stages.
+            self.signal_canvas.hide()
             self.signal_figure.clf()
             self.signal_ax = list(self.signal_figure.subplots(
                 nrows=need, ncols=1,
@@ -992,6 +1119,9 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         if flush:
             self.signal_figure.canvas.draw()
             self.signal_figure.canvas.flush_events()
+        if structure_changed:
+            self._fit_canvases()
+            self.signal_canvas.show()
 
     def _apply_signal_layout(self):
         """Tighten the signal figure layout so the panels touch each other."""
@@ -1370,8 +1500,13 @@ class MainWindow(QMainWindow, Ui_MiSleep):
             # selection would be cleared on every refresh
             if self.ChListView.model() is not self.channel_slm:
                 self.ChListView.setModel(self.channel_slm)
+                selection_model = self.ChListView.selectionModel()
+                if selection_model is not None:
+                    selection_model.selectionChanged.connect(
+                        self._update_channel_action_states)
         finally:
             self._updating_ch_list = False
+        self._update_channel_action_states()
 
     def _on_channel_list_changed(self, *args):
         """React to any channel-list model change.
@@ -1448,6 +1583,7 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         self.ChListView.setCurrentIndex(idx)
         if sm is not None:
             sm.select(idx, sm.SelectionFlag.ClearAndSelect)
+        self._update_channel_action_states()
 
     def show_marker_list(self):
         """Open the marker list viewer dialog."""
@@ -1470,35 +1606,36 @@ class MainWindow(QMainWindow, Ui_MiSleep):
     def _sync_state_buttons(self):
         """Keep the Annotation dock state buttons in sync with the state map.
 
-        The original 1-4 buttons (NREM/REM/Wake/Init) from the .ui are
-        reused and only restyled/renamed; any extra states (5-10) get
-        additional colored buttons in the ``ExtraStatePanel`` (declared in
-        the .ui, below them).
+        Every configured state lives in the same two-column grid.  The four
+        original buttons are reused; additional states are created there too.
         """
         orig = {1: self.NREMBt, 2: self.REMBt, 3: self.WakeBt, 4: self.InitBt}
         self._state_btns = {}
+        for bt in orig.values():
+            bt.hide()
 
-        # clear and (re)fill the panel for extra states 5..10
+        # clear and (re)fill the shared state grid
         extra_grid = self.ExtraStatePanel.layout()
         while extra_grid.count():
             item = extra_grid.takeAt(0)
             w = item.widget()
-            if w is not None:
+            if w is not None and w not in orig.values():
                 w.deleteLater()
 
-        extra_idx = 0
-        for code in sorted(self.state_map_dict):
+        for button_idx, code in enumerate(sorted(self.state_map_dict)):
             name = self.state_map_dict[code]
             color = self.state_color_dict.get(code, "#808080")
             if code in orig:
                 bt = orig[code]
+                bt.show()
             else:
-                row, col = divmod(extra_idx, 2)
-                extra_idx += 1
                 bt = QPushButton()
                 bt.clicked.connect(
                     lambda _=False, c=code: self.sleep_state_label(state_code=c))
-                extra_grid.addWidget(bt, row, col)
+            row, col = divmod(button_idx, 2)
+            extra_grid.addWidget(bt, row, col)
+            bt.setSizePolicy(QSizePolicy.Policy.Expanding,
+                             QSizePolicy.Policy.Fixed)
             bt.setText(f"{code}:{name}")
             # Full local style: readable text on any state color (works in
             # light and dark themes - e.g. a white 'Init' button needs dark
@@ -1511,24 +1648,30 @@ class MainWindow(QMainWindow, Ui_MiSleep):
                 f" font-weight: 600; }}"
                 f" QPushButton:hover {{ border: 1px solid rgba(255,255,255,190); }}"
                 f" QPushButton:pressed {{ background-color: {color}; }}"
-                f" QPushButton:disabled {{ color: rgba(255,255,255,120);"
-                f" border-color: rgba(255,255,255,60); }}")
+                f" QPushButton:disabled {{ background-color: #9aa3af;"
+                f" color: #dce1e8; border-color: #7d8794; }}")
             bt.setToolTip(
                 f"Label the selected area as {name} "
                 f"(shortcut key {code if code < 10 else 0})")
             self._state_btns[code] = bt
+        extra_grid.setColumnStretch(0, 1)
+        extra_grid.setColumnStretch(1, 1)
+        self._update_annotation_mode()
 
     # ------------------------------------------------------------------
     # Interaction
     # ------------------------------------------------------------------
     def radio_recheck(self, radioBt):
         """Reset the selection lines when the label mode changes."""
-        if radioBt.text() == "Sleep state":
+        if not radioBt.isChecked():
+            return
+        if radioBt is self.SleepStateRadio:
             self.start_end_ms = []
             self.plot_start_end_line()
-        if radioBt.text() == "Start-End":
+        if radioBt is self.StartEndRadio:
             self.start_end = []
             self.plot_start_end_line(ms=True)
+        self._update_annotation_mode()
 
     def click_signal(self, event):
         """Handle clicks in the signal area (marker / start-end selection).
@@ -1644,6 +1787,10 @@ class MainWindow(QMainWindow, Ui_MiSleep):
                 self.start_end_ms.append(x)
 
             self.plot_start_end_line(ms=True)
+            if len(self.start_end_ms) == 2:
+                # Leave the matplotlib callback first, then open the modal
+                # label chooser.  This avoids a half-painted selection line.
+                QTimer.singleShot(0, self.append_start_end)
 
     def click_hypo(self, event):
         """Jump to the clicked time on the hypnogram."""
@@ -1835,9 +1982,10 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         high = self.FilterHighSpin.value()
         if filter_type in ("bandpass", "bandstop") and low >= high:
             return
-        self.midata.filter(
-            chans=[self.midata.channels[selected_channel[0]]],
-            btype=filter_type, low=low, high=high)
+        with self._processing("Filtering channel…"):
+            self.midata.filter(
+                chans=[self.midata.channels[selected_channel[0]]],
+                btype=filter_type, low=low, high=high)
         self.y_lims.append(self.y_lims[selected_channel[0]])
         self.y_shift.append(self.y_shift[selected_channel[0]])
 
@@ -2039,9 +2187,10 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         self.transfer_result_dialog.exec()
         if self.transfer_result_dialog.closed:
             return
-        self.transfer_result_dialog.transfer(config=self.config,
-                                             mianno=self.mianno,
-                                             ac_time=self.midata.time)
+        with self._processing("Exporting annotation result…"):
+            self.transfer_result_dialog.transfer(config=self.config,
+                                                 mianno=self.mianno,
+                                                 ac_time=self.midata.time)
 
     def state_spectral(self):
         """Run the per-state spectral analysis."""
@@ -2052,9 +2201,9 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         self.state_spectral_dialog.exec()
         if self.state_spectral_dialog.closed:
             return
-        self.state_spectral_dialog.spectral_analysis(midata=self.midata,
-                                                     mianno=self.mianno,
-                                                     config=self.config)
+        with self._processing("Exporting state spectral analysis…"):
+            self.state_spectral_dialog.spectral_analysis(
+                midata=self.midata, mianno=self.mianno, config=self.config)
 
     def add_horizontal_line(self):
         """Add a horizontal reference line."""
@@ -2079,8 +2228,9 @@ class MainWindow(QMainWindow, Ui_MiSleep):
             self.swa_detection_dialog.exec()
             if self.swa_detection_dialog.closed:
                 return
-            swa_lst = self.swa_detection_dialog.swa_detection(
-                self.midata, self.mianno, self.config)
+            with self._processing("Detecting slow-wave activity…"):
+                swa_lst = self.swa_detection_dialog.swa_detection(
+                    self.midata, self.mianno, self.config)
 
             self.mianno._start_end += [[each[0], each[4], "SWA"] for each in swa_lst]
             self.plot_start_end_label_line()
@@ -2098,8 +2248,9 @@ class MainWindow(QMainWindow, Ui_MiSleep):
             self.spindel_detection_dialog.exec()
             if self.spindel_detection_dialog.closed:
                 return
-            spindle_lst = self.spindel_detection_dialog.spindle_detection(
-                self.midata, self.mianno, self.config)
+            with self._processing("Detecting sleep spindles…"):
+                spindle_lst = self.spindel_detection_dialog.spindle_detection(
+                    self.midata, self.mianno, self.config)
 
             self.mianno._start_end += [[each[0], each[1], "Spindle"] for each in spindle_lst]
             self.plot_start_end_label_line()
@@ -2117,8 +2268,9 @@ class MainWindow(QMainWindow, Ui_MiSleep):
             self.auto_stage_lightGBM_dialog.exec()
             if self.auto_stage_lightGBM_dialog.closed:
                 return
-            auto_stage_lst, save_anno = self.auto_stage_lightGBM_dialog.auto_stage(
-                self.midata, self.mianno)
+            with self._processing("Running LightGBM auto staging…"):
+                auto_stage_lst, save_anno = self.auto_stage_lightGBM_dialog.auto_stage(
+                    self.midata, self.mianno)
 
             limit = min(len(self.mianno._sleep_state), len(auto_stage_lst))
             self.mianno._sleep_state[:limit] = auto_stage_lst[:limit]
@@ -2144,8 +2296,10 @@ class MainWindow(QMainWindow, Ui_MiSleep):
             self.auto_stage_causalTransformer_dialog.exec()
             if self.auto_stage_causalTransformer_dialog.closed:
                 return
-            auto_stage_lst, save_anno = self.auto_stage_causalTransformer_dialog.auto_stage(
-                self.midata, self.mianno)
+            with self._processing("Running causal-transformer auto staging…"):
+                auto_stage_lst, save_anno = \
+                    self.auto_stage_causalTransformer_dialog.auto_stage(
+                        self.midata, self.mianno)
 
             limit = min(len(self.mianno._sleep_state), len(auto_stage_lst))
             self.mianno._sleep_state[:limit] = auto_stage_lst[:limit]

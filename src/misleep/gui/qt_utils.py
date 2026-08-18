@@ -65,6 +65,13 @@ class CollapsibleSection(QWidget):
             self._content.setParent(None)
         self._content = widget
         if widget is not None:
+            # Dock contents often retain a large layout size hint from their
+            # former floating-dock geometry.  Ignore that horizontal hint so
+            # the unified sidebar can actually constrain every section to its
+            # viewport instead of silently clipping the rightmost controls.
+            widget.setMinimumWidth(0)
+            widget.setSizePolicy(QSizePolicy.Policy.Ignored,
+                                 QSizePolicy.Policy.Preferred)
             self.layout().addWidget(widget)
             if collapsed is not None:
                 self.header.setChecked(not collapsed)

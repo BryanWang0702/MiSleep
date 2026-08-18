@@ -42,16 +42,16 @@ THEMES = {
     "light": {
         "name": "Light",
         # surfaces
-        "window": "#eaeef5",
-        "surface": "#ffffff",
-        "surface_alt": "#e2e8f2",
-        "input": "#ffffff",
-        "disabled_bg": "#eef1f6",
+        "window": "#d8dee8",
+        "surface": "#f2f4f7",
+        "surface_alt": "#cfd7e3",
+        "input": "#f8f9fb",
+        "disabled_bg": "#d9dfe8",
         # lines
-        "border": "#c9d3e1",
-        "border_strong": "#8796aa",
-        "button_top": "#ffffff",
-        "button_bottom": "#e4eaf2",
+        "border": "#aeb9c8",
+        "border_strong": "#75859b",
+        "button_top": "#f8f9fb",
+        "button_bottom": "#cbd4e0",
         # text
         "text": "#141d2b",
         "text_secondary": "#4a5a70",
@@ -75,7 +75,7 @@ THEMES = {
         # matplotlib / plot area
         "plot": {"trace": "#0d1524", "grid": "#2f9d74", "bg": "#ffffff"},
         "mpl": {
-            "figure.facecolor": "#eaeef5",
+            "figure.facecolor": "#d8dee8",
             "axes.facecolor": "#ffffff",
             "axes.edgecolor": "#a9b6c9",
             "axes.labelcolor": "#141d2b",
@@ -146,6 +146,11 @@ _DANGER_BUTTONS = ("DeleteChBt",)
 
 _PRIMARY_SELECTOR = ", ".join(f"#{name}" for name in _PRIMARY_BUTTONS)
 _DANGER_SELECTOR = ", ".join(f"#{name}" for name in _DANGER_BUTTONS)
+
+
+def _state_selector(names, state):
+    """Apply a pseudo-state to every selector in a selector group."""
+    return ", ".join(f"#{name}:{state}" for name in names)
 
 
 def font_families() -> list[str]:
@@ -266,66 +271,70 @@ QPushButton {
     max-height: 24px;
 }
 QPushButton:hover {
-    background-color: $surface_alt;
+    background: $surface_alt;
     border-color: $accent;
 }
 QPushButton:pressed {
-    background-color: $accent_soft_2;
+    background: $accent_soft_2;
 }
 QPushButton:focus {
     border-color: $accent;
 }
 QPushButton:disabled {
     color: $text_disabled;
-    background-color: $disabled_bg;
+    background: $disabled_bg;
     border-color: $border;
 }
 QPushButton:checked {
-    background-color: $accent_soft;
+    background: $accent_soft;
     border-color: $accent;
     color: $accent;
 }
 QPushButton[default="true"] {
-    background-color: $accent;
+    background: $accent;
     border-color: $accent;
     color: #ffffff;
 }
 QPushButton[default="true"]:hover {
-    background-color: $accent_hover;
+    background: $accent_hover;
     border-color: $accent_hover;
 }
 QPushButton[default="true"]:pressed {
-    background-color: $accent_pressed;
+    background: $accent_pressed;
     border-color: $accent_pressed;
 }
 
-/* the small 24x24 channel-move arrows keep their compact size */
+/* channel-move arrows share a row and expand like Show/Hide/Delete */
 #MoveUpBt, #MoveDownBt {
-    min-height: 24px;
+    min-height: 20px;
     max-height: 24px;
-    min-width: 24px;
-    max-width: 24px;
+    min-width: 52px;
+    max-width: 16777215px;
     padding: 0px;
     font-size: 10pt;
 }
 
 /* primary actions */
 $_primary {
-    background-color: $accent;
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                stop:0 $accent, stop:1 $accent_pressed);
     border-color: $accent;
     color: #ffffff;
     font-weight: 600;
 }
-$_primary:hover {
-    background-color: $accent_hover;
+$_primary_hover {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                stop:0 $accent_hover, stop:1 $accent);
     border-color: $accent_hover;
 }
-$_primary:pressed {
-    background-color: $accent_pressed;
+$_primary_pressed {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                stop:0 $accent_pressed, stop:1 $accent_pressed);
     border-color: $accent_pressed;
 }
-$_primary:disabled {
-    background-color: $disabled_bg;
+$_primary_disabled {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                stop:0 $disabled_bg, stop:1 $disabled_bg);
     border-color: $border;
     color: $text_disabled;
     font-weight: 400;
@@ -333,17 +342,17 @@ $_primary:disabled {
 
 /* destructive actions */
 $_danger {
-    background-color: $surface;
+    background: $surface;
     border-color: $danger;
     color: $danger;
 }
-$_danger:hover {
-    background-color: $danger_hover;
+$_danger_hover {
+    background: $danger_hover;
     border-color: $danger_hover;
     color: #ffffff;
 }
-$_danger:pressed {
-    background-color: $danger;
+$_danger_pressed {
+    background: $danger;
     border-color: $danger;
     color: #ffffff;
 }
@@ -377,8 +386,18 @@ QLineEdit:disabled, QDateTimeEdit:disabled, QPlainTextEdit:disabled {
     border-color: $border;
 }
 QComboBox::drop-down {
-    border: none;
-    width: 22px;
+    subcontrol-origin: padding;
+    subcontrol-position: top right;
+    border-left: 1px solid $border_strong;
+    border-top-right-radius: 3px;
+    border-bottom-right-radius: 3px;
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                stop:0 $button_top, stop:1 $button_bottom);
+    width: 24px;
+}
+QComboBox::down-arrow {
+    width: 9px;
+    height: 9px;
 }
 QComboBox QAbstractItemView {
     background-color: $surface;
@@ -391,9 +410,25 @@ QComboBox QAbstractItemView {
 }
 QSpinBox::up-button, QDoubleSpinBox::up-button, QDateTimeEdit::up-button,
 QSpinBox::down-button, QDoubleSpinBox::down-button, QDateTimeEdit::down-button {
-    border: none;
-    background: transparent;
-    width: 18px;
+    subcontrol-origin: border;
+    border-left: 1px solid $border_strong;
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                stop:0 $button_top, stop:1 $button_bottom);
+    width: 20px;
+}
+QSpinBox::up-button, QDoubleSpinBox::up-button, QDateTimeEdit::up-button {
+    subcontrol-position: top right;
+    border-bottom: 1px solid $border;
+    border-top-right-radius: 3px;
+}
+QSpinBox::down-button, QDoubleSpinBox::down-button, QDateTimeEdit::down-button {
+    subcontrol-position: bottom right;
+    border-bottom-right-radius: 3px;
+}
+QSpinBox::up-arrow, QDoubleSpinBox::up-arrow, QDateTimeEdit::up-arrow,
+QSpinBox::down-arrow, QDoubleSpinBox::down-arrow, QDateTimeEdit::down-arrow {
+    width: 8px;
+    height: 6px;
 }
 
 /* ---------------- lists, trees, tables ---------------- */
@@ -671,7 +706,12 @@ def build_stylesheet(theme_name: str = "light") -> str:
     theme_name = theme_name if theme_name in THEMES else "light"
     palette = dict(THEMES[theme_name])
     palette["_primary"] = _PRIMARY_SELECTOR
+    palette["_primary_hover"] = _state_selector(_PRIMARY_BUTTONS, "hover")
+    palette["_primary_pressed"] = _state_selector(_PRIMARY_BUTTONS, "pressed")
+    palette["_primary_disabled"] = _state_selector(_PRIMARY_BUTTONS, "disabled")
     palette["_danger"] = _DANGER_SELECTOR
+    palette["_danger_hover"] = _state_selector(_DANGER_BUTTONS, "hover")
+    palette["_danger_pressed"] = _state_selector(_DANGER_BUTTONS, "pressed")
     return _STYLESHEET_TEMPLATE.substitute(palette)
 
 

@@ -558,6 +558,20 @@ def test_compact_control_geometry():
     assert window.SaveLabelBt.height() <= 32
     assert window.FilterLowSpin.height() <= 32
     assert dialog.findChildren(QPushButton)[0].height() <= 32
+    assert window.SleepStateRadio.text() == "State"
+    assert window.LabelBt.isHidden()
+    state_widths = [button.width() for button in window._state_btns.values()]
+    assert max(state_widths) - min(state_widths) <= 2
+    assert window.sidebar.width() <= window.sidebar_scroll.viewport().width()
+    assert window.ShowRangeCombo.width() >= window.gridLayout_4.geometry().width() - 20
+
+    # Every primary-button pseudo-state must target every button.  A selector
+    # such as ``#A, #B:disabled`` would leave A permanently styled disabled.
+    from misleep.gui.style import build_stylesheet
+
+    stylesheet = build_stylesheet("light")
+    assert "#FilterConfirmBt:disabled" in stylesheet
+    assert "#MultipleScalerConfirmBt:disabled" in stylesheet
 
     dialog.close()
     window.is_saved = True
