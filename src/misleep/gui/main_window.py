@@ -6,6 +6,7 @@ channels with sleep-state background colors, the spectrogram strip, the
 hypnogram, and a collection of dock widgets for channel/scoring tools.
 """
 
+import configparser
 import copy
 import datetime
 import json
@@ -35,7 +36,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from misleep.config import load_config, save_config, user_config_path
+from misleep import __version__ as _pkg_version
+from misleep.config import default_config_path, load_config, save_config, user_config_path
 from misleep.data import MiAnnotation, MiData
 from misleep.gui.config_dialog import SettingsDialog
 from misleep.gui.dialogs import (
@@ -188,9 +190,16 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         # Initial params for widgets
         self.channel_slm = ChannelListModel()
 
-        # Initial dialogs and secondary windows
-        self.about_dialog = AboutDialog(version=self.config["gui"]["version"],
-                                        update_time=self.config["gui"]["updatetime"])
+        # Initial dialogs and secondary windows.
+        # Version / update date are package metadata: the per-user config
+        # may still carry stale values copied from an older install (which
+        # is why About used to show 2025/01/01), so read them from the
+        # package and the bundled defaults instead.
+        _default_cfg = configparser.ConfigParser()
+        _default_cfg.read(default_config_path(), encoding="utf-8")
+        self.about_dialog = AboutDialog(
+            version=f"v{_pkg_version}",
+            update_time=_default_cfg.get("gui", "updatetime", fallback="2026/08/18"))
         # Secondary analysis windows are created on first use.  Constructing
         # every Qt form during startup costs time even when most sessions only
         # annotate signals.
@@ -554,10 +563,12 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         self.load_annoSc = QShortcut(QKeySequence("Shift+A"), self)
         self.load_annoSc.activated.connect(self.load_anno)
 
-        # Save labels
+        # Save labels: the Ctrl+S shortcut lives on the menu action
+        # (File > Save Annotation) so it shows in the menu; registering a
+        # second QShortcut here would make Qt report an "Ambiguous shortcut
+        # overload" for Ctrl+S.
         self.SaveLabelBt.clicked.connect(self.save_anno)
-        self.saveSc = QShortcut(QKeySequence("Ctrl+S"), self)
-        self.saveSc.activated.connect(self.save_anno)
+        self.SaveLabelBt.setToolTip("Save annotation (Ctrl+S)")
 
         # Dynamic state-label buttons in the Annotation dock
         self._sync_state_buttons()
