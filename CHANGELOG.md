@@ -15,16 +15,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   updating after a State Spectral export. It now uses a standalone
   `matplotlib.figure.Figure`, and the main window self-heals any
   externally-closed canvas.
+- **Faster file loading**: one-time warm-up costs (matplotlib font cache,
+  heavy scipy imports) now run at application startup instead of inside
+  the first file load; the hypnogram is drawn as a single PolyCollection
+  so long recordings load quickly too.
 
 ### Changed
 
+- **Menu bar**: order is now File / Tools / Result / Settings / Help (the
+  View menu was removed); Help contains About and a new **User Guide**
+  dialog with brief usage notes and a link to the online documentation.
+- **Color schemes restored**: Settings -> General again offers the
+  **Color scheme** selector (Black / Pink / Blue / Khaki) with the
+  missing **Blue** preset implemented; it applies immediately and
+  persists via `gui.color_tone`.
+- **Documentation**: `site_url` points to `https://bryanwang.cn/misleep/`
+  and a GitHub Actions workflow builds and deploys the mkdocs site to
+  GitHub Pages.
 - **App icon**: the window now uses the square `misleep.ico` (crisp at
   16/32/48 px) with the logo PNG as the large-size fallback.
 - **About dialog / version**: package bumped to **v0.4.0**; About shows
   the current version and update date.
-
-### Changed
-
 - **Spectrogram clarity**: restored v2-style 5 s / 1 s normalized power
   rendering with a stable zero-to-percentile color range and a colormap-low
   background, preventing theme-colored gaps from washing out the display.

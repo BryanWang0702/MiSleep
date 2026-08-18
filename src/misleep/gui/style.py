@@ -214,6 +214,28 @@ COLOR_TONES = {
                  "accent_pressed": "#9f944f", "accent_soft": "#3d3928",
                  "accent_soft_2": "#4b4630"},
     },
+    "blue": {
+        "name": "Blue",
+        "light": {
+            "window": "#d6dde8", "surface": "#eef3f9",
+            "surface_alt": "#c9d6e6", "input": "#f7fafd",
+            "disabled_bg": "#dde4ee", "border": "#a9bcd4",
+            "border_strong": "#6f87a5", "button_top": "#fafcfe",
+            "button_bottom": "#c2d2e6", "text": "#16202e",
+            "text_secondary": "#41536b", "text_disabled": "#8b9ab0",
+            "accent": "#2f5f9e", "accent_hover": "#274f85",
+            "accent_pressed": "#1e3f6b", "accent_soft": "#d4e2f3",
+            "accent_soft_2": "#c0d4ec", "scroll_handle": "#8fa6c2",
+            "scroll_handle_hover": "#6d87a8", "slider_groove": "#b9cbe2",
+            "plot": {"grid": "#3e76b0"},
+            "mpl": {"figure.facecolor": "#d6dde8",
+                    "axes.edgecolor": "#7f96b4", "xtick.color": "#41536b",
+                    "ytick.color": "#41536b", "grid.color": "#dfe7f1"},
+        },
+        "dark": {"accent": "#6d9fd8", "accent_hover": "#8cb6e8",
+                 "accent_pressed": "#5182bd", "accent_soft": "#23344d",
+                 "accent_soft_2": "#2b405f"},
+    },
 }
 
 

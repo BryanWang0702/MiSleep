@@ -16,6 +16,7 @@ from contextlib import contextmanager
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.collections import PolyCollection
 from PySide6.QtCore import QEvent, QTimer, Qt
 from PySide6.QtGui import QColor, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
@@ -49,6 +50,7 @@ from misleep.gui.dialogs import (
     StateSpectralDialog,
     SWADetectionDialog,
     TransferResultDialog,
+    UserGuideDialog,
 )
 from misleep.gui.event_filters import WheelInputGuard
 from misleep.gui.qt_utils import (
@@ -655,7 +657,7 @@ class MainWindow(QMainWindow, Ui_MiSleep):
             bt.setEnabled(active)
 
     def _build_menus(self):
-        """Polish the menu bar: File extras, Settings rename, View dock menu."""
+        """Polish the menu bar: File extras, Settings, Help with user guide."""
         # File: add "Save Annotation" and "Exit"
         save_anno_action = self.menuFile.addAction(app_icon(), "Save Annotation", self.save_anno)
         save_anno_action.setShortcut(QKeySequence("Ctrl+S"))
@@ -665,8 +667,11 @@ class MainWindow(QMainWindow, Ui_MiSleep):
 
         # Help: Settings lives on its own top-level menu, not in About
         self.menuHelp.removeAction(self.actionConfig)
+        # Help: About + User Guide (with a link to the online documentation)
+        self.menuHelp.addSeparator()
+        self.menuHelp.addAction(app_icon(), "User Guide…", self.show_user_guide)
 
-        # A dedicated Settings menu on the menu bar
+        # A dedicated Settings menu, placed between Result and Help
         settings_menu = self.menuBar.addMenu("Settings")
         settings_action = settings_menu.addAction(
             app_icon(), "Settings…", self.open_settings_dialog)
@@ -676,15 +681,12 @@ class MainWindow(QMainWindow, Ui_MiSleep):
             "Switch to Dark Theme", self.toggle_theme)
         self.theme_action.setShortcut(QKeySequence("Ctrl+Shift+T"))
         self._update_theme_action()
+        self.menuBar.insertMenu(self.menuHelp.menuAction(), settings_menu)
 
-        # View: sidebar section visibility toggles (mirrors the headers)
-        view_menu = self.menuBar.addMenu("&View")
-        for sec in self._sections:
-            action = view_menu.addAction(sec.title)
-            action.setCheckable(True)
-            action.setChecked(sec.is_expanded())
-            action.toggled.connect(sec.set_expanded)
-            sec.header.toggled.connect(action.setChecked)
+    def show_user_guide(self):
+        """Open the in-app user guide (brief usage notes + online docs)."""
+        dialog = UserGuideDialog(self)
+        dialog.exec()
 
     # ------------------------------------------------------------------
     # Data / annotation loading
@@ -1499,20 +1501,27 @@ class MainWindow(QMainWindow, Ui_MiSleep):
             self.hypo_ax.clear()
             self._hypo_transient = []
             # One thick filled bar per consecutive run of the same state,
-            # spanning the full state band (edges touch between states) -
-            # clearly readable even when a whole night is squeezed into a
-            # few thousand pixels.
+            # spanning the full state band (edges touch between states).
+            # All bars are drawn as a single PolyCollection, so building the
+            # hypnogram stays fast even for multi-hour recordings with tens
+            # of thousands of state runs.
             band = 0.5  # half height of each bar (state +/- band)
             runs = lst2group([i, each] for i, each in enumerate(self.mianno.sleep_state))
+            rects = []
+            colors = []
             for start, end, state in runs:
                 if end <= start:
                     continue
-                color = self.state_color_dict.get(state, "#8892a0")
-                self._hypo_steps.append(self.hypo_ax.fill_between(
-                    [start, end], state - band, state + band,
-                    facecolor=color, edgecolor="none",
+                y0 = state - band
+                y1 = state + band
+                rects.append([(start, y0), (end, y0), (end, y1), (start, y1)])
+                colors.append(self.state_color_dict.get(state, "#8892a0"))
+            if rects:
+                collection = PolyCollection(
+                    rects, facecolors=colors, edgecolors="none",
                     alpha=float(self.config["gui"].get(
-                        "hypnogramstatealpha", "0.55")), zorder=1))
+                        "hypnogramstatealpha", "0.55")), zorder=1)
+                self._hypo_steps.append(self.hypo_ax.add_collection(collection))
 
             self.hypo_ax.set_ylim(0, len(list(self.state_map_dict.keys())) + 0.5)
             self.hypo_ax.set_xlim(0, self.total_seconds)

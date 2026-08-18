@@ -104,6 +104,31 @@ def _version():
     return __version__
 
 
+def _prewarm():
+    """Pay the one-time warm-up costs (font cache, heavy scipy imports)
+    at application startup instead of inside the first file load.
+
+    Without this, the very first plot after loading a file silently pays
+    ~1-2 s of matplotlib font-cache building and scipy imports, which the
+    user perceives as a slow "initialize/draw" phase.
+    """
+    try:
+        import scipy.integrate  # noqa: F401
+        import scipy.ndimage  # noqa: F401
+        import scipy.signal  # noqa: F401
+
+        from matplotlib import font_manager
+        font_manager.findfont("DejaVu Sans")  # build / load the font cache
+
+        import matplotlib.pyplot as plt
+        plt.get_cmap("jet")
+
+        from misleep.preprocessing import spectral  # noqa: F401
+        from misleep.viz import spectral as _viz_spectral  # noqa: F401
+    except Exception:  # pragma: no cover
+        pass
+
+
 def show(data_path=None, anno_path=None):
     """Create and show the MiSleep main window (blocking).
 
@@ -131,6 +156,9 @@ def show(data_path=None, anno_path=None):
     app.setApplicationName("MiSleep")
     app.setApplicationDisplayName("MiSleep")
     app.setWindowIcon(app_icon())
+
+    # Warm-up one-time costs so the first file load renders immediately
+    _prewarm()
 
     main_win = MainWindow()
 

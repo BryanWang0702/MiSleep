@@ -55,6 +55,11 @@ misleep_config.ini
 .tmp/
 pytest-cache-files-*/
 
+# Export artifacts written by the GUI tests
+tests/data/*.xlsx
+tests/data/anno.txt
+tests/data/New folder/
+
 # OS files
 .DS_Store
 Thumbs.db

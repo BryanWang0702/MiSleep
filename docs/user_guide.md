@@ -14,9 +14,8 @@ The main window follows the classic scoring workflow:
      (LightGBM, Transformer)
    * **Result** — State Spectral, Transfer Result
    * **Settings** — the in-application settings dialog (own menu)
-   * **View** — expand/collapse the Meta, Channel, Annotation and Time
-     sidebar sections
-   * **Help** — About
+   * **Help** — About, User Guide (with a link to the online
+     documentation)
    The window starts **maximized**, so the signal area uses all the
    available width (no horizontal scrolling).
 2. **Visualization area (center, the most important part)** — three
@@ -220,9 +219,9 @@ the display duration from the combo box (30 s – 1 h) or a custom value
 
 ### Help
 
-* **View** — check/uncheck to expand or collapse the Meta, Channel,
-  Annotation and Time sidebar sections (same as clicking their headers).
 * **About** — version and update info.
+* **User Guide** — a brief in-app guide with a link to the full online
+  documentation at <https://bryanwang.cn/misleep/>.
 * **Settings** — opens the in-application settings dialog. Changes are
   **applied immediately** without restarting MiSleep:
   * *Sleep states* — edit state names and pick state background colors
@@ -233,7 +232,8 @@ the display duration from the combo box (30 s – 1 h) or a custom value
   * *Spectral* — default frequency range, FFT window length, nfft and
     Gaussian smoothing σ,
   * *General* — state background transparency, the **theme** (light/dark),
-    the **spectrogram colormap**, and the default open path.
+    the **color scheme** (Black / Pink / Blue / Khaki), the hypnogram
+    transparency, and the default open path.
   An **"Open file…"** button opens the raw configuration file in your
   system editor for advanced edits (changes then require a restart).
 

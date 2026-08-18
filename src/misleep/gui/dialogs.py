@@ -62,6 +62,62 @@ class AboutDialog(QDialog, Ui_AboutDialog):
             self.UpdateLabel.setText(f"Update: {update_time}")
 
 
+class UserGuideDialog(QDialog):
+    """A short in-app user guide with a link to the online documentation."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("MiSleep - User Guide")
+        self.setWindowIcon(app_icon())
+        self.resize(600, 460)
+
+        layout = QVBoxLayout(self)
+        layout.setSpacing(12)
+        layout.setContentsMargins(24, 20, 24, 20)
+
+        title = QLabel("<h2>MiSleep User Guide</h2>")
+        layout.addWidget(title)
+
+        steps = (
+            "1. <b>Load data</b> - File &rarr; Load Data (or drag a "
+            ".mat / .edf file onto the window). Optional: File &rarr; Load "
+            "Annotation.<br>",
+            "2. <b>Browse</b> - use the scroll bar, the arrow keys "
+            "(&larr;/&rarr; page, &uarr;/&darr; 5 s epoch) or the mouse "
+            "wheel over the signal / hypnogram panels.<br>",
+            "3. <b>Score</b> - Marker / Start-End / Sleep state modes on the "
+            "right sidebar; press the state buttons or number keys "
+            "1-9 (0 for state 10) to label the selected area.<br>",
+            "4. <b>Tools</b> - Filter, channel scaler/shift, spectrogram, "
+            "SWA / spindle detection and auto staging under the Tools menu.<br>",
+            "5. <b>Export</b> - Result &rarr; State Spectral / Transfer Result "
+            "saves Excel/PDF reports; File &rarr; Save Data exports the "
+            "signals.<br>",
+            "6. <b>Appearance</b> - Settings &rarr; Theme (light/dark) and "
+            "Color scheme; Ctrl+Shift+T toggles light/dark.<br>",
+        )
+        text = QLabel("".join(steps))
+        text.setWordWrap(True)
+        text.setTextFormat(Qt.TextFormat.RichText)
+        layout.addWidget(text)
+
+        layout.addSpacing(8)
+        link = QLabel(
+            'Full documentation: <a href="https://bryanwang.cn/misleep/">'
+            'https://bryanwang.cn/misleep/</a>')
+        link.setOpenExternalLinks(True)
+        link.setTextFormat(Qt.TextFormat.RichText)
+        layout.addWidget(link)
+
+        layout.addStretch(1)
+        close_row = QHBoxLayout()
+        close_row.addStretch(1)
+        close_bt = QPushButton("Close")
+        close_bt.clicked.connect(self.accept)
+        close_row.addWidget(close_bt)
+        layout.addLayout(close_row)
+
+
 class LabelDialog(QDialog, Ui_Dialog):
     """Pick a marker / start-end label from the configured lists."""
 

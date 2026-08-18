@@ -317,6 +317,12 @@ class SettingsDialog(QDialog):
             "Applies immediately: widgets and plots switch together.")
         form.addRow("Theme:", self._theme_combo)
 
+        self._tone_combo = QComboBox()
+        self._tone_combo.addItems(["black", "pink", "blue", "khaki"])
+        self._tone_combo.setToolTip(
+            "Chrome / accent color scheme (independent of light/dark mode).")
+        form.addRow("Color scheme:", self._tone_combo)
+
         return box
 
     # ------------------------------------------------------------------
@@ -358,6 +364,7 @@ class SettingsDialog(QDialog):
         self._hypno_alpha.setValue(float(gui.get("hypnogramstatealpha", "0.55")))
         self._openpath.setText(gui["openpath"])
         self._theme_combo.setCurrentText(gui.get("theme", "light"))
+        self._tone_combo.setCurrentText(gui.get("color_tone", "black"))
         self._marker_line_bt.set_color(
             gui.get("markerlinecolor", "red").strip("\"'"))
 
@@ -391,10 +398,7 @@ class SettingsDialog(QDialog):
                 "freq_range": json.dumps([self._freq_low.value(), self._freq_high.value()]),
                 "openpath": self._openpath.text(),
                 "theme": self._theme_combo.currentText(),
-                # The current UI deliberately has one neutral interface tone
-                # and the v2-compatible Jet spectrogram; only state and marker
-                # colors are user-editable.
-                "color_tone": "black",
+                "color_tone": self._tone_combo.currentText(),
                 "spectrogram_cmap": "jet",
                 "markerlinecolor": self._marker_line_bt.color().name(),
             },
