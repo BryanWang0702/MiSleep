@@ -6,7 +6,6 @@ the general-purpose helpers are re-exported from :mod:`misleep.utils` so
 there is a single source of truth.
 """
 
-import numpy as np
 from PySide6.QtCore import QAbstractListModel, QModelIndex, Qt
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
@@ -15,8 +14,6 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from scipy.ndimage import gaussian_filter1d
-from scipy.signal import welch
 
 
 def app_icon() -> QIcon:
@@ -205,6 +202,9 @@ def cal_draw_spectrum(data, sf, nperseg, freq_band=None, relative=None, nfft=Non
         powers); ``figure`` is the matplotlib figure.
     """
     import matplotlib.pyplot as plt
+    import numpy as np
+    from scipy.ndimage import gaussian_filter1d
+    from scipy.signal import welch
 
     plt.close()
 

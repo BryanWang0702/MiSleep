@@ -43,8 +43,8 @@ def _ensure_user_config() -> Path:
             path.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy(default_config_path(), path)
             logger.info("Created user configuration at %s", path)
-        except OSError:  # pragma: no cover
-            logger.warning("Could not create user config at %s", path)
+        except OSError as exc:  # pragma: no cover
+            logger.warning("Could not create user config at %s: %s", path, exc)
     return path
 
 
@@ -69,11 +69,12 @@ def load_config(path: str | Path | None = None) -> configparser.ConfigParser:
     config = configparser.ConfigParser()
     config.read(default_config_path(), encoding="utf-8")
 
-    if path is None:
+    default_user_path = path is None
+    if default_user_path:
         path = _ensure_user_config()
     if Path(path).exists():
         config.read(path, encoding="utf-8")
-    else:
+    elif not default_user_path:
         logger.warning("Configuration file %s does not exist, using defaults", path)
 
     return config

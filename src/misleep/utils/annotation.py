@@ -1,10 +1,6 @@
 # -*- coding: UTF-8 -*-
 """Helpers for converting between annotation representations."""
 
-from itertools import groupby
-
-import pandas as pd
-
 from misleep.utils.time_utils import transfer_time
 
 
@@ -25,8 +21,23 @@ def lst2group(pre_lst):
     list of [start, end, value]
         Consecutive runs, ``end`` is exclusive.
     """
-    pre_lst = [list(group) for _, group in groupby(pre_lst, key=lambda x: x[1])]
-    return [[each[0][0], each[-1][0] + 1, each[0][1]] for each in pre_lst]
+    rows = iter(pre_lst)
+    try:
+        first_idx, first_value = next(rows)
+    except StopIteration:
+        return []
+
+    grouped = []
+    run_start = last_idx = first_idx
+    run_value = first_value
+    for idx, value in rows:
+        if value != run_value:
+            grouped.append([run_start, last_idx + 1, run_value])
+            run_start = idx
+            run_value = value
+        last_idx = idx
+    grouped.append([run_start, last_idx + 1, run_value])
+    return grouped
 
 
 def marker2mianno(marker):
@@ -75,6 +86,8 @@ def insert_row(df, idx, row):
     pandas.DataFrame
         A new dataframe with the row inserted.
     """
+    import pandas as pd
+
     if isinstance(row, pd.Series):
         row = pd.DataFrame(row).T
     df = pd.concat([df[:idx], row, df[idx:]], axis=0).reset_index(drop=True)
@@ -92,6 +105,8 @@ def temp_loop4below_row(row, acquisition_time, columns):
     -------
     (previous_row, new_row, below_row) : tuple of pandas.Series
     """
+    import pandas as pd
+
     seconds_ = (int(row["start_time_sec"] / 3600) + 1) * 3600
     previous_row = pd.Series([
         row["start_time"], row["start_time_sec"], "1",

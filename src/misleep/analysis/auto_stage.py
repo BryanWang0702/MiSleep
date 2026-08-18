@@ -6,6 +6,7 @@ features; every window label is then expanded back to per-second labels.
 """
 
 import copy
+import warnings
 from importlib.resources import files
 from pathlib import Path
 
@@ -125,7 +126,28 @@ def auto_stage_gbm(EEG, EMG, label, sf, EEG_channel="F", mouse_age="adult"):
             f"Make sure the 'misleep' package data is installed "
             f"(pip install misleep) or provide the model manually.")
 
-    gbm_model = joblib.load(model_file)
+    # The bundled LightGBM estimators were trained with scikit-learn 1.3.2.
+    # Their LabelEncoder is only retained as fitted metadata and is not used
+    # by predict_proba(), but newer sklearn versions otherwise print a long
+    # compatibility warning on every run.  Limit the suppression narrowly to
+    # that known packaged object; all other model-loading warnings remain.
+    try:
+        from sklearn.exceptions import InconsistentVersionWarning
+    except ImportError:  # pragma: no cover - sklearn is a LightGBM dependency
+        InconsistentVersionWarning = Warning
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message="Setting the shape on a NumPy array has been deprecated.*",
+            category=DeprecationWarning,
+            module=r"joblib\.numpy_pickle",
+        )
+        warnings.filterwarnings(
+            "ignore",
+            message="Trying to unpickle estimator LabelEncoder from version 1.3.2.*",
+            category=InconsistentVersionWarning,
+        )
+        gbm_model = joblib.load(model_file)
 
     pred_prob = gbm_model.predict_proba(window_feature_df,
                                         num_iteration=gbm_model.best_iteration_)

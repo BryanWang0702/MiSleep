@@ -2,7 +2,6 @@
 """Spectrum / spectrogram preview window."""
 
 import numpy as np
-import pandas as pd
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
 from PySide6.QtWidgets import QFileDialog, QMainWindow, QMessageBox
 
@@ -122,6 +121,8 @@ class SpecWindow(QMainWindow, Ui_spec_window):
         self.SpectrogramScrollArea.setWidget(self.spectrogram_canvas)
 
     def spectrum_save(self):
+        import pandas as pd
+
         fd, _ = QFileDialog.getSaveFileName(
             self, "Save figure and data",
             f"{self.data_path}_spectrum_{self.start_end[0]}_{self.start_end[1]}",
@@ -145,6 +146,8 @@ class SpecWindow(QMainWindow, Ui_spec_window):
         self.setEnabled(True)
 
     def spectrogram_save(self):
+        import pandas as pd
+
         fd, _ = QFileDialog.getSaveFileName(
             self, "Save figure and data",
             f"{self.data_path}_spectrogram_{self.start_end[0]}_{self.start_end[1]}",

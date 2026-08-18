@@ -572,6 +572,9 @@ def test_compact_control_geometry():
     stylesheet = build_stylesheet("light")
     assert "#FilterConfirmBt:disabled" in stylesheet
     assert "#MultipleScalerConfirmBt:disabled" in stylesheet
+    # Checkboxes use Fusion's native tick; a custom checked background would
+    # turn the entire square into a solid block on Windows.
+    assert "QCheckBox::indicator:checked" not in stylesheet
 
     dialog.close()
     window.is_saved = True
@@ -654,8 +657,62 @@ def test_settings_dialog_collect(fresh_config):
     assert float(gui["statecolorbgalpha"]) == 0.1
     assert float(gui["hypnogramstatealpha"]) == 0.55
     assert gui["color_tone"] == "black"
+    assert gui["spectrogram_cmap"] == "jet"
+    assert gui["markerlinecolor"] == "#ff0000"
+    assert "startendcolor" not in gui
+    assert "startendlinecolor" not in gui
     assert json.loads(gui["freq_range"]) == [0.5, 30.0]
     assert float(collected["spec"]["gaussian_sigma"]) == 1.0
+
+
+@pytest.mark.skipif(not _pyside6_available(), reason="PySide6 not installed")
+def test_settings_colors_tab_only_edits_marker():
+    """State colors live on page one; Colors contains one marker swatch."""
+    from PySide6.QtWidgets import QApplication, QTabWidget, QWidget
+
+    app = QApplication.instance() or QApplication([])
+    from misleep.config import load_config
+    from misleep.gui.config_dialog import ColorButton, SettingsDialog
+
+    class FakeMain(QWidget):
+        config = load_config()
+
+        def apply_settings(self):
+            pass
+
+    parent = FakeMain()
+    dialog = SettingsDialog(parent)
+    tabs = dialog.findChild(QTabWidget)
+    colors_page = tabs.widget(1)
+    assert tabs.tabText(1) == "Colors"
+    assert len(colors_page.findChildren(ColorButton)) == 1
+    assert not hasattr(dialog, "_start_end_line_bt")
+    assert not hasattr(dialog, "_se_rows")
+
+    dialog.close()
+    parent.close()
+    app.processEvents()
+
+
+@pytest.mark.skipif(not _pyside6_available(), reason="PySide6 not installed")
+def test_hypnogram_ignores_clicks_outside_axes():
+    """Matplotlib reports xdata=None outside axes; it must not raise."""
+    from types import SimpleNamespace
+    from PySide6.QtWidgets import QApplication
+
+    app = QApplication.instance() or QApplication([])
+    from misleep.gui.main_window import MainWindow
+
+    window = MainWindow()
+    calls = []
+    window.redraw_all = lambda **kwargs: calls.append(kwargs)
+    window.click_hypo(SimpleNamespace(inaxes=None, xdata=None))
+    assert calls == []
+    window.click_hypo(SimpleNamespace(inaxes=window.hypo_ax, xdata=12.9))
+    assert calls == [{"second": 12}]
+
+    window.is_saved = True
+    window.close()
 
 
 @pytest.mark.skipif(not _pyside6_available(), reason="PySide6 not installed")

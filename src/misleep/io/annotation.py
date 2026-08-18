@@ -17,8 +17,6 @@ import json
 import math
 from pathlib import Path
 
-import pandas as pd
-
 from misleep.data import MiAnnotation
 from misleep.io.base import MiData  # noqa: F401 (kept for API symmetry)
 from misleep.logger import logger
@@ -120,6 +118,8 @@ def load_table_anno(file_path, state_map=None):
     row represents one second. Optional event rows use ``type=marker`` with
     ``time`` and ``label``, or ``type=start_end`` with ``start/end/label``.
     """
+    import pandas as pd
+
     path = Path(file_path)
     separator = "\t" if path.suffix.lower() == ".tsv" else ","
     frame = pd.read_csv(path, sep=separator)
@@ -263,6 +263,8 @@ def transfer_result(mianno, ac_time):
     -------
     (df, analyse_df, start_end_df, marker_df) : tuple of pandas.DataFrame
     """
+    import pandas as pd
+
     marker = [[
         transfer_time(ac_time, each[0], "%Y-%m-%d %H:%M:%S", ms=True),
         each[0], each[1]] for each in mianno.marker]

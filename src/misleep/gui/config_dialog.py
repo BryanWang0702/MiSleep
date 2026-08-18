@@ -2,8 +2,8 @@
 """In-application settings dialog.
 
 Lets the user edit the MiSleep configuration from inside the GUI
-(state names & colors, start-end label colors, marker/start-end labels,
-spectral defaults, ...). Changes are saved to the per-user configuration
+(state names & colors, marker color, annotation labels, spectral defaults,
+...). Changes are saved to the per-user configuration
 file and **applied immediately** to the running application -- no
 restart needed.
 """
@@ -35,7 +35,6 @@ from PySide6.QtWidgets import (
 
 from misleep.config import save_config
 from misleep.gui.qt_utils import app_icon
-from misleep.gui.style import COLOR_TONES
 
 
 def _contrast_text(color: QColor) -> str:
@@ -232,26 +231,17 @@ class SettingsDialog(QDialog):
         del self._state_rows[code]
 
     def _build_colors_tab(self):
-        self._se_rows = []  # (label_edit, color_button, row_widget)
-        box = QGroupBox("Start-end label colors")
-        layout = QVBoxLayout(box)
-
-        self._se_list = QListWidget()
-        layout.addWidget(self._se_list, 1)
-
-        add_bt = QPushButton("Add label")
-        add_bt.clicked.connect(self._add_se_color)
-        layout.addWidget(add_bt)
-
-        # Marker / start-end line colors
-        line_box = QGroupBox("Annotation line colors")
-        line_form = QFormLayout(line_box)
+        page = QWidget()
+        page_layout = QVBoxLayout(page)
+        box = QGroupBox("Marker color")
+        line_form = QFormLayout(box)
         self._marker_line_bt = ColorButton()
-        self._start_end_line_bt = ColorButton()
-        line_form.addRow("Marker lines:", self._marker_line_bt)
-        line_form.addRow("Start-End lines:", self._start_end_line_bt)
-        layout.addWidget(line_box)
-        return box
+        self._marker_line_bt.setToolTip(
+            "Marker color in both the signal panel and hypnogram")
+        line_form.addRow("Marker:", self._marker_line_bt)
+        page_layout.addWidget(box)
+        page_layout.addStretch(1)
+        return page
 
     def _build_labels_tab(self):
         box = QGroupBox("Label lists")
@@ -327,19 +317,6 @@ class SettingsDialog(QDialog):
             "Applies immediately: widgets and plots switch together.")
         form.addRow("Theme:", self._theme_combo)
 
-        self._tone_combo = QComboBox()
-        for key, preset in COLOR_TONES.items():
-            self._tone_combo.addItem(preset["name"], key)
-        self._tone_combo.setToolTip(
-            "Color tone for panels, buttons, borders and interface text accents.")
-        form.addRow("Color tone:", self._tone_combo)
-
-        self._cmap_combo = QComboBox()
-        self._cmap_combo.addItems(
-            ["jet", "turbo", "viridis", "plasma", "magma", "inferno", "cividis"])
-        self._cmap_combo.setToolTip(
-            "Colormap used for the spectrograms (main window and spectrum window).")
-        form.addRow("Spectrogram colormap:", self._cmap_combo)
         return box
 
     # ------------------------------------------------------------------
@@ -359,13 +336,6 @@ class SettingsDialog(QDialog):
         for code in sorted(statemap, key=int):
             self._add_state_row(int(code), str(statemap[code]),
                                 str(statecolor.get(code, "#808080")))
-
-        # Start-end label colors
-        self._se_list.clear()
-        self._se_rows = []
-        startendcolor = json.loads(gui["startendcolor"])
-        for label, color in startendcolor.items():
-            self._add_se_color(label=label, color=color)
 
         # Label lists
         self._marker_editor.list.clear()
@@ -388,42 +358,8 @@ class SettingsDialog(QDialog):
         self._hypno_alpha.setValue(float(gui.get("hypnogramstatealpha", "0.55")))
         self._openpath.setText(gui["openpath"])
         self._theme_combo.setCurrentText(gui.get("theme", "light"))
-        tone_idx = self._tone_combo.findData(gui.get("color_tone", "black"))
-        self._tone_combo.setCurrentIndex(max(0, tone_idx))
-        self._cmap_combo.setCurrentText(gui.get("spectrogram_cmap", "jet"))
         self._marker_line_bt.set_color(
             gui.get("markerlinecolor", "red").strip("\"'"))
-        self._start_end_line_bt.set_color(
-            gui.get("startendlinecolor", "blue").strip("\"'"))
-
-    def _add_se_color(self, label="new label", color="#0000ff"):
-        row = QWidget()
-        h = QHBoxLayout(row)
-        h.setContentsMargins(6, 2, 6, 2)
-        label_edit = QLineEdit(label)
-        label_edit.setMinimumWidth(160)
-        label_edit.setMaximumWidth(240)
-        color_bt = ColorButton(color)
-        del_bt = QPushButton("Delete")
-        del_bt.clicked.connect(lambda: self._remove_se_color(row))
-        h.addWidget(label_edit)
-        h.addWidget(color_bt)
-        h.addWidget(del_bt)
-        h.addStretch(1)
-
-        item = QListWidgetItem()
-        item.setSizeHint(row.sizeHint())
-        self._se_list.addItem(item)
-        self._se_list.setItemWidget(item, row)
-        self._se_rows.append((label_edit, color_bt))
-
-    def _remove_se_color(self, row_widget):
-        for i, (edit, bt) in enumerate(self._se_rows):
-            if edit.parentWidget() is row_widget:
-                self._se_list.takeItem(i)
-                self._se_rows.pop(i)
-                row_widget.deleteLater()
-                return
 
     def _browse_path(self):
         path = QFileDialog.getExistingDirectory(self, "Select default folder",
@@ -444,14 +380,10 @@ class SettingsDialog(QDialog):
                     for code, (name_edit, _) in self._state_rows.items()}
         statecolor = {str(code): bt.color().name()
                       for code, (_, bt) in self._state_rows.items()}
-        startendcolor = {edit.text().strip(): bt.color().name()
-                         for edit, bt in self._se_rows if edit.text().strip()}
-
         return {
             "gui": {
                 "statemap": json.dumps(statemap),
                 "statecolor": json.dumps(statecolor),
-                "startendcolor": json.dumps(startendcolor),
                 "marker": str(self._marker_editor.values()),
                 "startend": str(self._se_editor.values()),
                 "statecolorbgalpha": str(self._bg_alpha.value()),
@@ -459,10 +391,12 @@ class SettingsDialog(QDialog):
                 "freq_range": json.dumps([self._freq_low.value(), self._freq_high.value()]),
                 "openpath": self._openpath.text(),
                 "theme": self._theme_combo.currentText(),
-                "color_tone": self._tone_combo.currentData(),
-                "spectrogram_cmap": self._cmap_combo.currentText(),
+                # The current UI deliberately has one neutral interface tone
+                # and the v2-compatible Jet spectrogram; only state and marker
+                # colors are user-editable.
+                "color_tone": "black",
+                "spectrogram_cmap": "jet",
                 "markerlinecolor": self._marker_line_bt.color().name(),
-                "startendlinecolor": self._start_end_line_bt.color().name(),
             },
             "spec": {
                 "win_length_sec": str(self._win_length.value()),

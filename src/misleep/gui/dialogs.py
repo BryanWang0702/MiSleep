@@ -11,7 +11,6 @@ import os
 from copy import deepcopy
 
 import numpy as np
-import pandas as pd
 from PySide6.QtCore import Qt, QStringListModel
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
@@ -28,7 +27,6 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from misleep.analysis.detection import SWA_detection, spindle_detection
 from misleep.config import save_config
 from misleep.gui.qt_utils import (
     app_icon,
@@ -49,8 +47,6 @@ from misleep.gui.uis.transfer_result_dialog_ui import Ui_TransferResultDialog
 from misleep.gui.workers import SaveThread
 from misleep.io.annotation import transfer_result
 from misleep.logger import logger
-from misleep.preprocessing.artifacts import reject_artifact
-from misleep.preprocessing.filtering import signal_filter
 from misleep.utils.annotation import lst2group
 
 
@@ -205,6 +201,8 @@ class TransferResultDialog(QDialog, Ui_TransferResultDialog):
 
     def transfer(self, config, mianno, ac_time):
         """Transfer the annotation into analysis dataframes and save to Excel."""
+        import pandas as pd
+
         mianno = deepcopy(mianno)
         ac_time = deepcopy(ac_time)
 
@@ -322,6 +320,10 @@ class StateSpectralDialog(QDialog, Ui_StateSpectralDialog):
 
     def spectral_analysis(self, midata, mianno, config):
         """Run the state spectral analysis and export results."""
+        import pandas as pd
+        from misleep.preprocessing.artifacts import reject_artifact
+        from misleep.preprocessing.filtering import signal_filter
+
         mianno = deepcopy(mianno)
         midata = deepcopy(midata)
 
@@ -586,6 +588,9 @@ class SWADetectionDialog(QDialog, Ui_SWADetectDialog):
 
     def swa_detection(self, midata, mianno, config):
         """Run SWA detection on the selected channel and states."""
+        import pandas as pd
+        from misleep.analysis.detection import SWA_detection
+
         freq_low = self.FreqLowEditor.value()
         freq_high = self.FreqHighEditor.value()
         channel_idx = self.ChannelComBox.currentIndex()
@@ -676,6 +681,9 @@ class SpindleDetectionDialog(QDialog, Ui_SpindleDetectDialog):
 
     def spindle_detection(self, midata, mianno, config):
         """Run spindle detection on the selected channel and states."""
+        import pandas as pd
+        from misleep.analysis.detection import spindle_detection
+
         freq_low = self.FreqLowEditor.value()
         freq_high = self.FreqHighEditor.value()
         channel_idx = self.ChannelComBox.currentIndex()

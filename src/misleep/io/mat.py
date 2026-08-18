@@ -14,8 +14,6 @@ import datetime
 import re
 
 import numpy as np
-from scipy.io import loadmat as scipy_loadmat
-from scipy.io import savemat
 
 from misleep.data import MiData
 from misleep.logger import logger
@@ -116,6 +114,8 @@ def load_mat(data_path):
     MiData or None
         The loaded data, or ``None`` when the file could not be parsed.
     """
+    from scipy.io import loadmat as scipy_loadmat
+
     try:
         raw_data = list(scipy_loadmat(data_path).values())[-1]
         return _load_scipy(raw_data)
@@ -155,6 +155,8 @@ def write_mat(signals, channels, sf, time, mat_file=None):
     -------
     None
     """
+    from scipy.io import savemat
+
     if mat_file is None:
         mat_file = f"./{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}_saved.mat"
 

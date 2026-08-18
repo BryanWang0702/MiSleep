@@ -712,30 +712,25 @@ QSlider::handle:vertical:hover {
 QCheckBox, QRadioButton {
     spacing: 6px;
 }
-QCheckBox::indicator, QRadioButton::indicator {
+/* Keep QCheckBox native: Fusion draws a real check mark (✓).  Painting the
+   whole checked indicator with QSS hides that glyph on Windows. */
+QRadioButton::indicator {
     width: 16px;
     height: 16px;
     border: 1px solid $border_strong;
     background: $surface;
 }
-QCheckBox::indicator {
-    border-radius: 0px;
-}
 QRadioButton::indicator {
     border-radius: 0px;
 }
-QCheckBox::indicator:hover, QRadioButton::indicator:hover {
-    border-color: $accent;
-}
-QCheckBox::indicator:checked {
-    background: $accent;
+QRadioButton::indicator:hover {
     border-color: $accent;
 }
 QRadioButton::indicator:checked {
     background: $accent;
     border-color: $accent;
 }
-QCheckBox::indicator:disabled, QRadioButton::indicator:disabled {
+QRadioButton::indicator:disabled {
     border-color: $border;
     background: $disabled_bg;
 }

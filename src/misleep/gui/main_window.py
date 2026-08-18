@@ -10,6 +10,7 @@ import copy
 import datetime
 import json
 import os
+import time
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -56,7 +57,6 @@ from misleep.gui.qt_utils import (
     create_new_mianno,
     identify_startend_color,
 )
-from misleep.gui.spec_window import SpecWindow
 from misleep.gui.style import (
     COLOR_TONES,
     THEMES,
@@ -69,7 +69,6 @@ from misleep.gui.workers import SaveThread
 from misleep.io.annotation import available_annotation_readers, load_annotation
 from misleep.io import available_readers, available_writers, load_signal
 from misleep.logger import logger
-from misleep.preprocessing.spectral import band_power, spectrogram, spectrum
 from misleep.utils.annotation import lst2group
 from misleep.viz.spectral import spectrogram_color_limits
 
@@ -85,6 +84,7 @@ class MainWindow(QMainWindow, Ui_MiSleep):
     """Main window of MiSleep."""
 
     def __init__(self, parent=None):
+        self._startup_started = time.perf_counter()
         super().__init__(parent)
         self.setupUi(self)
 
@@ -176,6 +176,7 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         self._spec_full_cache = {}           # channel idx -> (f, t, Sxx) of whole file
         self._spec_cache_max_sec = 4 * 3600  # longer files compute per window
         self._hypo_key = None                # fingerprint of the drawn hypnogram base
+        self._hypo_revision = 0              # increments only when states change
         self._hypo_steps = []                # base step artists of the hypnogram
         self._hypo_transient = []            # per-flip overlay artists
         self._signal_artists = {}            # signal-axes idx -> artists we own
@@ -187,21 +188,24 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         # Initial dialogs and secondary windows
         self.about_dialog = AboutDialog(version=self.config["gui"]["version"],
                                         update_time=self.config["gui"]["updatetime"])
-        self.spec_window = SpecWindow()
+        # Secondary analysis windows are created on first use.  Constructing
+        # every Qt form during startup costs time even when most sessions only
+        # annotate signals.
+        self.spec_window = None
         self.label_dialog = LabelDialog(config=self.config)
-        self.transfer_result_dialog = TransferResultDialog()
-        self.state_spectral_dialog = StateSpectralDialog(config=self.config)
-        self.save_data_dialog = SaveDataDialog()
-        self.horizontal_line_dialog = HorizontalLineDialog()
+        self.transfer_result_dialog = None
+        self.state_spectral_dialog = None
+        self.save_data_dialog = None
+        self.horizontal_line_dialog = None
         # The horizontal_line dict contains the line value, line color, line comment
         # example: {'ch1': [23.33, '#ff0000', '3 x Standard deviation', horizontalLineObject]}
         self.horizontal_line = {}
         self.axhline_horizontal = []
 
-        self.swa_detection_dialog = SWADetectionDialog()
-        self.spindel_detection_dialog = SpindleDetectionDialog()
-        self.auto_stage_lightGBM_dialog = AutoStageLightGBMDialog()
-        self.auto_stage_causalTransformer_dialog = AutoStageCausalTransformerDialog()
+        self.swa_detection_dialog = None
+        self.spindel_detection_dialog = None
+        self.auto_stage_lightGBM_dialog = None
+        self.auto_stage_causalTransformer_dialog = None
 
         # Check whether operations are saved or not
         self.is_saved = True
@@ -243,6 +247,14 @@ class MainWindow(QMainWindow, Ui_MiSleep):
             self.theme_action.setText(
                 "Switch to Light Theme" if self._theme_name == "dark"
                 else "Switch to Dark Theme")
+
+    def _ensure_dialog(self, attribute, factory):
+        """Create a secondary window only when the user first opens it."""
+        dialog = getattr(self, attribute)
+        if dialog is None:
+            dialog = factory()
+            setattr(self, attribute, dialog)
+        return dialog
 
     def toggle_theme(self):
         """Toggle between the light and dark themes and redraw everything."""
@@ -371,7 +383,9 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         self.MoveLabel.setText("Move channel:")
         for widget in (self.MoveLabel, self.MoveUpBt, self.MoveDownBt):
             widget.setMinimumWidth(0)
-            widget.setMaximumWidth(16777215)
+            # QWIDGETSIZE_MAX itself produces a warning in recent PySide6.
+            # This is still effectively unbounded inside the sidebar.
+            widget.setMaximumWidth(10000)
             widget.setSizePolicy(QSizePolicy.Policy.Expanding,
                                  QSizePolicy.Policy.Fixed)
         move_row.setStretch(0, 1)
@@ -531,7 +545,8 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         # Marker / start-end event list viewers (declared in the .ui beside Save)
         self.MarkerListBt.clicked.connect(self.show_marker_list)
         self.StartEndListBt.clicked.connect(self.show_start_end_list)
-        logger.info("MiSleep ready - open a data file to start")
+        logger.info("MiSleep ready in %.3f s - open a data file to start",
+                    time.perf_counter() - self._startup_started)
 
         # Wheel over spin boxes / combos must not change their values
         app = QApplication.instance()
@@ -678,6 +693,7 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         data_path : str
             Path of any registered signal file to load.
         """
+        load_started = time.perf_counter()
         if not os.path.exists(data_path):
             QMessageBox.about(
                 self, "Error",
@@ -699,6 +715,7 @@ class MainWindow(QMainWindow, Ui_MiSleep):
             self.change_Bts_status(True)
             self.mianno = None
             return
+        read_elapsed = time.perf_counter() - load_started
 
         # Save config
         self.save_config({"openpath": self.data_path})
@@ -720,12 +737,14 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         self.anno_path = ""
         self.AnnoPathEdit.setText("")
 
-        self.clear_refresh(clf=True)
+        self.clear_refresh(clf=True, draw=False)
 
         try:
             self.check_show()
         except Exception as e:
             logger.error(f"Check Show ERROR: {e}")
+        logger.info("Data timing: read %.3f s, initialize/draw %.3f s",
+                    read_elapsed, time.perf_counter() - load_started - read_elapsed)
 
     def load_anno(self):
         """Triggered by actionLoadAnnotation: ask for an annotation file."""
@@ -751,6 +770,7 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         anno_path : str
             Path of the annotation ``.txt`` file.
         """
+        load_started = time.perf_counter()
         if not os.path.exists(anno_path):
             QMessageBox.about(self, "Error", f"Annotation file not found:\n{anno_path}")
             return
@@ -792,12 +812,14 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         # Set meta info
         self.AnnoPathEdit.setText(self.anno_path)
 
-        self.clear_refresh(clf=True)
+        self.clear_refresh(clf=True, draw=False)
 
         try:
             self.check_show(_mianno)
         except Exception as e:
             logger.error(f"Check Show ERROR: {e}")
+        logger.info("Annotation load and redraw completed in %.3f s",
+                    time.perf_counter() - load_started)
 
     def check_show(self, mianno=None):
         """Validate data/annotation and draw everything.
@@ -815,9 +837,11 @@ class MainWindow(QMainWindow, Ui_MiSleep):
 
         if isinstance(self.midata, MiData) and not isinstance(self.mianno, MiAnnotation):
             self.mianno = create_new_mianno(self.midata.duration)
+        self._hypo_revision += 1
 
         self.show_idx = list(range(self.midata.n_channels))
-        self.y_lims = [max(abs(each[:1000])) for each in self.midata.signals]
+        self.y_lims = [float(np.max(np.abs(each[:1000])))
+                       for each in self.midata.signals]
         self.y_lims = [1e-3 if each == 0.0 else each for each in self.y_lims]
         self.y_shift = [0 for _ in range(self.midata.n_channels)]
 
@@ -853,7 +877,6 @@ class MainWindow(QMainWindow, Ui_MiSleep):
             self.horizontal_line[channel] = []
 
         self.redraw_all(second=0)
-        self.clear_refresh(clf=False)
         self.change_Bts_status(False)
 
         self.setWindowTitle(
@@ -891,7 +914,7 @@ class MainWindow(QMainWindow, Ui_MiSleep):
     # ------------------------------------------------------------------
     # Plotting
     # ------------------------------------------------------------------
-    def clear_refresh(self, clf=False):
+    def clear_refresh(self, clf=False, draw=True):
         """Clear and refresh all plot canvases."""
         if clf:
             self.signal_figure.clf()
@@ -903,6 +926,9 @@ class MainWindow(QMainWindow, Ui_MiSleep):
             self._hypo_key = None
             self._hypo_steps = []
             self._hypo_transient = []
+
+        if not draw:
+            return
 
         self.hypo_figure.canvas.draw()
         self.hypo_figure.canvas.flush_events()
@@ -1194,6 +1220,7 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         """Redraw the spectrogram strip (cached whole-file STFT when possible)."""
         if self.midata is None:
             return
+        from misleep.preprocessing.spectral import spectrogram
         # remove the previous spectrogram artist (cheaper than clearing axes)
         if getattr(self, "_spec_artist", None) is not None:
             try:
@@ -1300,6 +1327,8 @@ class MainWindow(QMainWindow, Ui_MiSleep):
 
     def plot_marker_line(self, flush=True):
         """Plot marker lines in the signal area."""
+        marker_color = self.config["gui"].get(
+            "markerlinecolor", "red").strip("\"'")
         for axvline in self.signal_marker_axvline:
             try:
                 axvline.remove()
@@ -1312,12 +1341,12 @@ class MainWindow(QMainWindow, Ui_MiSleep):
                     self.signal_marker_axvline.append(
                         self.signal_ax[idx + 1].axvline(
                             int((each[0] - self.current_sec) * self.midata.sf[show_]),
-                            color="Red", alpha=1))
+                            color=marker_color, alpha=1))
                 self.signal_marker_axvline.append(
                     self.signal_ax[1].text(
                         x=int((each[0] - self.current_sec) * self.midata.sf[self.show_idx[0]]),
                         y=self.y_lims[self.show_idx[0]] + self.y_shift[self.show_idx[0]],
-                        s=each[1], verticalalignment="top", color="Red"))
+                        s=each[1], verticalalignment="top", color=marker_color))
 
         if flush:
             self.signal_figure.canvas.draw()
@@ -1395,7 +1424,7 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         if self.mianno is not None:
             key = (
                 id(self.mianno),
-                hash(tuple(self.mianno.sleep_state)),
+                self._hypo_revision,
                 tuple(sorted(self.state_map_dict.items())),
                 tuple(sorted(self.state_color_dict.items())),
                 float(self.config["gui"].get("hypnogramstatealpha", "0.55")),
@@ -1787,6 +1816,8 @@ class MainWindow(QMainWindow, Ui_MiSleep):
 
     def click_hypo(self, event):
         """Jump to the clicked time on the hypnogram."""
+        if event.inaxes is not self.hypo_ax or event.xdata is None:
+            return
         current_sec = int(event.xdata)
         self.redraw_all(second=current_sec)
 
@@ -2000,6 +2031,9 @@ class MainWindow(QMainWindow, Ui_MiSleep):
 
     def show_spec_window(self):
         """Show the spectrum/spectrogram window for the selected segment."""
+        from misleep.gui.spec_window import SpecWindow
+        from misleep.preprocessing.spectral import band_power, spectrogram, spectrum
+
         if self.SleepStateRadio.isChecked() and len(self.start_end) == 2 and \
                 self.start_end[1] - self.start_end[0] >= 5:
             start_ = self.start_end[0]
@@ -2033,6 +2067,7 @@ class MainWindow(QMainWindow, Ui_MiSleep):
             nfft = int(win_sec * self.midata.sf[channel])
 
         try:
+            spec_window = self._ensure_dialog("spec_window", SpecWindow)
             freq_range = [float(x) for x in self.config["gui"]["freq_range"].strip("[]").split(",")]
             freq, psd = spectrum(
                 signal=signal_data,
@@ -2053,7 +2088,7 @@ class MainWindow(QMainWindow, Ui_MiSleep):
                                    bands=[[0.5, 4, "delta"], [4, 9, "theta"]])
             ratio = bandPower["delta"] / bandPower["theta"]
 
-            self.spec_window.show_(
+            spec_window.show_(
                 spectrum=[psd, freq],
                 spectrogram=[f, t, Sxx],
                 percentile_=self.spectrogram_percentile,
@@ -2061,12 +2096,12 @@ class MainWindow(QMainWindow, Ui_MiSleep):
                 freq_range=freq_range,
                 data_path=self.data_path)
 
-            self.spec_window.activateWindow()
-            state = self.spec_window.windowState()
-            self.spec_window.setWindowState(
+            spec_window.activateWindow()
+            state = spec_window.windowState()
+            spec_window.setWindowState(
                 (state & ~Qt.WindowState.WindowMinimized)
                 | Qt.WindowState.WindowActive)
-            self.spec_window.showNormal()
+            spec_window.showNormal()
         except Exception:
             QMessageBox.about(
                 self, "Error",
@@ -2140,6 +2175,7 @@ class MainWindow(QMainWindow, Ui_MiSleep):
 
         self.mianno.sleep_state[self.start_end[0]: self.start_end[1]] = \
             [sleep_type] * (self.start_end[1] - self.start_end[0])
+        self._hypo_revision += 1
 
         self.is_saved = False
         self.AnnotationPathLabel.setText("*Annotation path:")
@@ -2174,37 +2210,42 @@ class MainWindow(QMainWindow, Ui_MiSleep):
     # ------------------------------------------------------------------
     def transfer_result(self):
         """Transfer the annotation into an Excel result file."""
-        self.transfer_result_dialog.ACTimeEditor.setDateTime(self.ac_time)
-        self.transfer_result_dialog.TransferStartTimeEdit.setDateTime(self.ac_time)
-        self.transfer_result_dialog.exec()
-        if self.transfer_result_dialog.closed:
+        dialog = self._ensure_dialog(
+            "transfer_result_dialog", TransferResultDialog)
+        dialog.ACTimeEditor.setDateTime(self.ac_time)
+        dialog.TransferStartTimeEdit.setDateTime(self.ac_time)
+        dialog.exec()
+        if dialog.closed:
             return
-        self.transfer_result_dialog.transfer(config=self.config,
-                                             mianno=self.mianno,
-                                             ac_time=self.midata.time)
+        dialog.transfer(config=self.config, mianno=self.mianno,
+                        ac_time=self.midata.time)
 
     def state_spectral(self):
         """Run the per-state spectral analysis."""
-        self.state_spectral_dialog.StartTimeEditor.setDateTime(self.ac_time)
-        self.state_spectral_dialog.EndTimeEditor.setDateTime(
+        dialog = self._ensure_dialog(
+            "state_spectral_dialog", lambda: StateSpectralDialog(config=self.config))
+        dialog.StartTimeEditor.setDateTime(self.ac_time)
+        dialog.EndTimeEditor.setDateTime(
             self.ac_time + datetime.timedelta(seconds=self.total_seconds))
-        self.state_spectral_dialog.dialog_show(channels=self.midata.channels)
-        self.state_spectral_dialog.exec()
-        if self.state_spectral_dialog.closed:
+        dialog.dialog_show(channels=self.midata.channels)
+        dialog.exec()
+        if dialog.closed:
             return
-        self.state_spectral_dialog.spectral_analysis(
+        dialog.spectral_analysis(
             midata=self.midata, mianno=self.mianno, config=self.config)
 
     def add_horizontal_line(self):
         """Add a horizontal reference line."""
         try:
-            self.horizontal_line_dialog.horizontal_line = copy.deepcopy(self.horizontal_line)
-            self.horizontal_line_dialog.show_chs()
-            self.horizontal_line_dialog.midata = self.midata
-            self.horizontal_line_dialog.exec()
-            if self.horizontal_line_dialog.closed:
+            dialog = self._ensure_dialog(
+                "horizontal_line_dialog", HorizontalLineDialog)
+            dialog.horizontal_line = copy.deepcopy(self.horizontal_line)
+            dialog.show_chs()
+            dialog.midata = self.midata
+            dialog.exec()
+            if dialog.closed:
                 return
-            self.horizontal_line = self.horizontal_line_dialog.horizontal_line
+            self.horizontal_line = dialog.horizontal_line
             self.plot_horizontal_line()
         except Exception as e:
             logger.error(f"Add horizontal line ERROR: {e}")
@@ -2214,11 +2255,13 @@ class MainWindow(QMainWindow, Ui_MiSleep):
     def swa_detection(self):
         """Slow-wave activity detection."""
         try:
-            self.swa_detection_dialog.show_chs(self.midata.channels)
-            self.swa_detection_dialog.exec()
-            if self.swa_detection_dialog.closed:
+            dialog = self._ensure_dialog(
+                "swa_detection_dialog", SWADetectionDialog)
+            dialog.show_chs(self.midata.channels)
+            dialog.exec()
+            if dialog.closed:
                 return
-            swa_lst = self.swa_detection_dialog.swa_detection(
+            swa_lst = dialog.swa_detection(
                 self.midata, self.mianno, self.config)
 
             self.mianno._start_end += [[each[0], each[4], "SWA"] for each in swa_lst]
@@ -2233,11 +2276,13 @@ class MainWindow(QMainWindow, Ui_MiSleep):
     def spindle_detection(self):
         """Sleep spindle detection."""
         try:
-            self.spindel_detection_dialog.show_chs(self.midata.channels)
-            self.spindel_detection_dialog.exec()
-            if self.spindel_detection_dialog.closed:
+            dialog = self._ensure_dialog(
+                "spindel_detection_dialog", SpindleDetectionDialog)
+            dialog.show_chs(self.midata.channels)
+            dialog.exec()
+            if dialog.closed:
                 return
-            spindle_lst = self.spindel_detection_dialog.spindle_detection(
+            spindle_lst = dialog.spindle_detection(
                 self.midata, self.mianno, self.config)
 
             self.mianno._start_end += [[each[0], each[1], "Spindle"] for each in spindle_lst]
@@ -2252,15 +2297,18 @@ class MainWindow(QMainWindow, Ui_MiSleep):
     def auto_stage_LightGBM(self):
         """Auto stage with the LightGBM model."""
         try:
-            self.auto_stage_lightGBM_dialog.show_chs(self.midata.channels)
-            self.auto_stage_lightGBM_dialog.exec()
-            if self.auto_stage_lightGBM_dialog.closed:
+            dialog = self._ensure_dialog(
+                "auto_stage_lightGBM_dialog", AutoStageLightGBMDialog)
+            dialog.show_chs(self.midata.channels)
+            dialog.exec()
+            if dialog.closed:
                 return
-            auto_stage_lst, save_anno = self.auto_stage_lightGBM_dialog.auto_stage(
+            auto_stage_lst, save_anno = dialog.auto_stage(
                 self.midata, self.mianno)
 
             limit = min(len(self.mianno._sleep_state), len(auto_stage_lst))
             self.mianno._sleep_state[:limit] = auto_stage_lst[:limit]
+            self._hypo_revision += 1
 
             if save_anno:
                 self.save_anno()
@@ -2279,16 +2327,18 @@ class MainWindow(QMainWindow, Ui_MiSleep):
     def auto_stage_CausalTransformer(self):
         """Auto stage with the causal-transformer model."""
         try:
-            self.auto_stage_causalTransformer_dialog.show_chs(self.midata.channels)
-            self.auto_stage_causalTransformer_dialog.exec()
-            if self.auto_stage_causalTransformer_dialog.closed:
+            dialog = self._ensure_dialog(
+                "auto_stage_causalTransformer_dialog",
+                AutoStageCausalTransformerDialog)
+            dialog.show_chs(self.midata.channels)
+            dialog.exec()
+            if dialog.closed:
                 return
-            auto_stage_lst, save_anno = \
-                self.auto_stage_causalTransformer_dialog.auto_stage(
-                    self.midata, self.mianno)
+            auto_stage_lst, save_anno = dialog.auto_stage(self.midata, self.mianno)
 
             limit = min(len(self.mianno._sleep_state), len(auto_stage_lst))
             self.mianno._sleep_state[:limit] = auto_stage_lst[:limit]
+            self._hypo_revision += 1
 
             if save_anno:
                 self.save_anno()
@@ -2336,13 +2386,14 @@ class MainWindow(QMainWindow, Ui_MiSleep):
 
     def save_data(self):
         """Export (cropped, channel-selected) data to ``.mat``/``.edf``."""
-        self.save_data_dialog.fill_midata_params(midata=self.midata)
-        self.save_data_dialog.exec()
-        if self.save_data_dialog.closed:
+        dialog = self._ensure_dialog("save_data_dialog", SaveDataDialog)
+        dialog.fill_midata_params(midata=self.midata)
+        dialog.exec()
+        if dialog.closed:
             return
 
         selected_channels = [each.row() for each in
-                             self.save_data_dialog.ChannelListView.selectedIndexes()]
+                             dialog.ChannelListView.selectedIndexes()]
         if selected_channels == []:
             selected_channels = list(range(self.midata.n_channels))
         midata_to_save = self.midata.pick_chs(
@@ -2351,15 +2402,15 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         start_sec = 0
         end_sec = self.midata.duration
 
-        if self.save_data_dialog.CropDataStartCheckBox.isChecked():
-            start_time = self.save_data_dialog.CropStartTimeEditor.dateTime().toPython()
+        if dialog.CropDataStartCheckBox.isChecked():
+            start_time = dialog.CropStartTimeEditor.dateTime().toPython()
             midata_to_save._time = start_time.strftime("%Y%m%d-%H:%M:%S")
             start_sec = int(datetime.timedelta.total_seconds(start_time - self.ac_time))
             if start_sec < 0:
                 start_sec = 0
 
-        if self.save_data_dialog.CropDataEndCheckBox.isChecked():
-            end_time = self.save_data_dialog.CropEndTimeEditor.dateTime().toPython()
+        if dialog.CropDataEndCheckBox.isChecked():
+            end_time = dialog.CropEndTimeEditor.dateTime().toPython()
             end_sec = int(datetime.timedelta.total_seconds(end_time - self.ac_time))
             if end_sec > self.midata.duration:
                 end_sec = self.midata.duration
@@ -2441,12 +2492,13 @@ class MainWindow(QMainWindow, Ui_MiSleep):
             each[1:-1] for each in gui["startend"][1:-1].split(", ")]
 
         # Refresh spectral defaults used by the state-spectral dialog
-        self.state_spectral_dialog.GaussianSpinBox.setValue(
-            float(self.config["spec"]["gaussian_sigma"]))
-        self.state_spectral_dialog.WinLengthSpinBox.setValue(
-            float(self.config["spec"]["win_length_sec"]))
-        self.state_spectral_dialog.nfftSpinBox.setValue(
-            int(float(self.config["spec"]["nfft_sec"])))
+        if self.state_spectral_dialog is not None:
+            self.state_spectral_dialog.GaussianSpinBox.setValue(
+                float(self.config["spec"]["gaussian_sigma"]))
+            self.state_spectral_dialog.WinLengthSpinBox.setValue(
+                float(self.config["spec"]["win_length_sec"]))
+            self.state_spectral_dialog.nfftSpinBox.setValue(
+                int(float(self.config["spec"]["nfft_sec"])))
 
         # Update the annotation state map if one is loaded
         if isinstance(self.mianno, MiAnnotation):
@@ -2455,6 +2507,7 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         # State names/colors are part of the hypnogram itself. Force a base
         # rebuild now instead of waiting for the next annotation edit.
         self._hypo_key = None
+        self._hypo_revision += 1
         self._hypo_steps = []
         self._hypo_transient = []
         # Frequency range changes also invalidate the cached whole-file STFT.
@@ -2534,7 +2587,8 @@ class MainWindow(QMainWindow, Ui_MiSleep):
 
         if event.isAccepted():
             self.save_timer.stop()
-            self.spec_window.close()
+            if self.spec_window is not None:
+                self.spec_window.close()
             plt.close(self.signal_figure)
             plt.close(self.hypo_figure)
 
