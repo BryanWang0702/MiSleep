@@ -73,8 +73,8 @@ class Ui_AboutDialog(object):
         AboutDialog.setWindowTitle(QCoreApplication.translate("AboutDialog", u"About", None))
         self.label_4.setText(QCoreApplication.translate("AboutDialog", u"<html><head/><body><p><img src=\":/logo/entire_logo.png\"/></p></body></html>", None))
         self.groupBox.setTitle(QCoreApplication.translate("AboutDialog", u"MiSleep", None))
-        self.VersionLabel.setText(QCoreApplication.translate("AboutDialog", u"Version: 0.4.0", None))
-        self.UpdateLabel.setText(QCoreApplication.translate("AboutDialog", u"Update: 2026/08/17", None))
+        self.VersionLabel.setText(QCoreApplication.translate("AboutDialog", u"Version: 0.3.0", None))
+        self.UpdateLabel.setText(QCoreApplication.translate("AboutDialog", u"Update: 2026/08/18", None))
         self.CopyrightLabel.setText(QCoreApplication.translate("AboutDialog", u"Copyright \u00a9 2023\u20132026 Xueqiang Wang.", None))
     # retranslateUi
 

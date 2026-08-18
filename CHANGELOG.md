@@ -5,7 +5,7 @@ All notable changes to MiSleep are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.3.0] — 2026-08-18
 
 ### Fixed
 
@@ -29,13 +29,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   **Color scheme** selector (Black / Pink / Blue / Khaki) with the
   missing **Blue** preset implemented; it applies immediately and
   persists via `gui.color_tone`.
-- **Documentation**: `site_url` points to `https://bryanwang.cn/misleep/`
-  and a GitHub Actions workflow builds and deploys the mkdocs site to
-  GitHub Pages.
+- **Documentation**: the mkdocs site is deployed to GitHub Pages at
+  `https://bryanwang.cn/MiSleep/` (dark theme, MiSleep logo, GUI preview
+  screenshots, Python syntax highlighting).
 - **App icon**: the window now uses the square `misleep.ico` (crisp at
   16/32/48 px) with the logo PNG as the large-size fallback.
-- **About dialog / version**: package bumped to **v0.4.0**; About shows
-  the current version and update date.
+- **About dialog**: shows version **v0.3.0** with the update date
+  2026/08/18.
 - **Spectrogram clarity**: restored v2-style 5 s / 1 s normalized power
   rendering with a stable zero-to-percentile color range and a colormap-low
   background, preventing theme-colored gaps from washing out the display.

@@ -2,24 +2,25 @@
 #
 # Preview locally with:  mkdocs serve
 # Build with:            mkdocs build
+# The site is deployed to GitHub Pages by .github/workflows/docs.yml and
+# served at https://bryanwang.cn/MiSleep/
 
 site_name: MiSleep
 site_description: Mice sleep EEG/EMG visualization, scoring and analysis
-site_url: https://bryanwang.cn/misleep/
+site_url: https://bryanwang.cn/MiSleep/
 repo_url: https://github.com/BryanWang0702/MiSleep
 theme:
   name: material
+  # black/gray documentation theme
   palette:
-    - scheme: default
-      primary: indigo
-      toggle:
-        icon: material/toggle-switch-off-outline
-        name: Switch to dark mode
     - scheme: slate
-      primary: indigo
-      toggle:
-        icon: material/toggle-switch
-        name: Switch to light mode
+      primary: blue-grey
+      accent: light-blue
+  logo: imgs/logo.png
+  favicon: imgs/logo.png
+  features:
+    - content.code.copy
+    - navigation.top
 
 nav:
   - Home: index.md
@@ -32,6 +33,10 @@ nav:
 
 markdown_extensions:
   - admonition
-  - codehilite
+  - pymdownx.highlight:
+      anchor_linenums: true
+      guess_lang: false
+  - pymdownx.superfences
+  - pymdownx.inlinehilite
   - toc:
       permalink: true

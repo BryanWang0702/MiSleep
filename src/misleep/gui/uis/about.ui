@@ -58,14 +58,14 @@
       <item>
        <widget class="QLabel" name="VersionLabel">
         <property name="text">
-         <string>Version: 0.4.0</string>
+         <string>Version: 0.3.0</string>
         </property>
        </widget>
       </item>
       <item>
        <widget class="QLabel" name="UpdateLabel">
         <property name="text">
-         <string>Update: 2026/08/17</string>
+         <string>Update: 2026/08/18</string>
         </property>
        </widget>
       </item>

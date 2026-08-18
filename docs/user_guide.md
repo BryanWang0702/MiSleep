@@ -221,7 +221,7 @@ the display duration from the combo box (30 s – 1 h) or a custom value
 
 * **About** — version and update info.
 * **User Guide** — a brief in-app guide with a link to the full online
-  documentation at <https://bryanwang.cn/misleep/>.
+  documentation at <https://bryanwang.cn/MiSleep/>.
 * **Settings** — opens the in-application settings dialog. Changes are
   **applied immediately** without restarting MiSleep:
   * *Sleep states* — edit state names and pick state background colors

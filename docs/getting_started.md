@@ -48,6 +48,18 @@ misleep
 The first launch creates a per-user configuration file at
 `~/.misleep/misleep_config.ini` (see the [config docs](config_file.md)).
 
+### GUI preview
+
+The main window shows the spectrogram strip, one box per channel and the
+hypnogram, with a collapsible sidebar (Meta / Channel / Annotation / Time)
+on the right. A light and a dark theme are available
+(`Ctrl+Shift+T` to toggle, or Settings &rarr; General &rarr; Theme /
+Color scheme).
+
+![MiSleep main window (light theme)](imgs/gui/main_light.png)
+
+![MiSleep main window (dark theme)](imgs/gui/main_dark.png)
+
 ### Opening files from the command line
 
 ```bash

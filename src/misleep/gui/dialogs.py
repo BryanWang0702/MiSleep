@@ -103,8 +103,8 @@ class UserGuideDialog(QDialog):
 
         layout.addSpacing(8)
         link = QLabel(
-            'Full documentation: <a href="https://bryanwang.cn/misleep/">'
-            'https://bryanwang.cn/misleep/</a>')
+            'Full documentation: <a href="https://bryanwang.cn/MiSleep/">'
+            'https://bryanwang.cn/MiSleep/</a>')
         link.setOpenExternalLinks(True)
         link.setTextFormat(Qt.TextFormat.RichText)
         layout.addWidget(link)
