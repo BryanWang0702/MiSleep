@@ -41,19 +41,17 @@ The name *MiSleep* comes from "**Mi**ce **Sleep**" and sounds like
 ## Installation
 
 ```bash
-# Core package (data, I/O, preprocessing, analysis, visualization)
+# Base install - includes everything (data, I/O, preprocessing, analysis,
+# visualization AND the PySide6 GUI)
 pip install misleep
 
-# With the PySide6 GUI (recommended for most users)
-pip install "misleep[gui]"
-
-# With everything, including the LightGBM auto-staging model
+# With the LightGBM auto-staging model as well
 pip install "misleep[full]"
 
 # For development / contributing
 git clone https://github.com/BryanWang0702/MiSleep.git
 cd misleepv3
-pip install -e ".[gui,analysis,dev]"
+pip install -e ".[analysis,dev]"
 ```
 
 > **Note on PyTorch:** the causal-transformer auto-staging model requires

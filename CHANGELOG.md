@@ -14,9 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   3.8-compatible, and the GUI extra pins the last 3.8-compatible PySide6
   line on older Pythons.
 - **Dependencies**: the packaging metadata now reflects the complete set
-  of runtime prerequisites (numpy, scipy, matplotlib, pandas, pyedflib,
-  mat73, openpyxl, joblib, scikit-learn; PySide6 / lightgbm / torch as
-  extras).
+  of runtime prerequisites, and **PySide6 moved into the base
+  dependencies** - a plain `pip install misleep` installs the GUI and all
+  core packages automatically (no separate PySide6 install needed).
+  LightGBM / torch remain optional extras.
 - **Documentation**: bright theme with a light header (readable
   black-on-transparent logo), full-width MiSleep banner on the home page,
   single GUI preview screenshot.

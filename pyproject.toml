@@ -47,15 +47,16 @@ dependencies = [
     "openpyxl>=3.0",
     "joblib>=1.1",
     "scikit-learn>=1.0",
-]
-
-[project.optional-dependencies]
-# PySide6-based graphical user interface (PySide6 >= 6.6 needs Python 3.9+,
-# so Python 3.8 gets the last 3.8-compatible PySide6 6.5 line)
-gui = [
+    # GUI toolkit - part of the base install so `pip install misleep` just
+    # works (PySide6 >= 6.6 needs Python 3.9+; 3.8 gets the 6.5 line)
     "PySide6>=6.6; python_version >= '3.9'",
     "PySide6>=6.4,<6.6; python_version < '3.9'",
 ]
+
+[project.optional-dependencies]
+# The GUI (PySide6) is now part of the base dependencies; this empty extra
+# is kept so existing `misleep[gui]` install commands keep working.
+gui = []
 # Automatic sleep staging with the LightGBM model
 analysis = [
     "lightgbm>=3.3",
@@ -66,8 +67,6 @@ transformer = [
 ]
 # Everything needed for a full MiSleep experience
 full = [
-    "PySide6>=6.6; python_version >= '3.9'",
-    "PySide6>=6.4,<6.6; python_version < '3.9'",
     "lightgbm>=3.3",
 ]
 # Tooling for developers / contributors

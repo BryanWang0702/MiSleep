@@ -14,19 +14,20 @@
 ## Installation
 
 ```bash
-# From PyPI
+# From PyPI - the base install already includes the PySide6 GUI and all
+# core dependencies
 pip install misleep
 
-# With the GUI
-pip install "misleep[gui]"
-
-# Everything for a full experience (GUI + LightGBM auto staging)
+# Everything for a full experience (adds LightGBM auto staging)
 pip install "misleep[full]"
+
+# Causal-transformer auto staging (PyTorch, not on all platforms)
+pip install "misleep[transformer]"
 
 # Development install from the repository
 git clone https://github.com/BryanWang0702/MiSleep.git
 cd misleepv3
-pip install -e ".[gui,analysis,dev]"
+pip install -e ".[analysis,dev]"
 ```
 
 > **Note for Apple Silicon (macOS):** `torch` and `lightgbm` ship official
