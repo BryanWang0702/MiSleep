@@ -1,5 +1,9 @@
 # MiSleep documentation
 
+<p align="center">
+  <img src="imgs/entire_logo.png" alt="MiSleep" width="80%"/>
+</p>
+
 MiSleep is an open-source Python toolbox for **mice sleep EEG/EMG**
 visualization, scoring, and analysis. This documentation covers both the
 desktop GUI and the Python library.

@@ -56,9 +56,7 @@ on the right. A light and a dark theme are available
 (`Ctrl+Shift+T` to toggle, or Settings &rarr; General &rarr; Theme /
 Color scheme).
 
-![MiSleep main window (light theme)](imgs/gui/main_light.png)
-
-![MiSleep main window (dark theme)](imgs/gui/main_dark.png)
+![MiSleep main window](imgs/gui/main_light.png)
 
 ### Opening files from the command line
 

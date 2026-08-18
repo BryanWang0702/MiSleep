@@ -11,12 +11,12 @@ site_url: https://bryanwang.cn/MiSleep/
 repo_url: https://github.com/BryanWang0702/MiSleep
 theme:
   name: material
-  # black/gray documentation theme
+  # black accent on a light (overall-bright) theme
   palette:
-    - scheme: slate
-      primary: blue-grey
-      accent: light-blue
-  logo: imgs/logo.png
+    - scheme: default
+      primary: black
+      accent: blue-grey
+  logo: imgs/entire_logo.png
   favicon: imgs/logo.png
   features:
     - content.code.copy
