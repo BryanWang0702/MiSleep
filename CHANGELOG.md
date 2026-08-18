@@ -5,6 +5,22 @@ All notable changes to MiSleep are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] — 2026-08-18
+
+### Changed
+
+- **Python support**: the package now supports **Python 3.8 through 3.14**
+  (`requires-python >= 3.8`); annotations and resource loading were made
+  3.8-compatible, and the GUI extra pins the last 3.8-compatible PySide6
+  line on older Pythons.
+- **Dependencies**: the packaging metadata now reflects the complete set
+  of runtime prerequisites (numpy, scipy, matplotlib, pandas, pyedflib,
+  mat73, openpyxl, joblib, scikit-learn; PySide6 / lightgbm / torch as
+  extras).
+- **Documentation**: bright theme with a light header (readable
+  black-on-transparent logo), full-width MiSleep banner on the home page,
+  single GUI preview screenshot.
+
 ## [0.3.0] — 2026-08-18
 
 ### Fixed

@@ -9,8 +9,9 @@ ImportError).
 """
 
 import importlib
-from importlib.resources import files
 from pathlib import Path
+
+from misleep._compat import resource_dir
 
 __all__ = ["AutoStageConfig", "EEGTransformerConfig", "PreprocessConfig",
            "STFTConfig", "auto_stage_llm", "default_checkpoint_path",
@@ -31,8 +32,7 @@ _LAZY_EXPORTS = {
 
 def default_checkpoint_path() -> Path:
     """Return the path of the packaged CausalTransformer checkpoint."""
-    ref = files("misleep.analysis.transformer.checkpoints")
-    return Path(str(ref)) / "CausalTransformer_best.pt"
+    return resource_dir("misleep.analysis.transformer.checkpoints") / "CausalTransformer_best.pt"
 
 
 def __getattr__(name: str):

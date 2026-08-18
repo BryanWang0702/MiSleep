@@ -21,7 +21,7 @@ def _pyside6_available():
 def test_public_api():
     import misleep
 
-    assert misleep.__version__ == "0.3.0"
+    assert misleep.__version__ == "0.3.1"
     for name in [
         "MiData",
         "MiAnnotation",

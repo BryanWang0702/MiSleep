@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from importlib.resources import files
 from pathlib import Path
 from typing import Iterable, List, Optional, Sequence, Tuple
 
 import numpy as np
+
+from misleep._compat import resource_dir
 
 from .configs import EEGTransformerConfig, PreprocessConfig
 from .models import build_model
@@ -19,8 +20,7 @@ from .preprocessing import (
 
 def default_checkpoint_path() -> Path:
     """Return the path of the packaged CausalTransformer checkpoint."""
-    ref = files("misleep.analysis.transformer.checkpoints")
-    return Path(str(ref)) / "CausalTransformer_best.pt"
+    return resource_dir("misleep.analysis.transformer.checkpoints") / "CausalTransformer_best.pt"
 
 
 @dataclass()

@@ -4,10 +4,10 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "misleep"
-version = "0.3.0"
+version = "0.3.1"
 description = "MiSleep: Mice sleep EEG/EMG visualization, scoring, and analysis"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.8"
 license = { file = "LICENSE" }
 authors = [
     { name = "Xueqiang Wang", email = "swang9194@gmail.com" },
@@ -25,6 +25,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Bio-Informatics",
     "Topic :: Scientific/Engineering :: Medical Science Apps.",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -49,9 +50,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# PySide6-based graphical user interface
+# PySide6-based graphical user interface (PySide6 >= 6.6 needs Python 3.9+,
+# so Python 3.8 gets the last 3.8-compatible PySide6 6.5 line)
 gui = [
-    "PySide6>=6.6",
+    "PySide6>=6.6; python_version >= '3.9'",
+    "PySide6>=6.4,<6.6; python_version < '3.9'",
 ]
 # Automatic sleep staging with the LightGBM model
 analysis = [
@@ -63,7 +66,8 @@ transformer = [
 ]
 # Everything needed for a full MiSleep experience
 full = [
-    "PySide6>=6.6",
+    "PySide6>=6.6; python_version >= '3.9'",
+    "PySide6>=6.4,<6.6; python_version < '3.9'",
     "lightgbm>=3.3",
 ]
 # Tooling for developers / contributors

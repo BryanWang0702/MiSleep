@@ -23,8 +23,8 @@ wipe your personal settings. Open the user file from the GUI via
 
 | key | default | meaning |
 |-----|---------|---------|
-| `version` | `v0.3.0` | displayed in the About dialog |
-| `updatetime` | `2025/01/01` | displayed in the About dialog |
+| `version` | `v0.3.1` | displayed in the About dialog |
+| `updatetime` | `2026/08/18` | displayed in the About dialog |
 | `marker` | `['half_signal', 'first REM', ...]` | marker label list (label picker) |
 | `startend` | `['high_theta', 'REM', ...]` | start-end label list (label picker) |
 | `statemap` | `{"1": "NREM", "2": "REM", "3": "Wake", "4": "INIT", ...}` | state code -> name mapping (JSON) |
@@ -48,8 +48,8 @@ wipe your personal settings. Open the user file from the GUI via
 
 ```ini
 [gui]
-version = v0.3.0
-updatetime = 2025/01/01
+version = v0.3.1
+updatetime = 2026/08/18
 marker = ['half_signal', 'first REM', 'WindEEG', 'W-R', 'maker']
 startend = ['high_theta', 'REM', 'Wake', 'Spindle', 'SWA', 'start end label', 'start end label']
 statemap = {"1": "NREM", "2": "REM", "3": "Wake", "4": "INIT", "5": "IS", "6": "MicroArousal"}

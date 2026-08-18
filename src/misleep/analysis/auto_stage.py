@@ -7,19 +7,18 @@ features; every window label is then expanded back to per-second labels.
 
 import copy
 import warnings
-from importlib.resources import files
 from pathlib import Path
 
 import numpy as np
 
+from misleep._compat import resource_dir
 from misleep.analysis.features import get_data_features, split_window_data
 from misleep.logger import logger
 
 
 def _model_dir() -> Path:
     """Return the directory containing the packaged LightGBM models."""
-    ref = files("misleep.analysis.models")
-    return Path(str(ref)) if ref.is_dir() else ref
+    return resource_dir("misleep.analysis.models")
 
 
 def model_path(mouse_age="adult", EEG_channel="F") -> Path:

@@ -22,7 +22,7 @@ works without PySide6; import ``misleep.gui`` explicitly when needed.
 from importlib import import_module
 
 __author__ = "Xueqiang Wang <swang9194@gmail.com>"
-__version__ = "0.3.0"
+__version__ = "0.3.1"
 
 # Importing ``misleep`` used to import scipy, pandas, sklearn and matplotlib
 # immediately.  The GUI necessarily imports some of those later, but making

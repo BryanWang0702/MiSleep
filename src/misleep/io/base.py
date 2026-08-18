@@ -14,6 +14,8 @@ or declaratively through the ``misleep.signal_readers`` / ``misleep.signal_write
 entry-point groups (see the project's ``pyproject.toml``).
 """
 
+from __future__ import annotations
+
 import importlib.metadata
 from pathlib import Path
 from collections.abc import Callable

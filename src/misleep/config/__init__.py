@@ -13,10 +13,13 @@ overrides the bundled default, so package upgrades never wipe personal
 settings.
 """
 
+from __future__ import annotations
+
 import configparser
 import shutil
 from pathlib import Path
 
+from misleep._compat import resource_path
 from misleep.logger import get_data_dir, logger
 
 #: Name of the per-user configuration file.
@@ -25,9 +28,7 @@ USER_CONFIG_NAME = "misleep_config.ini"
 
 def default_config_path() -> Path:
     """Return the path of the bundled default configuration file."""
-    import importlib.resources
-
-    return Path(str(importlib.resources.files(__name__).joinpath("default_config.ini")))
+    return resource_path(__name__, "default_config.ini")
 
 
 def user_config_path() -> Path:
