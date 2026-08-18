@@ -975,12 +975,15 @@ def apply_theme(app: QApplication, theme_name: str = "light",
     theme_name = theme_name if theme_name in THEMES else "light"
 
     # Fusion renders identically on every platform, so the QSS look is
-    # predictable across Windows / macOS / Linux (native styles would
-    # override parts of the stylesheet).
-    try:
-        app.setStyle("Fusion")
-    except Exception:  # pragma: no cover
-        pass
+    # predictable on Windows / Linux. On macOS, switching the style at
+    # runtime crashes Qt with a Bus error (known PySide6/Qt bug on macOS,
+    # especially arm64), so the native style is kept there - the stylesheet
+    # still applies on top of it.
+    if sys.platform != "darwin":
+        try:
+            app.setStyle("Fusion")
+        except Exception:  # pragma: no cover
+            pass
 
     _setup_app_font(app)
     app.setPalette(build_palette(theme_name, tone_name))
