@@ -973,12 +973,22 @@ def apply_theme(app: QApplication, theme_name: str = "light",
         The theme name that was actually applied.
     """
     theme_name = theme_name if theme_name in THEMES else "light"
+    tone_name = tone_name if tone_name in COLOR_TONES else "black"
+
+    # Idempotency: applying the same theme repeatedly (e.g. every MainWindow
+    # created in a long-lived process) tears down and rebuilds Qt's whole
+    # style engine each time, which crashes macOS after a few calls
+    # (segfault / bus error in setStyle or setStyleSheet). Skip everything
+    # when the effective theme did not change.
+    stylesheet = build_stylesheet(theme_name, tone_name)
+    if app.styleSheet() == stylesheet:
+        return theme_name
 
     # Fusion renders identically on every platform, so the QSS look is
     # predictable on Windows / Linux. On macOS, switching the style at
-    # runtime crashes Qt with a Bus error (known PySide6/Qt bug on macOS,
-    # especially arm64), so the native style is kept there - the stylesheet
-    # still applies on top of it.
+    # runtime crashes Qt (known PySide6/Qt bug on macOS, especially arm64),
+    # so the native style is kept there - the stylesheet still applies on
+    # top of it.
     if sys.platform != "darwin":
         try:
             app.setStyle("Fusion")
@@ -987,7 +997,7 @@ def apply_theme(app: QApplication, theme_name: str = "light",
 
     _setup_app_font(app)
     app.setPalette(build_palette(theme_name, tone_name))
-    app.setStyleSheet(build_stylesheet(theme_name, tone_name))
+    app.setStyleSheet(stylesheet)
     apply_matplotlib_theme(theme_name, tone_name)
     return theme_name
 
