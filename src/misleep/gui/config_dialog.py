@@ -35,6 +35,7 @@ from PySide6.QtWidgets import (
 
 from misleep.config import save_config
 from misleep.gui.qt_utils import app_icon
+from misleep.gui.style import COLOR_TONES
 
 
 def _contrast_text(color: QColor) -> str:
@@ -304,6 +305,14 @@ class SettingsDialog(QDialog):
         self._bg_alpha.setDecimals(2)
         form.addRow("State background alpha:", self._bg_alpha)
 
+        self._hypno_alpha = QDoubleSpinBox()
+        self._hypno_alpha.setRange(0.15, 1.0)
+        self._hypno_alpha.setSingleStep(0.05)
+        self._hypno_alpha.setDecimals(2)
+        self._hypno_alpha.setToolTip(
+            "Lower values make state bands lighter so marker lines remain visible.")
+        form.addRow("Hypnogram state alpha:", self._hypno_alpha)
+
         path_row = QHBoxLayout()
         self._openpath = QLineEdit()
         browse_bt = QPushButton("Browse…")
@@ -317,6 +326,13 @@ class SettingsDialog(QDialog):
         self._theme_combo.setToolTip(
             "Applies immediately: widgets and plots switch together.")
         form.addRow("Theme:", self._theme_combo)
+
+        self._tone_combo = QComboBox()
+        for key, preset in COLOR_TONES.items():
+            self._tone_combo.addItem(preset["name"], key)
+        self._tone_combo.setToolTip(
+            "Color tone for panels, buttons, borders and interface text accents.")
+        form.addRow("Color tone:", self._tone_combo)
 
         self._cmap_combo = QComboBox()
         self._cmap_combo.addItems(
@@ -369,11 +385,16 @@ class SettingsDialog(QDialog):
 
         # General
         self._bg_alpha.setValue(float(gui["statecolorbgalpha"]))
+        self._hypno_alpha.setValue(float(gui.get("hypnogramstatealpha", "0.55")))
         self._openpath.setText(gui["openpath"])
         self._theme_combo.setCurrentText(gui.get("theme", "light"))
+        tone_idx = self._tone_combo.findData(gui.get("color_tone", "black"))
+        self._tone_combo.setCurrentIndex(max(0, tone_idx))
         self._cmap_combo.setCurrentText(gui.get("spectrogram_cmap", "jet"))
-        self._marker_line_bt.set_color(gui.get("markerlinecolor", "red"))
-        self._start_end_line_bt.set_color(gui.get("startendlinecolor", "blue"))
+        self._marker_line_bt.set_color(
+            gui.get("markerlinecolor", "red").strip("\"'"))
+        self._start_end_line_bt.set_color(
+            gui.get("startendlinecolor", "blue").strip("\"'"))
 
     def _add_se_color(self, label="new label", color="#0000ff"):
         row = QWidget()
@@ -434,9 +455,11 @@ class SettingsDialog(QDialog):
                 "marker": str(self._marker_editor.values()),
                 "startend": str(self._se_editor.values()),
                 "statecolorbgalpha": str(self._bg_alpha.value()),
+                "hypnogramstatealpha": str(self._hypno_alpha.value()),
                 "freq_range": json.dumps([self._freq_low.value(), self._freq_high.value()]),
                 "openpath": self._openpath.text(),
                 "theme": self._theme_combo.currentText(),
+                "color_tone": self._tone_combo.currentData(),
                 "spectrogram_cmap": self._cmap_combo.currentText(),
                 "markerlinecolor": self._marker_line_bt.color().name(),
                 "startendlinecolor": self._start_end_line_bt.color().name(),

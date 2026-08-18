@@ -10,7 +10,6 @@ import copy
 import datetime
 import json
 import os
-from contextlib import contextmanager
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -26,7 +25,6 @@ from PySide6.QtWidgets import (
     QGridLayout,
     QMainWindow,
     QMessageBox,
-    QProgressDialog,
     QPushButton,
     QScrollArea,
     QSizePolicy,
@@ -59,7 +57,13 @@ from misleep.gui.qt_utils import (
     identify_startend_color,
 )
 from misleep.gui.spec_window import SpecWindow
-from misleep.gui.style import THEMES, apply_theme, retheme_figures
+from misleep.gui.style import (
+    COLOR_TONES,
+    THEMES,
+    apply_theme,
+    resolved_theme,
+    retheme_figures,
+)
 from misleep.gui.uis.main_window_ui import Ui_MiSleep
 from misleep.gui.workers import SaveThread
 from misleep.io.annotation import available_annotation_readers, load_annotation
@@ -92,9 +96,12 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         self._theme_name = self.config.get("gui", "theme", fallback="light")
         if self._theme_name not in THEMES:
             self._theme_name = "light"
+        self._tone_name = self.config.get("gui", "color_tone", fallback="black")
+        if self._tone_name not in COLOR_TONES:
+            self._tone_name = "black"
         app = QApplication.instance()
         if app is not None:
-            apply_theme(app, self._theme_name)
+            apply_theme(app, self._theme_name, self._tone_name)
         self._set_plot_colors()
 
         logger.info(f"Initializing MiSleep {self.config['gui']['version']}")
@@ -117,6 +124,14 @@ class MainWindow(QMainWindow, Ui_MiSleep):
                                in json.loads(self.config["gui"]["statemap"]).items()}
         self.state_color_dict = {int(key): value for key, value
                                  in json.loads(self.config["gui"]["statecolor"]).items()}
+        # Migrate the legacy white INIT default without overriding any custom
+        # non-white color chosen by the user.
+        if self.state_map_dict.get(4, "").strip().upper() == "INIT" and \
+                str(self.state_color_dict.get(4, "")).lower() in \
+                {"white", "#fff", "#ffffff"}:
+            self.state_color_dict[4] = "#ececec"
+            self.config["gui"]["statecolor"] = json.dumps(
+                {str(k): v for k, v in self.state_color_dict.items()})
         self.start_end_color_dict = dict(json.loads(self.config["gui"]["startendcolor"].replace("'", '"')).items())
 
         self.ShowRangeCombo_dict = {0: 30, 1: 60, 2: 300, 3: 1800, 4: 3600}
@@ -218,7 +233,7 @@ class MainWindow(QMainWindow, Ui_MiSleep):
     # ------------------------------------------------------------------
     def _set_plot_colors(self):
         """Cache the theme colors used by the matplotlib canvases."""
-        theme = THEMES[self._theme_name]
+        theme = resolved_theme(self._theme_name, self._tone_name)
         self._plot_trace = theme["plot"]["trace"]
         self._plot_grid = theme["plot"]["grid"]
 
@@ -234,8 +249,8 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         self._theme_name = "dark" if self._theme_name == "light" else "light"
         app = QApplication.instance()
         if app is not None:
-            apply_theme(app, self._theme_name)
-        retheme_figures(self._theme_name)
+            apply_theme(app, self._theme_name, self._tone_name)
+        retheme_figures(self._theme_name, self._tone_name)
         self._set_plot_colors()
         self._update_theme_action()
         # Persist the choice so the next launch keeps it
@@ -632,36 +647,6 @@ class MainWindow(QMainWindow, Ui_MiSleep):
             action.setChecked(sec.is_expanded())
             action.toggled.connect(sec.set_expanded)
             sec.header.toggled.connect(action.setChecked)
-
-    @contextmanager
-    def _processing(self, message="Processing…"):
-        """Paint a modal busy indicator around a known blocking operation.
-
-        A Qt timer cannot detect a frozen GUI thread until the work has
-        already finished.  Showing and painting this dialog *before* the
-        synchronous call is deterministic and also blocks every main-window
-        control for the duration of the operation.
-        """
-        progress = QProgressDialog(message, None, 0, 0, self)
-        progress.setObjectName("ProcessingDialog")
-        progress.setWindowTitle("MiSleep")
-        # Window-modal blocks the main UI but still permits a save-folder
-        # chooser opened by an export routine to receive input.
-        progress.setWindowModality(Qt.WindowModality.WindowModal)
-        progress.setMinimumDuration(0)
-        progress.setAutoClose(False)
-        progress.setAutoReset(False)
-        progress.setMinimumWidth(300)
-        progress.show()
-        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
-        QApplication.processEvents()
-        try:
-            yield
-        finally:
-            QApplication.restoreOverrideCursor()
-            progress.close()
-            progress.deleteLater()
-            QApplication.processEvents()
 
     # ------------------------------------------------------------------
     # Data / annotation loading
@@ -1134,7 +1119,8 @@ class MainWindow(QMainWindow, Ui_MiSleep):
     def _style_signal_boxes(self):
         """Give every signal panel a visible frame so the channels don't
         look like they float together (all four spines on, theme edge)."""
-        edge = THEMES[self._theme_name]["mpl"]["axes.edgecolor"]
+        edge = resolved_theme(
+            self._theme_name, self._tone_name)["mpl"]["axes.edgecolor"]
         for ax in self.signal_ax:
             for spine in ax.spines.values():
                 spine.set_visible(True)
@@ -1178,7 +1164,8 @@ class MainWindow(QMainWindow, Ui_MiSleep):
             x = range(int(replot_start * sf), int(replot_end * sf))
             cover = self.signal_ax[i + 1].fill_between(
                 x, -y_lim + y_shift, y_lim + y_shift,
-                facecolor=THEMES[self._theme_name]["plot"]["bg"], alpha=1)
+                facecolor=resolved_theme(
+                    self._theme_name, self._tone_name)["plot"]["bg"], alpha=1)
             fill = self.signal_ax[i + 1].fill_between(
                 x, -y_lim + y_shift, y_lim + y_shift,
                 facecolor=self.state_color_dict[state],
@@ -1411,6 +1398,7 @@ class MainWindow(QMainWindow, Ui_MiSleep):
                 hash(tuple(self.mianno.sleep_state)),
                 tuple(sorted(self.state_map_dict.items())),
                 tuple(sorted(self.state_color_dict.items())),
+                float(self.config["gui"].get("hypnogramstatealpha", "0.55")),
             )
         if key != self._hypo_key:
             self.hypo_ax.clear()
@@ -1427,7 +1415,9 @@ class MainWindow(QMainWindow, Ui_MiSleep):
                 color = self.state_color_dict.get(state, "#8892a0")
                 self._hypo_steps.append(self.hypo_ax.fill_between(
                     [start, end], state - band, state + band,
-                    facecolor=color, edgecolor="none"))
+                    facecolor=color, edgecolor="none",
+                    alpha=float(self.config["gui"].get(
+                        "hypnogramstatealpha", "0.55")), zorder=1))
 
             self.hypo_ax.set_ylim(0, len(list(self.state_map_dict.keys())) + 0.5)
             self.hypo_ax.set_xlim(0, self.total_seconds)
@@ -1464,7 +1454,10 @@ class MainWindow(QMainWindow, Ui_MiSleep):
                     self.hypo_ax.axvline(each, color="lime", alpha=1))
         for each in self.mianno.marker:
             self._hypo_transient.append(
-                self.hypo_ax.axvline(each[0], color="Red", alpha=1))
+                self.hypo_ax.axvline(
+                    each[0], color=self.config["gui"].get(
+                        "markerlinecolor", "red").strip("\"'"), alpha=1,
+                    linewidth=1.6, zorder=6))
 
         self.hypo_figure.canvas.draw()
         self.hypo_figure.canvas.flush_events()
@@ -1982,10 +1975,9 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         high = self.FilterHighSpin.value()
         if filter_type in ("bandpass", "bandstop") and low >= high:
             return
-        with self._processing("Filtering channel…"):
-            self.midata.filter(
-                chans=[self.midata.channels[selected_channel[0]]],
-                btype=filter_type, low=low, high=high)
+        self.midata.filter(
+            chans=[self.midata.channels[selected_channel[0]]],
+            btype=filter_type, low=low, high=high)
         self.y_lims.append(self.y_lims[selected_channel[0]])
         self.y_shift.append(self.y_shift[selected_channel[0]])
 
@@ -2187,10 +2179,9 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         self.transfer_result_dialog.exec()
         if self.transfer_result_dialog.closed:
             return
-        with self._processing("Exporting annotation result…"):
-            self.transfer_result_dialog.transfer(config=self.config,
-                                                 mianno=self.mianno,
-                                                 ac_time=self.midata.time)
+        self.transfer_result_dialog.transfer(config=self.config,
+                                             mianno=self.mianno,
+                                             ac_time=self.midata.time)
 
     def state_spectral(self):
         """Run the per-state spectral analysis."""
@@ -2201,9 +2192,8 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         self.state_spectral_dialog.exec()
         if self.state_spectral_dialog.closed:
             return
-        with self._processing("Exporting state spectral analysis…"):
-            self.state_spectral_dialog.spectral_analysis(
-                midata=self.midata, mianno=self.mianno, config=self.config)
+        self.state_spectral_dialog.spectral_analysis(
+            midata=self.midata, mianno=self.mianno, config=self.config)
 
     def add_horizontal_line(self):
         """Add a horizontal reference line."""
@@ -2228,9 +2218,8 @@ class MainWindow(QMainWindow, Ui_MiSleep):
             self.swa_detection_dialog.exec()
             if self.swa_detection_dialog.closed:
                 return
-            with self._processing("Detecting slow-wave activity…"):
-                swa_lst = self.swa_detection_dialog.swa_detection(
-                    self.midata, self.mianno, self.config)
+            swa_lst = self.swa_detection_dialog.swa_detection(
+                self.midata, self.mianno, self.config)
 
             self.mianno._start_end += [[each[0], each[4], "SWA"] for each in swa_lst]
             self.plot_start_end_label_line()
@@ -2248,9 +2237,8 @@ class MainWindow(QMainWindow, Ui_MiSleep):
             self.spindel_detection_dialog.exec()
             if self.spindel_detection_dialog.closed:
                 return
-            with self._processing("Detecting sleep spindles…"):
-                spindle_lst = self.spindel_detection_dialog.spindle_detection(
-                    self.midata, self.mianno, self.config)
+            spindle_lst = self.spindel_detection_dialog.spindle_detection(
+                self.midata, self.mianno, self.config)
 
             self.mianno._start_end += [[each[0], each[1], "Spindle"] for each in spindle_lst]
             self.plot_start_end_label_line()
@@ -2268,9 +2256,8 @@ class MainWindow(QMainWindow, Ui_MiSleep):
             self.auto_stage_lightGBM_dialog.exec()
             if self.auto_stage_lightGBM_dialog.closed:
                 return
-            with self._processing("Running LightGBM auto staging…"):
-                auto_stage_lst, save_anno = self.auto_stage_lightGBM_dialog.auto_stage(
-                    self.midata, self.mianno)
+            auto_stage_lst, save_anno = self.auto_stage_lightGBM_dialog.auto_stage(
+                self.midata, self.mianno)
 
             limit = min(len(self.mianno._sleep_state), len(auto_stage_lst))
             self.mianno._sleep_state[:limit] = auto_stage_lst[:limit]
@@ -2296,10 +2283,9 @@ class MainWindow(QMainWindow, Ui_MiSleep):
             self.auto_stage_causalTransformer_dialog.exec()
             if self.auto_stage_causalTransformer_dialog.closed:
                 return
-            with self._processing("Running causal-transformer auto staging…"):
-                auto_stage_lst, save_anno = \
-                    self.auto_stage_causalTransformer_dialog.auto_stage(
-                        self.midata, self.mianno)
+            auto_stage_lst, save_anno = \
+                self.auto_stage_causalTransformer_dialog.auto_stage(
+                    self.midata, self.mianno)
 
             limit = min(len(self.mianno._sleep_state), len(auto_stage_lst))
             self.mianno._sleep_state[:limit] = auto_stage_lst[:limit]
@@ -2422,12 +2408,18 @@ class MainWindow(QMainWindow, Ui_MiSleep):
 
         # Apply a theme change (chosen in the settings dialog) immediately
         new_theme = gui.get("theme", fallback="light")
-        if new_theme in THEMES and new_theme != self._theme_name:
+        new_tone = gui.get("color_tone", fallback="black")
+        if new_theme not in THEMES:
+            new_theme = "light"
+        if new_tone not in COLOR_TONES:
+            new_tone = "black"
+        if new_theme != self._theme_name or new_tone != self._tone_name:
             self._theme_name = new_theme
+            self._tone_name = new_tone
             app = QApplication.instance()
             if app is not None:
-                apply_theme(app, new_theme)
-            retheme_figures(new_theme)
+                apply_theme(app, new_theme, new_tone)
+            retheme_figures(new_theme, new_tone)
             self._set_plot_colors()
             self._update_theme_action()
 

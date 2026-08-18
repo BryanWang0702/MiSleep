@@ -579,6 +579,17 @@ def test_compact_control_geometry():
 
 
 @pytest.mark.skipif(not _pyside6_available(), reason="PySide6 not installed")
+def test_interface_color_tone_presets_are_distinct():
+    from misleep.gui.style import COLOR_TONES, resolved_theme
+
+    assert set(COLOR_TONES) == {"black", "pink", "blue", "khaki"}
+    accents = {name: resolved_theme("light", name)["accent"]
+               for name in COLOR_TONES}
+    assert len(set(accents.values())) == 4
+    assert resolved_theme("light", "black")["text"] == "#151515"
+
+
+@pytest.mark.skipif(not _pyside6_available(), reason="PySide6 not installed")
 def test_settings_dialog_live_apply(monkeypatch, tmp_path):
     from PySide6.QtWidgets import QApplication
 
@@ -638,8 +649,11 @@ def test_settings_dialog_collect(fresh_config):
     # JSON values must parse and keep int codes (colors normalize to hex)
     assert json.loads(gui["statemap"])["1"] == "NREM"
     assert json.loads(gui["statecolor"])["1"] == "#ffa500"
+    assert json.loads(gui["statecolor"])["4"] == "#ececec"
     assert "marker" in gui and "startend" in gui
     assert float(gui["statecolorbgalpha"]) == 0.1
+    assert float(gui["hypnogramstatealpha"]) == 0.55
+    assert gui["color_tone"] == "black"
     assert json.loads(gui["freq_range"]) == [0.5, 30.0]
     assert float(collected["spec"]["gaussian_sigma"]) == 1.0
 

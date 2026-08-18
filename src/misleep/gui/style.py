@@ -28,6 +28,7 @@ is preserved for compatibility.
 
 from __future__ import annotations
 
+import copy
 import sys
 from string import Template
 
@@ -134,6 +135,99 @@ THEMES = {
         },
     },
 }
+
+# Color-tone presets are independent from light/dark mode.  They change the
+# application chrome and accent colors while keeping data/state colors under
+# the user's explicit control in Settings.
+COLOR_TONES = {
+    "black": {
+        "name": "Black / Gray",
+        "light": {
+            "window": "#d6d6d6", "surface": "#f0f0f0",
+            "surface_alt": "#c9c9c9", "input": "#f8f8f8",
+            "disabled_bg": "#d9d9d9", "border": "#aaaaaa",
+            "border_strong": "#666a70", "button_top": "#fafafa",
+            "button_bottom": "#c8c8c8", "text": "#151515",
+            "text_secondary": "#414141", "text_disabled": "#858585",
+            "accent": "#3c3f44", "accent_hover": "#24272b",
+            "accent_pressed": "#111315", "accent_soft": "#d3d3d3",
+            "accent_soft_2": "#bdbdbd", "scroll_handle": "#969696",
+            "scroll_handle_hover": "#707070", "slider_groove": "#bcbcbc",
+            "plot": {"grid": "#737373"},
+            "mpl": {"figure.facecolor": "#d6d6d6",
+                    "axes.edgecolor": "#8a8a8a", "xtick.color": "#414141",
+                    "ytick.color": "#414141", "grid.color": "#d0d0d0"},
+        },
+        "dark": {
+            "accent": "#aeb2b8", "accent_hover": "#d0d2d5",
+            "accent_pressed": "#858a91", "accent_soft": "#303236",
+            "accent_soft_2": "#3c3f44", "text_secondary": "#b4b4b4",
+            "plot": {"grid": "#777b80"},
+        },
+    },
+    "pink": {
+        "name": "Pink",
+        "light": {
+            "window": "#ded4d8", "surface": "#f5f0f2",
+            "surface_alt": "#d8c6cd", "input": "#fbf8f9",
+            "disabled_bg": "#e2dadd", "border": "#bca5ae",
+            "border_strong": "#8d6f7b", "button_top": "#fffafb",
+            "button_bottom": "#d9c4cc", "text": "#241b1f",
+            "text_secondary": "#604b54", "text_disabled": "#9d8991",
+            "accent": "#a63f69", "accent_hover": "#862d51",
+            "accent_pressed": "#68213e", "accent_soft": "#ead1db",
+            "accent_soft_2": "#ddb8c7", "scroll_handle": "#b88b9d",
+            "scroll_handle_hover": "#996a7d", "slider_groove": "#d6bbc6",
+            "plot": {"grid": "#a85777"},
+            "mpl": {"figure.facecolor": "#ded4d8",
+                    "axes.edgecolor": "#aa8b98", "xtick.color": "#604b54",
+                    "ytick.color": "#604b54", "grid.color": "#eadde2"},
+        },
+        "dark": {"accent": "#df7da4", "accent_hover": "#ee9fbe",
+                 "accent_pressed": "#bd5f85", "accent_soft": "#482a37",
+                 "accent_soft_2": "#593344"},
+    },
+    "blue": {
+        "name": "Blue",
+        "light": {},
+        "dark": {},
+    },
+    "khaki": {
+        "name": "Khaki",
+        "light": {
+            "window": "#ddd9c9", "surface": "#f3f1e8",
+            "surface_alt": "#d4cfb8", "input": "#faf9f3",
+            "disabled_bg": "#e0ddcf", "border": "#b8af8e",
+            "border_strong": "#82785b", "button_top": "#fbfaf3",
+            "button_bottom": "#d2ccb3", "text": "#242117",
+            "text_secondary": "#5d5742", "text_disabled": "#99927b",
+            "accent": "#71663a", "accent_hover": "#5a512d",
+            "accent_pressed": "#40391e", "accent_soft": "#e2ddc4",
+            "accent_soft_2": "#d2c9a6", "scroll_handle": "#aaa17f",
+            "scroll_handle_hover": "#8c825f", "slider_groove": "#cbc4a7",
+            "plot": {"grid": "#847a49"},
+            "mpl": {"figure.facecolor": "#ddd9c9",
+                    "axes.edgecolor": "#9f9676", "xtick.color": "#5d5742",
+                    "ytick.color": "#5d5742", "grid.color": "#e3dfd0"},
+        },
+        "dark": {"accent": "#c4b76f", "accent_hover": "#d8cd8d",
+                 "accent_pressed": "#9f944f", "accent_soft": "#3d3928",
+                 "accent_soft_2": "#4b4630"},
+    },
+}
+
+
+def resolved_theme(theme_name: str = "light", tone_name: str = "black") -> dict:
+    """Return a theme with the selected color-tone overrides applied."""
+    theme_name = theme_name if theme_name in THEMES else "light"
+    tone_name = tone_name if tone_name in COLOR_TONES else "black"
+    result = copy.deepcopy(THEMES[theme_name])
+    for key, value in COLOR_TONES[tone_name][theme_name].items():
+        if isinstance(value, dict):
+            result[key].update(value)
+        else:
+            result[key] = value
+    return result
 
 #: Buttons that act as *primary* actions get the accent colour.
 _PRIMARY_BUTTONS = (
@@ -701,10 +795,10 @@ QCalendarWidget QSpinBox {
 """)
 
 
-def build_stylesheet(theme_name: str = "light") -> str:
+def build_stylesheet(theme_name: str = "light", tone_name: str = "black") -> str:
     """Return the Qt stylesheet for the given theme name."""
     theme_name = theme_name if theme_name in THEMES else "light"
-    palette = dict(THEMES[theme_name])
+    palette = resolved_theme(theme_name, tone_name)
     palette["_primary"] = _PRIMARY_SELECTOR
     palette["_primary_hover"] = _state_selector(_PRIMARY_BUTTONS, "hover")
     palette["_primary_pressed"] = _state_selector(_PRIMARY_BUTTONS, "pressed")
@@ -749,7 +843,7 @@ _MPL_SHARED = {
 }
 
 
-def build_palette(theme_name: str = "light"):
+def build_palette(theme_name: str = "light", tone_name: str = "black"):
     """Return a QPalette matching the theme.
 
     The stylesheet covers most widgets, but a few things are drawn by the
@@ -762,7 +856,7 @@ def build_palette(theme_name: str = "light"):
     from PySide6.QtGui import QColor
 
     theme_name = theme_name if theme_name in THEMES else "light"
-    p = THEMES[theme_name]
+    p = resolved_theme(theme_name, tone_name)
 
     pal = QPalette()
     pal.setColor(QPalette.ColorRole.Window, QColor(p["window"]))
@@ -794,7 +888,7 @@ def build_palette(theme_name: str = "light"):
     return pal
 
 
-def apply_matplotlib_theme(theme_name: str = "light") -> None:
+def apply_matplotlib_theme(theme_name: str = "light", tone_name: str = "black") -> None:
     """Apply the theme colors to the matplotlib defaults (affects new figures)."""
     import matplotlib as mpl
     from matplotlib import font_manager
@@ -810,10 +904,10 @@ def apply_matplotlib_theme(theme_name: str = "light") -> None:
             break
         except Exception:
             continue
-    mpl.rcParams.update(THEMES[theme_name]["mpl"])
+    mpl.rcParams.update(resolved_theme(theme_name, tone_name)["mpl"])
 
 
-def retheme_figures(theme_name: str = "light") -> None:
+def retheme_figures(theme_name: str = "light", tone_name: str = "black") -> None:
     """Restyle every currently open matplotlib figure for ``theme_name``.
 
     Used after a live theme toggle so existing canvases (signal area,
@@ -823,7 +917,7 @@ def retheme_figures(theme_name: str = "light") -> None:
     import matplotlib.pyplot as plt
 
     theme_name = theme_name if theme_name in THEMES else "light"
-    mpl_colors = THEMES[theme_name]["mpl"]
+    mpl_colors = resolved_theme(theme_name, tone_name)["mpl"]
     for num in plt.get_fignums():
         fig = plt.figure(num)
         try:
@@ -846,7 +940,8 @@ def retheme_figures(theme_name: str = "light") -> None:
 # Public API
 # ---------------------------------------------------------------------------
 
-def apply_theme(app: QApplication, theme_name: str = "light") -> str:
+def apply_theme(app: QApplication, theme_name: str = "light",
+                tone_name: str = "black") -> str:
     """Apply a full MiSleep theme (style + fonts + matplotlib) to ``app``.
 
     Parameters
@@ -872,9 +967,9 @@ def apply_theme(app: QApplication, theme_name: str = "light") -> str:
         pass
 
     _setup_app_font(app)
-    app.setPalette(build_palette(theme_name))
-    app.setStyleSheet(build_stylesheet(theme_name))
-    apply_matplotlib_theme(theme_name)
+    app.setPalette(build_palette(theme_name, tone_name))
+    app.setStyleSheet(build_stylesheet(theme_name, tone_name))
+    apply_matplotlib_theme(theme_name, tone_name)
     return theme_name
 
 
