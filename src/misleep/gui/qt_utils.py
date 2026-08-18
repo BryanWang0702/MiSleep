@@ -17,8 +17,17 @@ from PySide6.QtWidgets import (
 
 
 def app_icon() -> QIcon:
-    """Return the MiSleep application icon from the Qt resources."""
-    return QIcon(":/logo/logo.png")
+    """Return the MiSleep application icon from the Qt resources.
+
+    The square ``misleep.ico`` is the primary icon (crisp at small title-bar
+    / taskbar sizes); ``logo.png`` is kept as the large-size fallback.
+    """
+    icon = QIcon()
+    icon.addFile(":/logo/misleep.ico")
+    icon.addFile(":/logo/logo.png")
+    if icon.isNull():
+        icon = QIcon(":/logo/logo.png")
+    return icon
 
 
 class CollapsibleSection(QWidget):
@@ -201,12 +210,14 @@ def cal_draw_spectrum(data, sf, nperseg, freq_band=None, relative=None, nfft=Non
         ``spectrum`` is an array of shape ``(2, n_freq)`` (frequencies and
         powers); ``figure`` is the matplotlib figure.
     """
-    import matplotlib.pyplot as plt
+    # IMPORTANT: build the figure with matplotlib.figure.Figure directly
+    # (not pyplot).  The old ``plt.close()`` here silently closed the main
+    # window's figures, which froze the signal/hypnogram panels after an
+    # export.  A non-pyplot figure is invisible to pyplot bookkeeping.
     import numpy as np
+    from matplotlib.figure import Figure
     from scipy.ndimage import gaussian_filter1d
     from scipy.signal import welch
-
-    plt.close()
 
     if freq_band is None:
         freq_band = [0.5, 30]
@@ -228,9 +239,9 @@ def cal_draw_spectrum(data, sf, nperseg, freq_band=None, relative=None, nfft=Non
 
     major_ticks_top = np.linspace(0, freq_band[1] + 0.1, 10)
 
-    figure = plt.figure(figsize=(10, 7))
+    figure = Figure(figsize=(10, 7))
     ax = figure.subplots(nrows=1, ncols=1)
-    plt.subplots_adjust(top=0.95, left=0.15, bottom=0.15, right=0.95)
+    figure.subplots_adjust(top=0.95, left=0.15, bottom=0.15, right=0.95)
 
     ax.xaxis.set_ticks(major_ticks_top)
     ax.grid(which="major", alpha=0.6)

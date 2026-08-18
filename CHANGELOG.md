@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Export no longer freezes the plots**: `cal_draw_spectrum` built its
+  figures through pyplot and its bare `plt.close()` silently closed the
+  main window's figures, so the signal / hypnogram panels stopped
+  updating after a State Spectral export. It now uses a standalone
+  `matplotlib.figure.Figure`, and the main window self-heals any
+  externally-closed canvas.
+
+### Changed
+
+- **App icon**: the window now uses the square `misleep.ico` (crisp at
+  16/32/48 px) with the logo PNG as the large-size fallback.
+- **About dialog / version**: package bumped to **v0.4.0**; About shows
+  the current version and update date.
+
 ### Changed
 
 - **Spectrogram clarity**: restored v2-style 5 s / 1 s normalized power

@@ -21,7 +21,7 @@ def _pyside6_available():
 def test_public_api():
     import misleep
 
-    assert misleep.__version__ == "0.3.0"
+    assert misleep.__version__ == "0.4.0"
     for name in [
         "MiData",
         "MiAnnotation",
@@ -572,6 +572,7 @@ def test_compact_control_geometry():
     stylesheet = build_stylesheet("light")
     assert "#FilterConfirmBt:disabled" in stylesheet
     assert "#MultipleScalerConfirmBt:disabled" in stylesheet
+    assert "max-width: 16777215px" not in stylesheet
     # Checkboxes use Fusion's native tick; a custom checked background would
     # turn the entire square into a solid block on Windows.
     assert "QCheckBox::indicator:checked" not in stylesheet
@@ -713,6 +714,56 @@ def test_hypnogram_ignores_clicks_outside_axes():
 
     window.is_saved = True
     window.close()
+
+
+@pytest.mark.skipif(not _pyside6_available(), reason="PySide6 not installed")
+def test_data_export_always_restores_main_window(tmp_path, monkeypatch):
+    """Successful and failed exports must both leave the signal UI usable."""
+    import datetime
+    import numpy as np
+    from PySide6.QtWidgets import QApplication, QFileDialog, QMessageBox
+
+    app = QApplication.instance() or QApplication([])
+    from misleep.data import MiData
+    from misleep.gui.dialogs import SaveDataDialog
+    from misleep.gui.main_window import MainWindow
+    from misleep.gui.workers import SaveThread
+
+    window = MainWindow()
+    window.midata = MiData(
+        signals=[np.arange(100, dtype=float)], channels=["EEG"], sf=[10.0],
+        time="20240409-18:00:00")
+    window.ac_time = datetime.datetime.strptime(
+        window.midata.time, "%Y%m%d-%H:%M:%S")
+    dialog = SaveDataDialog()
+    dialog.exec = lambda: None
+    dialog.closed = False
+    window.save_data_dialog = dialog
+    messages = []
+    monkeypatch.setattr(
+        QMessageBox, "about",
+        staticmethod(lambda *args, **kwargs: messages.append(args[1:])))
+
+    output = tmp_path / "export.npz"
+    monkeypatch.setattr(
+        QFileDialog, "getSaveFileName",
+        staticmethod(lambda *args, **kwargs: (str(output), "")))
+    window.save_data()
+    assert output.exists()
+    assert window.isEnabled()
+
+    monkeypatch.setattr(
+        SaveThread, "save_data",
+        lambda self: (_ for _ in ()).throw(OSError("simulated failure")))
+    window.save_data()
+    assert window.isEnabled()
+    assert any("simulated failure" in text for message in messages
+               for text in message)
+
+    dialog.close()
+    window.is_saved = True
+    window.close()
+    app.processEvents()
 
 
 @pytest.mark.skipif(not _pyside6_available(), reason="PySide6 not installed")

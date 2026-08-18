@@ -226,34 +226,35 @@ class TransferResultDialog(QDialog, Ui_TransferResultDialog):
             self, "Save transfered result",
             f"{get_base_path(config['gui']['openpath'])}", "*.xlsx;;")
         if fd == "":
-            return
+            return None
 
         try:
-            writer = pd.ExcelWriter(fd, datetime_format="yyyy-mm-dd hh:mm:ss")
-            pd.concat([df, analyse_df], axis=1).to_excel(
-                excel_writer=writer, sheet_name="Sleep state", index=False)
-            start_end_df.to_excel(excel_writer=writer, sheet_name="Start End", index=False)
-            marker_df.to_excel(excel_writer=writer, sheet_name="Marker", index=False)
-            writer.close()
+            with pd.ExcelWriter(
+                    fd, datetime_format="yyyy-mm-dd hh:mm:ss") as writer:
+                pd.concat([df, analyse_df], axis=1).to_excel(
+                    excel_writer=writer, sheet_name="Sleep state", index=False)
+                start_end_df.to_excel(
+                    excel_writer=writer, sheet_name="Start End", index=False)
+                marker_df.to_excel(
+                    excel_writer=writer, sheet_name="Marker", index=False)
         except PermissionError as e:
             logger.error(f"Permission error: {e}")
             QMessageBox.about(self, "Error", "Close the EXCEL sheet first.")
-            return
+            return False
 
-        QMessageBox.about(self, "Info", "Transfered result saved")
+        return True
 
     def ok_event(self):
         self.closed = False
-        self.hide()
+        self.accept()
 
     def cancel_event(self):
         self.closed = True
-        self.hide()
+        self.reject()
 
     def closeEvent(self, event):
-        event.ignore()
         self.closed = True
-        self.hide()
+        super().closeEvent(event)
 
 
 class StateSpectralDialog(QDialog, Ui_StateSpectralDialog):
@@ -413,41 +414,54 @@ class StateSpectralDialog(QDialog, Ui_StateSpectralDialog):
         fd = QFileDialog.getExistingDirectory(self, "Select a folder to save states' data",
                                               f"{config['gui']['openpath']}")
         if fd == "":
-            return
+            return None
 
+        figures = [figure for _, figure in spectra.values()]
         try:
-            writer = pd.ExcelWriter(
-                fd + f"/{os.path.basename(config['gui']['openpath']).split('.')[0]}_power_results.xlsx")
-
-            for state, (spec, figure) in spectra.items():
-                state_name = str(name_map.get(state, state))
-                safe_name = "".join(c if c not in '\\/:*?"<>|' else "_" for c in state_name)
-                figure.savefig(fd + "/" + safe_name + "_spectrum.pdf")
-                _df = pd.DataFrame(data=spec.T, columns=["frequency", "power"])
-                if hour_spec[state]:
-                    _df[[str(each) for each in range(1, len(hour_spec[state]) + 1)]] = \
-                        pd.DataFrame(hour_spec[state]).T
-                _df.to_excel(excel_writer=writer, sheet_name=safe_name[:31], index=False)
-
-            writer.close()
+            output = fd + \
+                f"/{os.path.basename(config['gui']['openpath']).split('.')[0]}_power_results.xlsx"
+            with pd.ExcelWriter(output) as writer:
+                for state, (spec, figure) in spectra.items():
+                    state_name = str(name_map.get(state, state))
+                    safe_name = "".join(
+                        c if c not in '\\/:*?"<>|' else "_"
+                        for c in state_name)
+                    figure.savefig(fd + "/" + safe_name + "_spectrum.pdf")
+                    _df = pd.DataFrame(
+                        data=spec.T, columns=["frequency", "power"])
+                    if hour_spec[state]:
+                        _df[[str(each) for each in range(
+                            1, len(hour_spec[state]) + 1)]] = \
+                            pd.DataFrame(hour_spec[state]).T
+                    _df.to_excel(
+                        excel_writer=writer, sheet_name=safe_name[:31],
+                        index=False)
         except PermissionError as e:
             logger.error(f"Permission error: {e}")
             QMessageBox.about(self, "Error", "Close the PDF or EXCEL file under this folder first.")
-            return
-        QMessageBox.about(self, "Info", "Spectral analysis finished")
+            return False
+        finally:
+            # The figures from cal_draw_spectrum are non-pyplot Figure
+            # objects; clear() releases their memory without touching the
+            # main window's figures.
+            for figure in figures:
+                try:
+                    figure.clear()
+                except Exception:  # pragma: no cover
+                    pass
+        return True
 
     def ok_event(self):
         self.closed = False
-        self.hide()
+        self.accept()
 
     def cancel_event(self):
         self.closed = True
-        self.hide()
+        self.reject()
 
     def closeEvent(self, event):
-        event.ignore()
         self.closed = True
-        self.hide()
+        super().closeEvent(event)
 
 
 class HorizontalLineDialog(QDialog, Ui_horizontal_line_dialog):
@@ -915,16 +929,15 @@ class SaveDataDialog(QDialog, Ui_SaveDataDialog):
 
     def ok_event(self):
         self.closed = False
-        self.hide()
+        self.accept()
 
     def cancel_event(self):
         self.closed = True
-        self.hide()
+        self.reject()
 
     def closeEvent(self, event):
-        event.ignore()
         self.closed = True
-        self.hide()
+        super().closeEvent(event)
 
 
 class EventListDialog(QDialog):

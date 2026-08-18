@@ -3,7 +3,7 @@
 
 import numpy as np
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
-from PySide6.QtWidgets import QFileDialog, QMainWindow, QMessageBox
+from PySide6.QtWidgets import QApplication, QFileDialog, QMainWindow, QMessageBox
 
 from misleep.gui.uis.spec_window_ui import Ui_spec_window
 from misleep.viz.spectral import spectrogram_color_limits
@@ -131,19 +131,22 @@ class SpecWindow(QMainWindow, Ui_spec_window):
             return
 
         self.setDisabled(True)
-        self.spectrum_figure.savefig(fd, dpi=300)
-        data_path = fd[:-4]
-        fd = data_path + "_data.csv"
         try:
+            self.spectrum_figure.savefig(fd, dpi=300)
+            data_path = fd[:-4]
+            fd = data_path + "_data.csv"
             _df = pd.DataFrame(
                 data=np.array([[f"{value:.2f}" for value in self.spectrum[1]], self.spectrum[0]]).T,
                 columns=["frequency", "power"])
             _df.to_csv(fd, index=False)
-        except PermissionError:
+        except OSError:
             QMessageBox.about(
                 self, "Error",
                 "Permission error, please check if the file is open in other programs.")
-        self.setEnabled(True)
+        finally:
+            self.setEnabled(True)
+            self.update()
+            QApplication.processEvents()
 
     def spectrogram_save(self):
         import pandas as pd
@@ -156,21 +159,23 @@ class SpecWindow(QMainWindow, Ui_spec_window):
             return
 
         self.setDisabled(True)
-        self.spectrogram_figure.savefig(fd, dpi=300)
-
-        data_path = fd[:-4]
-        fd = data_path + "_data.csv"
         try:
+            self.spectrogram_figure.savefig(fd, dpi=300)
+            data_path = fd[:-4]
+            fd = data_path + "_data.csv"
             _df = pd.DataFrame(
                 self.spectrogram[2].T,
                 index=[f"{value:.2f}" for value in self.spectrogram[1]],
                 columns=[f"{value:.2f}" for value in self.spectrogram[0]])
             _df.to_csv(fd, index=True)
-        except PermissionError:
+        except OSError:
             QMessageBox.about(
                 self, "Error",
                 "Permission error, please check if the file is open in other programs.")
-        self.setEnabled(True)
+        finally:
+            self.setEnabled(True)
+            self.update()
+            QApplication.processEvents()
 
     def closeEvent(self, event):
         """Release matplotlib figures; they are recreated on the next show."""

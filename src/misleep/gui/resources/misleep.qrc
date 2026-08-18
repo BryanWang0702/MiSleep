@@ -2,5 +2,6 @@
   <qresource prefix="logo">
     <file>logo.png</file>
     <file>entire_logo.png</file>
+    <file>misleep.ico</file>
   </qresource>
 </RCC>

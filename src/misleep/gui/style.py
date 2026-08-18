@@ -403,7 +403,6 @@ QPushButton[default="true"]:pressed {
     min-height: 20px;
     max-height: 24px;
     min-width: 52px;
-    max-width: 16777215px;
     padding: 0px;
     font-size: 10pt;
 }

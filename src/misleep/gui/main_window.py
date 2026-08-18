@@ -11,6 +11,7 @@ import datetime
 import json
 import os
 import time
+from contextlib import contextmanager
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -255,6 +256,28 @@ class MainWindow(QMainWindow, Ui_MiSleep):
             dialog = factory()
             setattr(self, attribute, dialog)
         return dialog
+
+    @contextmanager
+    def _busy_operation(self):
+        """Disable interaction during synchronous work and always restore it.
+
+        Export routines still contain libraries that must run on the GUI
+        thread (Qt dialogs and matplotlib).  This guard prevents accidental
+        input during that work and, importantly, restores the window after
+        success, cancellation, or an exception.
+        """
+        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+        self.setEnabled(False)
+        QApplication.processEvents()
+        try:
+            yield
+        finally:
+            self.setEnabled(True)
+            QApplication.restoreOverrideCursor()
+            self.signal_canvas.update()
+            self.hypo_canvas.update()
+            self.update()
+            QApplication.processEvents()
 
     def toggle_theme(self):
         """Toggle between the light and dark themes and redraw everything."""
@@ -835,6 +858,9 @@ class MainWindow(QMainWindow, Ui_MiSleep):
             self.mianno = None
             return
 
+        # heal the canvases before (re)attaching them to the scroll areas
+        self._repair_canvases()
+
         if isinstance(self.midata, MiData) and not isinstance(self.mianno, MiAnnotation):
             self.mianno = create_new_mianno(self.midata.duration)
         self._hypo_revision += 1
@@ -934,6 +960,46 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         self.hypo_figure.canvas.flush_events()
         self.signal_figure.canvas.draw()
         self.signal_figure.canvas.flush_events()
+
+    def _repair_canvases(self):
+        """Recreate a main canvas whose matplotlib figure was closed.
+
+        A stray pyplot ``close()`` in some export routine used to kill the
+        main figures, freezing the signal/hypnogram panels.  With the
+        source fixed this should never happen, but the guard keeps the
+        window self-healing anyway.
+        """
+        import matplotlib.pyplot as plt
+
+        def alive(fig):
+            try:
+                return (plt.fignum_exists(fig.number)
+                        and plt.figure(fig.number) is fig)
+            except Exception:  # pragma: no cover
+                return False
+
+        if not alive(self.signal_figure):
+            self.signal_figure = plt.figure()
+            self.signal_ax = None
+            self.signal_canvas = FigureCanvas(self.signal_figure)
+            self.signal_canvas.mpl_connect("button_release_event", self.click_signal)
+            self.signal_canvas.installEventFilter(self)
+            self.SignalArea.setWidget(self.signal_canvas)
+            self._signal_artists = {}
+            self._spec_artist = None
+            logger.warning("Signal canvas was closed externally - recreated")
+
+        if not alive(self.hypo_figure):
+            self.hypo_figure = plt.figure(layout="constrained")
+            self.hypo_ax = self.hypo_figure.subplots()
+            self.hypo_canvas = FigureCanvas(self.hypo_figure)
+            self.hypo_canvas.mpl_connect("button_release_event", self.click_hypo)
+            self.hypo_canvas.installEventFilter(self)
+            self.HypnoArea.setWidget(self.hypo_canvas)
+            self._hypo_key = None
+            self._hypo_steps = []
+            self._hypo_transient = []
+            logger.warning("Hypnogram canvas was closed externally - recreated")
 
     def _fit_canvases(self):
         """Resize the matplotlib figures to match their widgets.
@@ -1493,6 +1559,9 @@ class MainWindow(QMainWindow, Ui_MiSleep):
 
     def redraw_all(self, second=0):
         """Validate ``second`` and redraw everything."""
+        # heal the canvases first in case an export closed a figure
+        self._repair_canvases()
+
         if second + self.show_duration >= self.total_seconds:
             self.current_sec = self.total_seconds - self.show_duration
         elif second <= 0:
@@ -2217,8 +2286,17 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         dialog.exec()
         if dialog.closed:
             return
-        dialog.transfer(config=self.config, mianno=self.mianno,
-                        ac_time=self.midata.time)
+        try:
+            with self._busy_operation():
+                saved = dialog.transfer(
+                    config=self.config, mianno=self.mianno,
+                    ac_time=self.midata.time)
+        except Exception as exc:
+            logger.exception("Transfer result failed")
+            QMessageBox.about(self, "Error", f"Transfer result failed: {exc}")
+            return
+        if saved:
+            QMessageBox.about(self, "Info", "Transferred result saved")
 
     def state_spectral(self):
         """Run the per-state spectral analysis."""
@@ -2231,8 +2309,17 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         dialog.exec()
         if dialog.closed:
             return
-        dialog.spectral_analysis(
-            midata=self.midata, mianno=self.mianno, config=self.config)
+        try:
+            with self._busy_operation():
+                saved = dialog.spectral_analysis(
+                    midata=self.midata, mianno=self.mianno,
+                    config=self.config)
+        except Exception as exc:
+            logger.exception("State spectral export failed")
+            QMessageBox.about(self, "Error", f"Spectral export failed: {exc}")
+            return
+        if saved:
+            QMessageBox.about(self, "Info", "Spectral analysis finished")
 
     def add_horizontal_line(self):
         """Add a horizontal reference line."""
@@ -2433,7 +2520,13 @@ class MainWindow(QMainWindow, Ui_MiSleep):
             return
 
         save_thread = SaveThread(file=midata_to_save, file_path=data_path)
-        saved = save_thread.save_data()
+        try:
+            with self._busy_operation():
+                saved = save_thread.save_data()
+        except Exception as exc:
+            logger.exception("Data export failed")
+            QMessageBox.about(self, "Error", f"Data save failed: {exc}")
+            return
         if saved:
             QMessageBox.about(self, "Info", f"Data Saved to {data_path}")
         else:
