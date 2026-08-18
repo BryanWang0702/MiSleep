@@ -84,10 +84,15 @@ misleep = "misleep.gui.app:main"
 [project.entry-points."misleep.signal_readers"]
 mat = "misleep.io.mat:load_mat"
 edf = "misleep.io.edf:load_edf"
+npy = "misleep.io.array:load_npy"
+npz = "misleep.io.array:load_npz"
+csv = "misleep.io.array:load_csv"
+tsv = "misleep.io.array:load_tsv"
 
 [project.entry-points."misleep.signal_writers"]
 mat = "misleep.io.mat:write_mat"
 edf = "misleep.io.edf:write_edf"
+npz = "misleep.io.array:write_npz"
 
 [tool.setuptools]
 package-dir = { "" = "src" }

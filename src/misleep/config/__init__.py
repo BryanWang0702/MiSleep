@@ -40,6 +40,7 @@ def _ensure_user_config() -> Path:
     path = user_config_path()
     if not path.exists():
         try:
+            path.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy(default_config_path(), path)
             logger.info("Created user configuration at %s", path)
         except OSError:  # pragma: no cover

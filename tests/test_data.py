@@ -26,8 +26,9 @@ def test_midata_validation():
 
 
 def test_midata_duplicate_channels():
-    md = MiData(signals=[np.zeros(10), np.zeros(10)], channels=["EEG", "EEG"], sf=[1, 1], time="t")
-    assert md.channels == ["EEG", "EEG_1"]
+    md = MiData(signals=[np.zeros(10), np.zeros(10), np.zeros(10)],
+                channels=["EEG", "EEG", "EEG"], sf=[1, 1, 1], time="t")
+    assert md.channels == ["EEG", "EEG_1", "EEG_2"]
 
 
 def test_midata_add_delete(midata):
@@ -51,8 +52,10 @@ def test_midata_crop(midata):
     assert cropped.signals[0].shape == (100 * 256,)
     assert cropped.channels == midata.channels
     # Cropping past the end clamps
-    cropped2 = midata.crop([500, 9999])
+    requested = [500, 9999]
+    cropped2 = midata.crop(requested)
     assert cropped2.duration == 100
+    assert requested == [500, 9999]  # caller input is not mutated
 
 
 def test_midata_pick_chs(midata):
@@ -68,6 +71,15 @@ def test_midata_rename(midata):
     assert midata.channels[0] == "EEG_F"
     with pytest.raises(IndexError):
         midata.rename_channels({"NOT_A_CHANNEL": "x"})
+
+
+def test_midata_rejects_invalid_signal_metadata():
+    with pytest.raises(ValueError):
+        MiData([], [], [], "t")
+    with pytest.raises(ValueError):
+        MiData([np.zeros((2, 2))], ["EEG"], [1], "t")
+    with pytest.raises(ValueError):
+        MiData([np.zeros(10)], ["EEG"], [0], "t")
 
 
 def test_midata_filter(midata):

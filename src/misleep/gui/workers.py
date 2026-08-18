@@ -8,8 +8,8 @@ stays responsive while saving large files.
 from PySide6.QtCore import QThread
 
 from misleep.io.annotation import save_misleep_anno
-from misleep.io.edf import write_edf
-from misleep.io.mat import load_mat, write_mat
+from misleep.io.base import write_signal
+from misleep.io.mat import load_mat
 
 
 class SaveThread(QThread):
@@ -41,17 +41,12 @@ class SaveThread(QThread):
         return save_misleep_anno(mianno, midata, self.file_path)
 
     def save_data(self):
-        """Save a :class:`MiData` to ``.mat`` or ``.edf``."""
+        """Save a :class:`MiData` through the registered format writer."""
         midata = self.file
         if midata is None:
             return False
 
-        if self.file_path.endswith(".mat"):
-            write_mat(midata.signals, midata.channels, midata.sf, midata.time, self.file_path)
-        elif self.file_path.endswith(".edf"):
-            write_edf(midata.signals, midata.channels, midata.sf, midata.time, self.file_path)
-        else:
-            raise ValueError("File type not supported!")
+        write_signal(midata, self.file_path)
         return True
 
 

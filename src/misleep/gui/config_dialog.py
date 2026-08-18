@@ -50,7 +50,7 @@ class ColorButton(QPushButton):
         super().__init__(parent)
         self._color = QColor(color)
         self.setCursor(Qt.PointingHandCursor)
-        self.setFixedSize(48, 26)
+        self.setFixedSize(64, 30)
         self.setToolTip("Click to choose a color")
         self.set_color(self._color)
         self.clicked.connect(self._pick)
@@ -71,7 +71,7 @@ class ColorButton(QPushButton):
                 background-color: {self._color.name()};
                 color: {_contrast_text(self._color)};
                 border: 2px solid rgba(0, 0, 0, 60%);
-                border-radius: 0px;
+                border-radius: 6px;
                 font-size: 8pt;
                 font-weight: bold;
                 padding: 0px;
@@ -203,7 +203,8 @@ class SettingsDialog(QDialog):
         h.setContentsMargins(0, 0, 0, 0)
         h.addWidget(QLabel(f"State {code}:"))
         name_edit = QLineEdit(name)
-        name_edit.setFixedWidth(140)
+        name_edit.setMinimumWidth(140)
+        name_edit.setMaximumWidth(220)
         h.addWidget(name_edit)
         color_bt = ColorButton(color)
         h.addWidget(color_bt)
@@ -379,7 +380,8 @@ class SettingsDialog(QDialog):
         h = QHBoxLayout(row)
         h.setContentsMargins(6, 2, 6, 2)
         label_edit = QLineEdit(label)
-        label_edit.setFixedWidth(160)
+        label_edit.setMinimumWidth(160)
+        label_edit.setMaximumWidth(240)
         color_bt = ColorButton(color)
         del_bt = QPushButton("Delete")
         del_bt.clicked.connect(lambda: self._remove_se_color(row))

@@ -17,29 +17,24 @@ from misleep.io.base import register_signal_reader, load_signal
 # ----------------------------------------------------------------------
 # 1. Write a reader: ``func(path: str) -> MiData``
 # ----------------------------------------------------------------------
-def load_npy(path: str) -> MiData:
-    """Load a trivial ``.npy`` format: a dict with signals/channels/sf/time."""
-    data = np.load(path, allow_pickle=True).item()
+def load_xyz(path: str) -> MiData:
+    """Load this example's safe, numeric format plus a fixed schema."""
+    data = np.loadtxt(path, delimiter=",")
     return MiData(
-        signals=data["signals"],
-        channels=data["channels"],
-        sf=data["sf"],
-        time=data["time"],
+        signals=[data[:, 0]],
+        channels=["EEG"],
+        sf=[256.0],
+        time="20240409-18:00:00",
     )
 
 
 def main():
     # 2. Register it for the ".npy" extension
-    register_signal_reader(".npy", load_npy)
+    register_signal_reader(".xyz", load_xyz)
 
     # 3. Create a demo file and load it through the registry
-    demo = Path("demo_midata.npy")
-    np.save(demo, {
-        "signals": [np.zeros(2560)],
-        "channels": ["EEG"],
-        "sf": [256.0],
-        "time": "20240409-18:00:00",
-    }, allow_pickle=True)
+    demo = Path("demo_midata.xyz")
+    np.savetxt(demo, np.zeros((2560, 1)), delimiter=",")
 
     midata = load_signal(demo)
     print("Loaded via registry:", midata)

@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **File formats**: added pickle-free NumPy NPY/NPZ, CSV/TSV signal input,
+  NPZ output, BDF input, and JSON/CSV/TSV annotation input. The GUI now
+  uses the extension registry, so built-in and third-party readers appear
+  automatically instead of being limited to hard-coded MAT/EDF branches.
+- **I/O safety and correctness**: NumPy object/pickle files are rejected;
+  plain arrays use explicit JSON metadata, and third-party entry-point
+  extensions are normalized consistently. Signal containers now reject
+  invalid dimensions/frequencies and preserve unique channel names.
+
 - **GUI redesign**: the four right-side docks were replaced by one tidy
   **sidebar** with collapsible sections (named as before: Meta / Channel /
   Annotation / Time); the bottom **status bar was removed**; all sizes are
@@ -30,9 +39,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   state backgrounds are drawn as cheap rectangles; short windows keep
   every sample, long windows use a min/max envelope (no visible
   thinning).
-- **Appearance**: sharper, higher-contrast look — square corners and
-  deeper palette in both themes; sidebar rows are vertically aligned
-  (uniform control widths, equal state-button columns).
+- **Appearance**: softer rounded buttons/editors with clearer focus and
+  hover states, a bounded responsive sidebar, and aligned control widths
+  that remain comfortable under DPI scaling.
 
 ## [0.3.0] — 2025
 

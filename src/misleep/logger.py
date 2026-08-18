@@ -10,6 +10,7 @@ stored under the per-user MiSleep data directory (see :func:`get_data_dir`).
 """
 
 import logging
+import os
 import sys
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
@@ -26,7 +27,8 @@ def get_data_dir() -> Path:
     Path
         Absolute path of the data directory.
     """
-    data_dir = Path.home() / ".misleep"
+    override = os.environ.get("MISLEEP_DATA_DIR")
+    data_dir = Path(override).expanduser() if override else Path.home() / ".misleep"
     data_dir.mkdir(parents=True, exist_ok=True)
     return data_dir
 

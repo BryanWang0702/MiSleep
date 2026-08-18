@@ -234,7 +234,7 @@ QToolBar::separator {
 QToolButton {
     background: transparent;
     border: 1px solid transparent;
-    border-radius: 0px;
+    border-radius: 6px;
     padding: 4px 8px;
     color: $text;
 }
@@ -253,10 +253,10 @@ QToolButton:disabled {
 QPushButton {
     background-color: $surface;
     border: 1px solid $border_strong;
-    border-radius: 0px;
-    padding: 4px 12px;
+    border-radius: 6px;
+    padding: 5px 12px;
     color: $text;
-    min-height: 26px;
+    min-height: 28px;
 }
 QPushButton:hover {
     background-color: $surface_alt;
@@ -346,8 +346,9 @@ QComboBox, QSpinBox, QDoubleSpinBox, QLineEdit, QDateTimeEdit,
 QTimeEdit, QDateEdit, QPlainTextEdit, QTextEdit {
     background-color: $input;
     border: 1px solid $border_strong;
-    border-radius: 0px;
-    padding: 3px 8px;
+    border-radius: 6px;
+    padding: 4px 8px;
+    min-height: 27px;
     selection-background-color: $accent;
     selection-color: #ffffff;
     color: $text;
@@ -371,7 +372,7 @@ QComboBox::drop-down {
 QComboBox QAbstractItemView {
     background-color: $surface;
     border: 1px solid $border;
-    border-radius: 0px;
+    border-radius: 6px;
     padding: 4px;
     selection-background-color: $accent_soft;
     selection-color: $text;
@@ -388,7 +389,7 @@ QSpinBox::down-button, QDoubleSpinBox::down-button, QDateTimeEdit::down-button {
 QListView, QListWidget, QTreeView, QTableView, QTreeWidget {
     background-color: $surface;
     border: 1px solid $border;
-    border-radius: 0px;
+    border-radius: 6px;
     alternate-background-color: $surface_alt;
     outline: none;
 }
@@ -427,7 +428,7 @@ QScrollBar:horizontal {
 }
 QScrollBar::handle:horizontal {
     background: $scroll_handle;
-    border-radius: 0px;
+    border-radius: 6px;
     min-width: 32px;
 }
 QScrollBar::handle:horizontal:hover {
@@ -441,7 +442,7 @@ QScrollBar:vertical {
 }
 QScrollBar::handle:vertical {
     background: $scroll_handle;
-    border-radius: 0px;
+    border-radius: 6px;
     min-height: 32px;
 }
 QScrollBar::handle:vertical:hover {
@@ -492,7 +493,7 @@ QSplitter::handle {
 /* ---------------- groups & tabs ---------------- */
 QGroupBox {
     border: 1px solid $border;
-    border-radius: 0px;
+    border-radius: 8px;
     margin-top: 10px;
     padding-top: 8px;
     background: transparent;
@@ -506,7 +507,7 @@ QGroupBox::title {
 }
 QTabWidget::pane {
     border: 1px solid $border;
-    border-radius: 0px;
+    border-radius: 8px;
     background: $surface;
     top: -1px;
 }
@@ -617,14 +618,14 @@ QToolTip {
 }
 QProgressBar {
     border: 1px solid $border;
-    border-radius: 0px;
+    border-radius: 6px;
     text-align: center;
     background: $surface;
     color: $text;
 }
 QProgressBar::chunk {
     background: $accent;
-    border-radius: 0px;
+    border-radius: 5px;
 }
 
 /* ---------------- calendar popup ---------------- */

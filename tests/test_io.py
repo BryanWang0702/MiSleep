@@ -7,15 +7,25 @@ import numpy as np
 import pytest
 
 from misleep.io import (
+    load_annotation,
+    load_csv,
     load_edf,
     load_misleep_anno,
+    load_npy,
+    load_npz,
     load_signal,
     save_misleep_anno,
     transfer_result,
     write_edf,
     write_mat,
+    write_npz,
 )
-from misleep.io.base import available_readers, available_writers, write_signal
+from misleep.io.base import (
+    available_readers,
+    available_writers,
+    register_signal_reader,
+    write_signal,
+)
 from misleep.io.mat import load_mat
 
 DATA_DIR = __import__("pathlib").Path(__file__).parent / "data"
@@ -35,6 +45,76 @@ def test_registry():
     assert ".edf" in available_readers()
     assert ".mat" in available_writers()
     assert ".edf" in available_writers()
+    for extension in (".npy", ".npz", ".csv", ".tsv", ".bdf"):
+        assert extension in available_readers()
+    assert ".npz" in available_writers()
+    register_signal_reader("DUMMY", lambda path: None)
+    assert ".dummy" in available_readers()
+
+
+def test_numpy_npz_round_trip(tmp_path, midata):
+    out = tmp_path / "signals.npz"
+    write_npz(midata.signals, midata.channels, midata.sf, midata.time, out)
+    loaded = load_npz(out)
+    assert loaded.channels == midata.channels
+    assert loaded.sf == midata.sf
+    assert loaded.time == midata.time
+    np.testing.assert_allclose(loaded.signals[0], midata.signals[0])
+
+    matrix_out = tmp_path / "matrix.npz"
+    np.savez(matrix_out, signals=np.arange(40).reshape(20, 2),
+             channels=np.array(["A", "B"]), sf=np.array([10, 10]),
+             time=np.array("20240409-18:00:00"), channel_axis=np.array(1))
+    matrix = load_npz(matrix_out)
+    assert matrix.channels == ["A", "B"]
+    assert matrix.duration == 2
+
+
+def test_numpy_npy_with_sidecar(tmp_path):
+    out = tmp_path / "signals.npy"
+    np.save(out, np.arange(40, dtype=float).reshape(2, 20))
+    out.with_suffix(".npy.json").write_text(
+        '{"sf": 10, "channels": ["EEG", "EMG"], '
+        '"time": "20240409-18:00:00", "channel_axis": 0}',
+        encoding="utf-8",
+    )
+    loaded = load_npy(out)
+    assert loaded.channels == ["EEG", "EMG"]
+    assert loaded.duration == 2
+
+
+def test_numpy_npy_requires_sampling_frequency(tmp_path):
+    out = tmp_path / "signals.npy"
+    np.save(out, np.zeros(20))
+    with pytest.raises(ValueError, match="Sampling frequency"):
+        load_npy(out)
+
+
+def test_csv_signal_infers_sampling_frequency(tmp_path):
+    out = tmp_path / "signals.csv"
+    out.write_text("time,EEG,EMG\n0,1,2\n0.5,3,4\n1.0,5,6\n1.5,7,8\n",
+                   encoding="utf-8")
+    loaded = load_csv(out)
+    assert loaded.channels == ["EEG", "EMG"]
+    assert loaded.sf == [2.0, 2.0]
+    assert loaded.duration == 2
+
+
+def test_json_and_csv_annotations(tmp_path):
+    json_path = tmp_path / "anno.json"
+    json_path.write_text(
+        '{"sleep_state": [1, 1, 2], "marker": [[1.5, "note"]], '
+        '"start_end": [], "state_map": {"1": "NREM", "2": "REM"}}',
+        encoding="utf-8",
+    )
+    json_anno = load_annotation(json_path)
+    assert json_anno.sleep_state == [1, 1, 2]
+    assert json_anno.marker == [[1.5, "note"]]
+
+    csv_path = tmp_path / "anno.csv"
+    csv_path.write_text("start,end,state\n0,2,NREM\n2,4,REM\n", encoding="utf-8")
+    csv_anno = load_annotation(csv_path)
+    assert csv_anno.sleep_state == [1, 1, 2, 2]
 
 
 def test_load_signal_dispatch():

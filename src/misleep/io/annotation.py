@@ -13,6 +13,9 @@ tab-separated state rows) is also supported through :func:`load_bio_anno`.
 """
 
 import datetime
+import json
+import math
+from pathlib import Path
 
 import pandas as pd
 
@@ -84,6 +87,103 @@ def load_bio_anno(file_path):
     state_list = [state_map[each] for each in state_list]
 
     return MiAnnotation(sleep_state=state_list, marker=[], start_end=[])
+
+
+def load_json_anno(file_path, state_map=None):
+    """Load a portable JSON annotation object.
+
+    Required key: ``sleep_state``. Optional keys are ``marker``,
+    ``start_end`` and ``state_map`` and mirror :class:`MiAnnotation`.
+    """
+    try:
+        payload = json.loads(Path(file_path).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError(f"Invalid JSON annotation: {exc}") from exc
+    if not isinstance(payload, dict) or "sleep_state" not in payload:
+        raise ValueError("JSON annotation must be an object containing 'sleep_state'")
+    mapping = payload.get("state_map", state_map)
+    if mapping is not None:
+        mapping = {int(key): str(value) for key, value in mapping.items()}
+    return MiAnnotation(
+        sleep_state=[int(value) for value in payload["sleep_state"]],
+        marker=payload.get("marker", []),
+        start_end=payload.get("start_end", []),
+        state_map=mapping,
+    )
+
+
+def load_table_anno(file_path, state_map=None):
+    """Load per-second or interval sleep states from CSV/TSV.
+
+    A table needs a ``state``/``state_code``/``sleep_state`` column. With
+    ``start`` and ``end`` columns each row is an interval; otherwise every
+    row represents one second. Optional event rows use ``type=marker`` with
+    ``time`` and ``label``, or ``type=start_end`` with ``start/end/label``.
+    """
+    path = Path(file_path)
+    separator = "\t" if path.suffix.lower() == ".tsv" else ","
+    frame = pd.read_csv(path, sep=separator)
+    frame.columns = [str(column).strip().lower() for column in frame.columns]
+    mapping = state_map or {1: "NREM", 2: "REM", 3: "Wake", 4: "Init"}
+    mapping = {int(key): str(value) for key, value in mapping.items()}
+    reverse = {name.casefold(): code for code, name in mapping.items()}
+    state_column = next(
+        (name for name in ("state", "state_code", "sleep_state") if name in frame), None)
+
+    def state_code(value):
+        try:
+            code = int(value)
+        except (TypeError, ValueError):
+            code = reverse.get(str(value).strip().casefold())
+        if code not in mapping:
+            raise ValueError(f"Unknown sleep state {value!r}; expected {mapping}")
+        return code
+
+    kind = frame["type"].astype(str).str.lower() if "type" in frame else None
+    state_rows = frame if kind is None else frame[~kind.isin(["marker", "start_end", "event"])]
+    if state_column is None or state_rows.empty:
+        raise ValueError("Annotation table must contain sleep-state rows and a state column")
+    if {"start", "end"}.issubset(frame.columns):
+        duration = int(math.ceil(pd.to_numeric(state_rows["end"]).max()))
+        sleep_state = [max(mapping)] * duration
+        for _, row in state_rows.iterrows():
+            start = max(0, int(math.floor(float(row["start"]))))
+            end = min(duration, int(math.ceil(float(row["end"]))))
+            sleep_state[start:end] = [state_code(row[state_column])] * max(0, end - start)
+    else:
+        sleep_state = [state_code(value) for value in state_rows[state_column]]
+
+    marker, start_end = [], []
+    if kind is not None:
+        for index, row in frame[kind == "marker"].iterrows():
+            when = row.get("time", row.get("start"))
+            marker.append([float(when), str(row.get("label", "marker"))])
+        for index, row in frame[kind.isin(["start_end", "event"])].iterrows():
+            start_end.append([float(row["start"]), float(row["end"]),
+                              str(row.get("label", "event"))])
+    return MiAnnotation(sleep_state=sleep_state, marker=marker,
+                        start_end=start_end, state_map=mapping)
+
+
+def available_annotation_readers():
+    """Return annotation extensions understood by :func:`load_annotation`."""
+    return [".txt", ".json", ".csv", ".tsv"]
+
+
+def load_annotation(file_path, state_map=None):
+    """Load an annotation by extension, auto-detecting legacy TXT files."""
+    path = Path(file_path)
+    if not path.is_file():
+        raise FileNotFoundError(f"Annotation file not found: {path}")
+    suffix = path.suffix.lower()
+    if suffix == ".json":
+        return load_json_anno(path, state_map=state_map)
+    if suffix in (".csv", ".tsv"):
+        return load_table_anno(path, state_map=state_map)
+    if suffix == ".txt":
+        prefix = path.read_text(encoding="utf-8", errors="ignore")[:5]
+        return load_bio_anno(path) if prefix == "Start" else load_misleep_anno(path, state_map)
+    raise ValueError(f"Unsupported annotation extension {suffix!r}")
 
 
 def save_misleep_anno(mianno, midata, file_path):

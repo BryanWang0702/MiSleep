@@ -104,4 +104,6 @@ def write_edf(signals, channels, sf, time, edf_file=None):
 
 
 register_signal_reader(".edf", load_edf)
+# pyedflib's high-level reader handles BioSemi BDF/BDF+ as well.
+register_signal_reader(".bdf", load_edf)
 register_signal_writer(".edf", write_edf)

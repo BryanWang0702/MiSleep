@@ -5,6 +5,58 @@ and **annotation files** (scoring).
 
 ## Signal files
 
+The GUI and `misleep.load_signal(path)` use the same extension registry.
+Built-in readers currently cover `.mat`, `.edf`, `.bdf`, `.npy`, `.npz`,
+`.csv` and `.tsv`. Extension matching is case-insensitive.
+
+### NumPy `.npz` (recommended Python interchange)
+
+NPZ is self-contained, compressed and supports channels with different sample
+counts. MiSleep archives store `signal_0`, `signal_1`, … plus `channels`, `sf`
+and `time`; they never require pickle support.
+
+```python
+from misleep import load_signal, write_npz
+
+write_npz(data.signals, data.channels, data.sf, data.time, "recording.npz")
+loaded = load_signal("recording.npz")
+```
+
+### NumPy `.npy`
+
+NPY stores a numeric 1-D or 2-D array. Since an array has no standard sampling
+frequency field, put metadata in `recording.npy.json` (or `recording.json`):
+
+```json
+{
+  "sf": [256, 256],
+  "channels": ["EEG", "EMG"],
+  "time": "20240409-18:00:00",
+  "channel_axis": 0,
+  "describe": "optional note"
+}
+```
+
+`sf` is required and can be one number (applied to every channel) or one per
+channel. `channel_axis` is `0` for channels × samples and `1` for samples ×
+channels; if omitted, MiSleep treats the smaller dimension as channels. For
+security, object arrays that need `allow_pickle=True` are rejected.
+
+### CSV / TSV
+
+The first row contains channel names and every later row contains samples. A
+column named `time`, `times`, `second`, `seconds` or `timestamp` is used to
+infer the sampling frequency from its median step:
+
+```csv
+time,EEG,EMG
+0.000,12.1,4.2
+0.004,11.8,4.0
+```
+
+Without a time column, add the same JSON sidecar described for NPY. Large or
+mixed-frequency recordings are better stored as NPZ, EDF/BDF or MAT.
+
 ### MATLAB `.mat`
 
 Three variants are supported and auto-detected:
@@ -34,6 +86,7 @@ The [European Data Format](https://edfplus.info/) is a standard, widely
 supported format. Loading is done with `pyedflib`; the acquisition time
 and per-channel sampling frequencies are read from the file header.
 Saving uses 16-bit digital scaling with a ±10417 µV physical range.
+BioSemi `.bdf`/BDF+ files are also accepted by the same reader.
 
 ### Writing
 
@@ -55,6 +108,28 @@ Loaded signals are always wrapped in a `misleep.data.midata.MiData`:
 | `n_channels` | int           | number of channels               |
 
 ## Annotation files
+
+The GUI accepts `.txt`, `.json`, `.csv` and `.tsv` annotations.
+
+### JSON
+
+JSON mirrors the in-memory annotation object:
+
+```json
+{
+  "sleep_state": [1, 1, 2, 3],
+  "marker": [[1.5, "injection"]],
+  "start_end": [[20, 30, "spindle"]],
+  "state_map": {"1": "NREM", "2": "REM", "3": "Wake", "4": "Init"}
+}
+```
+
+### CSV / TSV annotations
+
+For per-second scoring, use a `state`, `state_code` or `sleep_state` column.
+For interval scoring add `start` and `end` columns (seconds). Values may be
+numeric codes or configured state names. Optional event rows use `type=marker`
+with `time,label`, or `type=start_end` with `start,end,label`.
 
 ### MiSleep `.txt` format
 

@@ -21,8 +21,8 @@ The name *MiSleep* comes from "**Mi**ce **Sleep**" and sounds like
 
 - **Cross-platform desktop GUI** built on **PySide6** (Qt6). Works on
   Windows, macOS and Linux without any platform-specific code.
-- **Free data structure** — organize your recordings as simple MATLAB
-  structures, or load standard **EDF/EDF+** files directly.
+- **Flexible data input** — load MATLAB, EDF/EDF+, BDF, NumPy NPY/NPZ,
+  CSV and TSV recordings; JSON/CSV/TSV annotation imports are also built in.
 - **Full scoring workflow** — per-second sleep state scoring (NREM / REM /
   Wake / Init), single time-point markers, start-end events, hypnogram,
   spectrogram and per-state spectral analysis.
@@ -105,7 +105,7 @@ the command line as shown above).
 import misleep as ms
 
 # Load a recording
-midata = ms.load_mat("data.mat")        # or ms.load_edf("data.edf")
+midata = ms.load_signal("data.npz")     # MAT, EDF/BDF, NPY/NPZ, CSV or TSV
 
 # Inspect it
 print(midata.channels, midata.sf, midata.duration)

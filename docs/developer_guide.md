@@ -126,10 +126,9 @@ in `main_window.py`.
 
 ## Adding a signal reader to the GUI file dialog
 
-The GUI calls `load_data`/`load_signal`; once a reader is registered for
-an extension, it can be opened through the file dialog. If you want the
-dialog itself to show the new filter, extend the `QFileDialog` filter
-string in `MainWindow.load_data`.
+The GUI builds its open/save filters from the reader and writer registries.
+Once an extension is registered, it appears automatically; no GUI edit is
+needed. Entry-point names may be written as either `xyz` or `.xyz`.
 
 ## Opening files by double-click / command line
 

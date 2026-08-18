@@ -167,5 +167,10 @@ class SpecWindow(QMainWindow, Ui_spec_window):
         self.setEnabled(True)
 
     def closeEvent(self, event):
+        """Release matplotlib figures; they are recreated on the next show."""
+        import matplotlib.pyplot as plt
+
+        plt.close(self.spectrum_figure)
+        plt.close(self.spectrogram_figure)
         event.ignore()
         self.hide()

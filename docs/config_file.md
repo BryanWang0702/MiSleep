@@ -9,6 +9,10 @@ created at:
 | Windows | `%USERPROFILE%\.misleep\misleep_config.ini` |
 | macOS / Linux | `~/.misleep/misleep_config.ini` |
 
+Set `MISLEEP_DATA_DIR` to place both the user configuration and logs in
+another writable directory. This is useful for portable installations,
+managed workstations and automated tests.
+
 User settings override the bundled defaults, so package upgrades never
 wipe your personal settings. Open the user file from the GUI via
 **Help → Config**; changes take effect after restarting MiSleep.

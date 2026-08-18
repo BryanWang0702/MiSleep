@@ -60,9 +60,8 @@ from misleep.gui.spec_window import SpecWindow
 from misleep.gui.style import THEMES, apply_theme, retheme_figures
 from misleep.gui.uis.main_window_ui import Ui_MiSleep
 from misleep.gui.workers import SaveThread
-from misleep.io.annotation import load_bio_anno, load_misleep_anno
-from misleep.io.edf import load_edf
-from misleep.io.mat import load_mat
+from misleep.io.annotation import available_annotation_readers, load_annotation
+from misleep.io import available_readers, available_writers, load_signal
 from misleep.logger import logger
 from misleep.preprocessing.spectral import band_power, spectrogram, spectrum
 from misleep.utils.annotation import lst2group
@@ -204,7 +203,7 @@ class MainWindow(QMainWindow, Ui_MiSleep):
 
         # Unified right-hand sidebar (replaces the four separate docks)
         self._build_sidebar()
-        self._thin_inputs()
+        self._constrain_inputs()
         self.setMinimumSize(960, 600)
         self.setWindowIcon(app_icon())
 
@@ -280,7 +279,10 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QScrollArea.Shape.NoFrame)
         scroll.setWidget(sidebar)
-        scroll.setFixedWidth(318)
+        scroll.setMinimumWidth(320)
+        scroll.setMaximumWidth(388)
+        scroll.setSizePolicy(QSizePolicy.Policy.Preferred,
+                             QSizePolicy.Policy.Expanding)
         scroll.setMinimumHeight(120)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.sidebar_scroll = scroll
@@ -313,18 +315,23 @@ class MainWindow(QMainWindow, Ui_MiSleep):
             self.removeDockWidget(dock)
             dock.hide()
 
-    def _thin_inputs(self):
-        """Give spin boxes / combos in the sidebar consistent widths so
-        the rows line up vertically."""
+    def _constrain_inputs(self):
+        """Align sidebar editors without forcing cramped fixed widths."""
         for name in ("FilterLowSpin", "FilterHighSpin", "PercentileSpin",
                      "SecondSpin", "SecondNumSpin", "multipleScalerEditor"):
             spin = getattr(self, name, None)
             if spin is not None:
-                spin.setFixedWidth(74)
+                spin.setMinimumWidth(76)
+                spin.setMaximumWidth(104)
         for name in ("FilterTypeCombo", "ShowRangeCombo"):
             combo = getattr(self, name, None)
             if combo is not None:
-                combo.setFixedWidth(112)
+                combo.setMinimumWidth(112)
+                combo.setMaximumWidth(156)
+        for edit in (self.DataPathEdit, self.AnnoPathEdit):
+            edit.setMinimumWidth(150)
+            edit.setToolTip(edit.text())
+            edit.textChanged.connect(edit.setToolTip)
 
     # ------------------------------------------------------------------
     # Initialization
@@ -544,10 +551,14 @@ class MainWindow(QMainWindow, Ui_MiSleep):
     # ------------------------------------------------------------------
     def load_data(self):
         """Triggered by actionLoadData: ask for a signal file and open it."""
+        extensions = available_readers()
+        patterns = " ".join(f"*{ext}" for ext in extensions)
+        format_filters = ";;".join(
+            f"{ext[1:].upper()} files (*{ext})" for ext in extensions)
         data_path, _ = QFileDialog.getOpenFileName(
             self, "Select data file",
             f"{self.config['gui']['openpath']}",
-            ".*(*.mat *.MAT *.edf *.EDF);;Matlab Files (*.mat *.MAT);;EDF Files (*.edf *.EDF)")
+            f"All supported signals ({patterns});;{format_filters};;All files (*)")
 
         if data_path == "":
             return
@@ -563,7 +574,7 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         Parameters
         ----------
         data_path : str
-            Path of the ``.mat`` or ``.edf`` file to load.
+            Path of any registered signal file to load.
         """
         if not os.path.exists(data_path):
             QMessageBox.about(
@@ -572,36 +583,19 @@ class MainWindow(QMainWindow, Ui_MiSleep):
             return
 
         self.data_path = data_path
-        if self.data_path.endswith((".mat", ".MAT")):
-            self.midata = load_mat(data_path=self.data_path)
-            if self.midata is None:
-                QMessageBox.about(
-                    self, "Error",
-                    r"Data file invalid, check "
-                    r"<a href='https://github.com/BryanWang0702/MiSleep'>MiSleep</a> for detail.")
-                self.data_path = ""
-                self.change_Bts_status(True)
-                self.mianno = None
-                return
-
-        if self.data_path.endswith((".edf", ".EDF")):
-            try:
-                self.midata = load_edf(data_path=self.data_path)
-            except Exception:
-                QMessageBox.about(
-                    self, "Error",
-                    r"Data file invalid, check "
-                    r"<a href='https://github.com/BryanWang0702/MiSleep'>MiSleep</a> for detail.")
-                self.data_path = ""
-                self.change_Bts_status(True)
-                self.mianno = None
-                return
-
-        if self.midata is None:
-            QMessageBox.about(
-                self, "Error",
-                f"Unsupported file type: {self.data_path}")
+        self.midata = None
+        try:
+            self.midata = load_signal(self.data_path)
+            if not isinstance(self.midata, MiData):
+                raise ValueError("The reader did not return valid MiData")
+        except Exception as exc:
+            logger.exception("Could not load signal file %s", self.data_path)
+            QMessageBox.critical(
+                self, "Could not load data",
+                f"MiSleep could not open this signal file.\n\n{exc}")
             self.data_path = ""
+            self.change_Bts_status(True)
+            self.mianno = None
             return
 
         # Save config
@@ -633,10 +627,12 @@ class MainWindow(QMainWindow, Ui_MiSleep):
 
     def load_anno(self):
         """Triggered by actionLoadAnnotation: ask for an annotation file."""
+        extensions = available_annotation_readers()
+        patterns = " ".join(f"*{ext}" for ext in extensions)
         anno_path, _ = QFileDialog.getOpenFileName(
             self, "Select annotation file",
             f"{self.config['gui']['openpath']}",
-            "txt Files (*.txt *.TXT)")
+            f"All supported annotations ({patterns});;All files (*)")
 
         if anno_path == "":
             return
@@ -660,36 +656,33 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         self.anno_path = anno_path
         _mianno = self.mianno
 
-        if self.anno_path.endswith((".txt", ".TXT")):
-            try:
-                with open(self.anno_path, "r", encoding="utf-8", errors="ignore") as f:
-                    file = f.read()
-                if file[:5] == "Start":
-                    self.mianno = load_bio_anno(self.anno_path)
+        try:
+            self.mianno = load_annotation(self.anno_path, state_map=self.state_map_dict)
+        except AssertionError as e:
+            if e.args and e.args[0] == "Empty":
+                if isinstance(self.midata, MiData):
+                    self.mianno = create_new_mianno(self.midata.duration)
                 else:
-                    self.mianno = load_misleep_anno(self.anno_path, state_map=self.state_map_dict)
-            except AssertionError as e:
-                if e.args[0] == "Empty":
-                    if isinstance(self.midata, MiData):
-                        self.mianno = create_new_mianno(self.midata.duration)
-                    else:
-                        QMessageBox.about(
-                            self, "Error",
-                            "To create a new annotation file, load a data file first.")
-                        self.anno_path = ""
-                        self.change_Bts_status(True)
-                        self.mianno = None
-                        return
-
-                if e.args[0] == "Invalid":
                     QMessageBox.about(
                         self, "Error",
-                        r"Annotation file invalid, check "
-                        r"<a href='https://github.com/BryanWang0702/MiSleep'>MiSleep</a> for detail.")
+                        "To create a new annotation file, load a data file first.")
                     self.anno_path = ""
                     self.change_Bts_status(True)
                     self.mianno = None
                     return
+            else:
+                QMessageBox.critical(self, "Could not load annotation",
+                                     "The annotation file is invalid.")
+                self.anno_path = ""
+                self.mianno = _mianno
+                return
+        except Exception as exc:
+            logger.exception("Could not load annotation file %s", self.anno_path)
+            QMessageBox.critical(self, "Could not load annotation",
+                                 f"MiSleep could not open this annotation.\n\n{exc}")
+            self.anno_path = ""
+            self.mianno = _mianno
+            return
 
         # Save config
         self.save_config({"openpath": self.anno_path})
@@ -2226,10 +2219,14 @@ class MainWindow(QMainWindow, Ui_MiSleep):
 
         midata_to_save = midata_to_save.crop([start_sec, end_sec])
 
+        extensions = available_writers()
+        filters = ";;".join(
+            f"{extension[1:].upper()} files (*{extension})"
+            for extension in extensions)
         data_path, _ = QFileDialog.getSaveFileName(
             self, "Select a file to save data",
             f"{self.config['gui']['openpath']}_misleep_saved",
-            "*mat Files (*.mat *.MAT);;*edf Files (*.edf *.EDF);")
+            filters)
         if data_path == "":
             return
 
@@ -2369,6 +2366,12 @@ class MainWindow(QMainWindow, Ui_MiSleep):
                 event.accept()
             else:
                 event.ignore()
+
+        if event.isAccepted():
+            self.save_timer.stop()
+            self.spec_window.close()
+            plt.close(self.signal_figure)
+            plt.close(self.hypo_figure)
 
 
 # Backward-compatible alias

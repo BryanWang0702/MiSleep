@@ -22,6 +22,16 @@ import math
 import numpy as np
 
 
+def _unique_name(name, existing):
+    """Return ``name`` or the next available ``name_N`` variant."""
+    if name not in existing:
+        return name
+    index = 1
+    while f"{name}_{index}" in existing:
+        index += 1
+    return f"{name}_{index}"
+
+
 class MiData:
     """MiSleep signal data format.
 
@@ -48,10 +58,7 @@ class MiData:
         # Avoid duplicated channel names: append "_1", "_2", ...
         temp_channel = []
         for each in channels:
-            if each in temp_channel:
-                temp_channel.append(f"{each}_1")
-            else:
-                temp_channel.append(each)
+            temp_channel.append(_unique_name(each, temp_channel))
         channels = temp_channel
 
         # All channels are truncated to the same integer duration in seconds
@@ -70,9 +77,13 @@ class MiData:
     def _validate_inputs(signals, channels, sf, describe):
         if not isinstance(signals, (list, np.ndarray)):
             raise TypeError(f"Signals should be a list of arrays or ndarray, got {type(signals)}")
+        if len(signals) == 0:
+            raise ValueError("At least one signal channel is required")
         for each in signals:
             if not isinstance(each, np.ndarray):
                 raise TypeError(f"Signals should be a list of arrays or ndarray, got {type(each)}")
+            if each.ndim != 1:
+                raise ValueError(f"Each signal must be a 1-D array, got shape {each.shape}")
 
         if not isinstance(channels, list):
             raise TypeError(f"Channels should be a list of strings, got {type(channels)}")
@@ -93,6 +104,8 @@ class MiData:
         for each in sf:
             if not isinstance(each, (int, float)):
                 raise TypeError(f"Sample frequency should be a list of int or float, got {type(each)}")
+            if not math.isfinite(each) or each <= 0:
+                raise ValueError(f"Sample frequencies must be finite and positive, got {each}")
 
         if describe is not None and not isinstance(describe, str):
             raise TypeError(f"'describe' should be a string for data description, got {type(describe)}")
@@ -142,10 +155,12 @@ class MiData:
         for each in mapping.keys():
             if each not in self._channels:
                 raise IndexError(f"{each} is not in the signal channel list ({self._channels})")
-            else:
-                while mapping[each] in self.channels:
-                    mapping[each] = f"{mapping[each]}_1"
-                self._channels[self._channels.index(each)] = mapping[each]
+            new_name = mapping[each]
+            if not isinstance(new_name, str) or not new_name.strip():
+                raise ValueError("New channel names must be non-empty strings")
+            index = self._channels.index(each)
+            existing = self._channels[:index] + self._channels[index + 1:]
+            self._channels[index] = _unique_name(new_name.strip(), existing)
 
     def filter(self, chans=None, btype="bandpass", low=0.5, high=30):
         """Filter the specified channel(s) and add the result as new channel(s).
@@ -188,21 +203,22 @@ class MiData:
         sf : float
             Sampling frequency of the new channel.
         """
-        _duration = math.floor(len(signal) / sf)
-        if np.abs(_duration - self._duration) > 10:
-            raise ValueError(
-                f"The new added signal channel's duration ({_duration}) "
-                f"differs from original signals ({self._duration})")
-
+        if not isinstance(signal, np.ndarray) or signal.ndim != 1 or signal.size == 0:
+            raise ValueError("The new signal must be a non-empty 1-D numpy array")
         if not isinstance(channel, str):
             raise TypeError(f"Channel name should be a string, got {type(channel)}")
-        if not isinstance(sf, (int, float)):
+        if not isinstance(sf, (int, float)) or not math.isfinite(sf) or sf <= 0:
             raise TypeError(f"Sample frequency should be a float, got {type(sf)}")
 
-        if channel in self.channels:
-            channel = f"{channel}_1"
+        _duration = math.floor(len(signal) / sf)
+        if _duration < self._duration:
+            raise ValueError(
+                f"The new signal is shorter ({_duration}s) than the existing data "
+                f"({self._duration}s)")
 
-        self._signals.append(signal)
+        channel = _unique_name(channel, self.channels)
+
+        self._signals.append(signal[:int(self._duration * sf)])
         self._channels.append(channel)
         self._n_channels = len(self._channels)
         self._sf.append(sf)
@@ -256,10 +272,10 @@ class MiData:
             raise ValueError(
                 f"End time (got {time_period[1]}) of 'time_period' should be larger than start time (got {time_period[0]})")
 
-        if time_period[1] > self._duration:
-            time_period[1] = self._duration
+        start, end = time_period
+        end = min(end, self._duration)
 
-        signals = [self.signals[idx][int(time_period[0] * each): int(time_period[1] * each)]
+        signals = [self.signals[idx][int(start * each): int(end * each)]
                    for idx, each in enumerate(self.sf)]
         return MiData(signals=signals, channels=self.channels, sf=self.sf,
                       time=self.time, describe=self.describe)

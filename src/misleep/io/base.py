@@ -16,6 +16,7 @@ entry-point groups (see the project's ``pyproject.toml``).
 
 import importlib.metadata
 from pathlib import Path
+from collections.abc import Callable
 
 from misleep.data import MiData, MiAnnotation  # backward-compatible re-export
 
@@ -31,13 +32,27 @@ __all__ = [
 ]
 
 #: Built-in readers/writers: extension (lower-case, with dot) -> callable.
-_BUILTIN_READERS: dict[str, callable] = {}
-_BUILTIN_WRITERS: dict[str, callable] = {}
-_ENTRYPOINT_READERS: dict[str, callable] | None = None
-_ENTRYPOINT_WRITERS: dict[str, callable] | None = None
+_BUILTIN_READERS: dict[str, Callable] = {}
+_BUILTIN_WRITERS: dict[str, Callable] = {}
+_ENTRYPOINT_READERS: dict[str, Callable] | None = None
+_ENTRYPOINT_WRITERS: dict[str, Callable] | None = None
 
 
-def register_signal_reader(extension: str, func: callable) -> None:
+def _normalise_extension(extension: str) -> str:
+    """Return a lower-case extension with a leading dot.
+
+    Entry-point names cannot conveniently be written with a leading dot in
+    every packaging tool, while programmatic registrations traditionally use
+    one.  Normalising both forms fixes third-party readers named ``xyz`` not
+    being found for a ``.xyz`` file.
+    """
+    if not isinstance(extension, str) or not extension.strip():
+        raise ValueError("A non-empty file extension is required")
+    extension = extension.strip().lower()
+    return extension if extension.startswith(".") else f".{extension}"
+
+
+def register_signal_reader(extension: str, func: Callable) -> None:
     """Register a callable that loads a :class:`MiData` from ``extension`` files.
 
     Parameters
@@ -48,10 +63,12 @@ def register_signal_reader(extension: str, func: callable) -> None:
     func : callable
         ``func(path: str) -> MiData``.
     """
-    _BUILTIN_READERS[extension.lower()] = func
+    if not callable(func):
+        raise TypeError("Signal reader must be callable")
+    _BUILTIN_READERS[_normalise_extension(extension)] = func
 
 
-def register_signal_writer(extension: str, func: callable) -> None:
+def register_signal_writer(extension: str, func: Callable) -> None:
     """Register a callable that saves a :class:`MiData` to ``extension`` files.
 
     Parameters
@@ -61,12 +78,14 @@ def register_signal_writer(extension: str, func: callable) -> None:
     func : callable
         ``func(signals, channels, sf, time, file_path) -> None``.
     """
-    _BUILTIN_WRITERS[extension.lower()] = func
+    if not callable(func):
+        raise TypeError("Signal writer must be callable")
+    _BUILTIN_WRITERS[_normalise_extension(extension)] = func
 
 
-def _load_entry_points(group: str) -> dict[str, callable]:
+def _load_entry_points(group: str) -> dict[str, Callable]:
     """Load third-party entry points for a given group (best effort)."""
-    registry: dict[str, callable] = {}
+    registry: dict[str, Callable] = {}
     try:
         eps = importlib.metadata.entry_points()
         if hasattr(eps, "select"):
@@ -76,7 +95,7 @@ def _load_entry_points(group: str) -> dict[str, callable]:
         for ep in matches:
             try:
                 func = ep.load()
-                registry[ep.name.lower()] = func
+                registry[_normalise_extension(ep.name)] = func
             except Exception:
                 continue
     except Exception:
@@ -122,7 +141,10 @@ def load_signal(data_path: str | Path):
     MiData
         The loaded data.
     """
-    suffix = Path(data_path).suffix.lower()
+    path = Path(data_path)
+    if not path.is_file():
+        raise FileNotFoundError(f"Signal file not found: {path}")
+    suffix = path.suffix.lower()
     readers = _all_readers()
     if suffix not in readers:
         raise ValueError(
