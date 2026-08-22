@@ -6,39 +6,103 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>408</width>
-    <height>342</height>
+    <width>420</width>
+    <height>300</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Dialog</string>
+   <string>LightGBM Auto Stage</string>
   </property>
   <property name="windowIcon">
    <iconset resource="../resources/misleep.qrc">
     <normaloff>:/logo/logo.png</normaloff>:/logo/logo.png</iconset>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="1" column="0">
-    <widget class="QPushButton" name="OKBt">
-     <property name="text">
-      <string>Ok</string>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="1">
-    <widget class="QPushButton" name="CancelBt">
-     <property name="text">
-      <string>Cancel</string>
-     </property>
-    </widget>
-   </item>
    <item row="0" column="0" colspan="2">
     <widget class="QGroupBox" name="groupBox">
      <property name="title">
       <string>Light GBM Auto Stage options</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_2">
-      <item row="3" column="1" colspan="2">
+      <item row="0" column="0">
+       <widget class="QLabel" name="label">
+        <property name="text">
+         <string>EEG channel:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1" colspan="3">
+       <widget class="QComboBox" name="EEGChannelCombox"/>
+      </item>
+      <item row="1" column="0">
+       <widget class="QCheckBox" name="UseEMGCheckbox">
+        <property name="text">
+         <string>Use EMG</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QLabel" name="label_8">
+        <property name="text">
+         <string>EMG channel:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="2" colspan="2">
+       <widget class="QComboBox" name="EMGchannelCombox"/>
+      </item>
+      <item row="2" column="0">
+       <widget class="QCheckBox" name="UseACCCheckbox">
+        <property name="text">
+         <string>Use ACC</string>
+        </property>
+        <property name="checked">
+         <bool>false</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QLabel" name="label_9">
+        <property name="text">
+         <string>ACC channel:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="2" colspan="2">
+       <widget class="QComboBox" name="ACCchannelCombox"/>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="label_2">
+        <property name="text">
+         <string>EEG site:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1" colspan="3">
+       <widget class="QComboBox" name="EEGSiteCombox">
+        <item>
+         <property name="text">
+          <string>Parietal</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Frontal</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item row="4" column="0">
+       <widget class="QLabel" name="label_3">
+        <property name="text">
+         <string>Mouse age:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="1" colspan="3">
        <widget class="QComboBox" name="AgeCombox">
         <item>
          <property name="text">
@@ -57,62 +121,83 @@
         </item>
        </widget>
       </item>
-      <item row="0" column="0">
-       <widget class="QLabel" name="label">
+      <item row="5" column="0">
+       <widget class="QLabel" name="label_10">
         <property name="text">
-         <string>EEG channel:</string>
+         <string>Low confidence rate:</string>
         </property>
        </widget>
       </item>
-      <item row="3" column="0">
-       <widget class="QLabel" name="label_3">
-        <property name="text">
-         <string>Mouse age:</string>
+      <item row="5" column="1" colspan="3">
+       <widget class="QDoubleSpinBox" name="ConfidenceThresholdSpin">
+        <property name="decimals">
+         <number>2</number>
+        </property>
+        <property name="minimum">
+         <double>0.050000000000000</double>
+        </property>
+        <property name="maximum">
+         <double>0.950000000000000</double>
+        </property>
+        <property name="singleStep">
+         <double>0.050000000000000</double>
+        </property>
+        <property name="value">
+         <double>0.800000000000000</double>
         </property>
        </widget>
       </item>
-      <item row="1" column="1" colspan="2">
-       <widget class="QComboBox" name="EMGchannelCombox"/>
-      </item>
-      <item row="0" column="1" colspan="2">
-       <widget class="QComboBox" name="EEGChannelCombox"/>
-      </item>
-      <item row="2" column="0">
-       <widget class="QLabel" name="label_2">
+      <item row="6" column="0">
+       <widget class="QLabel" name="label_11">
         <property name="text">
-         <string>EEG site:</string>
+         <string>HMM T:</string>
         </property>
        </widget>
       </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="label_8">
-        <property name="text">
-         <string>EMG channel:</string>
+      <item row="6" column="1" colspan="3">
+       <widget class="QDoubleSpinBox" name="HMMTemperatureSpin">
+        <property name="decimals">
+         <number>2</number>
+        </property>
+        <property name="minimum">
+         <double>0.050000000000000</double>
+        </property>
+        <property name="maximum">
+         <double>2.000000000000000</double>
+        </property>
+        <property name="singleStep">
+         <double>0.050000000000000</double>
+        </property>
+        <property name="value">
+         <double>0.100000000000000</double>
         </property>
        </widget>
       </item>
-      <item row="2" column="1" colspan="2">
-       <widget class="QComboBox" name="EEGSiteCombox">
-        <item>
-         <property name="text">
-          <string>Parietal</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Frontal</string>
-         </property>
-        </item>
-       </widget>
-      </item>
-      <item row="4" column="0" colspan="3">
+      <item row="7" column="0" colspan="4">
        <widget class="QCheckBox" name="SaveAnnoCheckbox">
         <property name="text">
-         <string>Cover current label</string>
+         <string>Cover current label (only fills INIT states)</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
         </property>
        </widget>
       </item>
      </layout>
+    </widget>
+   </item>
+   <item row="1" column="0">
+    <widget class="QPushButton" name="OKBt">
+     <property name="text">
+      <string>Ok</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="1">
+    <widget class="QPushButton" name="CancelBt">
+     <property name="text">
+      <string>Cancel</string>
+     </property>
     </widget>
    </item>
   </layout>

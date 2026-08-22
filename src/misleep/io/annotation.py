@@ -113,45 +113,122 @@ def load_json_anno(file_path, state_map=None):
 def load_table_anno(file_path, state_map=None):
     """Load per-second or interval sleep states from CSV/TSV.
 
-    A table needs a ``state``/``state_code``/``sleep_state`` column. With
-    ``start`` and ``end`` columns each row is an interval; otherwise every
-    row represents one second. Optional event rows use ``type=marker`` with
-    ``time`` and ``label``, or ``type=start_end`` with ``start/end/label``.
+    Supported layouts (auto-detected; the header row is optional):
+
+    * MiSleep-style tables: a ``state`` / ``state_code`` / ``sleep_state``
+      column with optional ``start`` / ``end`` intervals (one row per
+      second when no interval columns), plus optional ``type=marker`` /
+      ``type=start_end`` event rows.
+    * BIDS-style: ``onset`` / ``duration`` / ``stage`` (or ``label``) rows,
+      e.g. ``sub-*_events.tsv``.
+    * Epoch tables: ``[epoch index,] epoch second, epoch label`` - the
+      index column may be missing (2 or 3 columns, with or without a
+      header). Each row fills a 5 s epoch (or the detected epoch gap).
     """
+    import numpy as np
     import pandas as pd
 
     path = Path(file_path)
     separator = "\t" if path.suffix.lower() == ".tsv" else ","
-    frame = pd.read_csv(path, sep=separator)
-    frame.columns = [str(column).strip().lower() for column in frame.columns]
+    raw = pd.read_csv(path, sep=separator, header=None, dtype=str)
+
+    def _all_numeric(series):
+        try:
+            pd.to_numeric(series.dropna())
+            return True
+        except (TypeError, ValueError):
+            return False
+
+    # A header row is a row that is not fully numeric.
+    if raw.shape[0] > 0 and not _all_numeric(raw.iloc[0]):
+        columns = [str(column).strip().lower() for column in raw.iloc[0]]
+        frame = raw.iloc[1:].reset_index(drop=True)
+        frame.columns = columns[: frame.shape[1]]
+        has_header = True
+    else:
+        frame = raw
+        has_header = False
+
     mapping = state_map or {1: "NREM", 2: "REM", 3: "Wake", 4: "Init"}
     mapping = {int(key): str(value) for key, value in mapping.items()}
     reverse = {name.casefold(): code for code, name in mapping.items()}
-    state_column = next(
-        (name for name in ("state", "state_code", "sleep_state") if name in frame), None)
 
     def state_code(value):
         try:
-            code = int(value)
+            code = int(float(value))
         except (TypeError, ValueError):
             code = reverse.get(str(value).strip().casefold())
         if code not in mapping:
             raise ValueError(f"Unknown sleep state {value!r}; expected {mapping}")
         return code
 
-    kind = frame["type"].astype(str).str.lower() if "type" in frame else None
-    state_rows = frame if kind is None else frame[~kind.isin(["marker", "start_end", "event"])]
-    if state_column is None or state_rows.empty:
-        raise ValueError("Annotation table must contain sleep-state rows and a state column")
-    if {"start", "end"}.issubset(frame.columns):
-        duration = int(math.ceil(pd.to_numeric(state_rows["end"]).max()))
-        sleep_state = [max(mapping)] * duration
-        for _, row in state_rows.iterrows():
-            start = max(0, int(math.floor(float(row["start"]))))
-            end = min(duration, int(math.ceil(float(row["end"]))))
-            sleep_state[start:end] = [state_code(row[state_column])] * max(0, end - start)
+    def pick(*names):
+        if not has_header:
+            return None
+        for name in names:
+            if name in frame.columns:
+                return name
+        return None
+
+    if has_header:
+        state_col = pick("stage", "state", "state_code", "sleep_state", "label")
+        start_col = pick("onset", "start")
+        end_col = pick("end", "offset")
+        duration_col = pick("duration")
+        second_col = pick("epoch_second", "second", "time")
+        index_col = pick("epoch", "epoch_index", "index")
+        kind = frame["type"].astype(str).str.lower() if "type" in frame.columns else None
     else:
-        sleep_state = [state_code(value) for value in state_rows[state_column]]
+        state_col = frame.columns[frame.shape[1] - 1]
+        second_col = frame.columns[frame.shape[1] - 2] if frame.shape[1] >= 2 else None
+        index_col = frame.columns[frame.shape[1] - 3] if frame.shape[1] == 3 else None
+        start_col = end_col = duration_col = None
+        kind = None
+
+    state_rows = frame if kind is None else frame[~kind.isin(["marker", "start_end", "event"])]
+    if state_col is None or state_rows.empty:
+        raise ValueError("Annotation table must contain sleep-state rows and a state column")
+
+    if start_col is not None:
+        starts = pd.to_numeric(state_rows[start_col], errors="coerce")
+        if duration_col is not None:
+            lengths = pd.to_numeric(state_rows[duration_col], errors="coerce")
+            duration = int(math.ceil(float(starts.max() + lengths.max())))
+        elif end_col is not None:
+            ends = pd.to_numeric(state_rows[end_col], errors="coerce")
+            lengths = ends - starts
+            duration = int(math.ceil(float(ends.max())))
+        else:
+            lengths = None
+            duration = int(math.ceil(float(starts.max()))) + 5
+        sleep_state = [max(mapping)] * max(0, duration)
+        for _, row in state_rows.iterrows():
+            start = max(0, int(math.floor(float(row[start_col]))))
+            ln = (int(math.ceil(float(row[duration_col])))
+                  if duration_col is not None
+                  else (int(math.ceil(float(row[end_col]) - float(row[start_col])))
+                        if end_col is not None else 5))
+            end = min(duration, start + max(1, ln))
+            if end > start:
+                sleep_state[start:end] = [state_code(row[state_col])] * (end - start)
+    elif second_col is not None:
+        # per-epoch rows: [index,] second, label -> fill 5 s epochs (or the
+        # detected gap between consecutive seconds)
+        starts = pd.to_numeric(state_rows[second_col], errors="coerce")
+        ordered = np.sort(starts.dropna().values)
+        gaps = np.diff(ordered)
+        gaps = gaps[gaps > 0]
+        epoch_len = int(gaps.min()) if gaps.size else 5
+        duration = int(math.ceil(float(starts.max()))) + epoch_len
+        sleep_state = [max(mapping)] * max(0, duration)
+        for _, row in state_rows.iterrows():
+            start = max(0, int(math.floor(float(row[second_col]))))
+            end = min(duration, start + epoch_len)
+            if end > start:
+                sleep_state[start:end] = [state_code(row[state_col])] * (end - start)
+    else:
+        # one row per second
+        sleep_state = [state_code(value) for value in state_rows[state_col]]
 
     marker, start_end = [], []
     if kind is not None:

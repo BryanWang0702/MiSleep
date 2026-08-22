@@ -830,40 +830,98 @@ class SpindleDetectionDialog(QDialog, Ui_SpindleDetectDialog):
 
 
 class AutoStageLightGBMDialog(QDialog, Ui_AutoStageLightGBMDialog):
-    """LightGBM auto-staging dialog."""
+    """LightGBM auto-staging dialog.
+
+    Lets the user pick the EEG channel, an optional EMG channel and an
+    optional ACC channel, the EEG site and the (informational) age group.
+    Every age uses the same model; the ACC option requires EMG (the
+    packaged benchmark models have no ACC-only variant).
+    """
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setupUi(self)
         self.OKBt.clicked.connect(self.ok_event)
         self.CancelBt.clicked.connect(self.cancel_event)
+        self.UseEMGCheckbox.toggled.connect(self._on_use_emg)
+        self.UseACCCheckbox.toggled.connect(self._on_use_acc)
 
     def show_chs(self, channels):
-        self.EEGChannelCombox.clear()
-        self.EEGChannelCombox.addItems(channels)
+        for combo in (self.EEGChannelCombox, self.EMGchannelCombox,
+                      self.ACCchannelCombox):
+            combo.clear()
+            combo.addItems(channels)
         self.EEGChannelCombox.setCurrentIndex(0)
-        self.EMGchannelCombox.clear()
-        self.EMGchannelCombox.addItems(channels)
-        self.EMGchannelCombox.setCurrentIndex(1)
+        self.EMGchannelCombox.setCurrentIndex(min(1, len(channels) - 1))
+        self.ACCchannelCombox.setCurrentIndex(len(channels) - 1)
+        self.EMGchannelCombox.setEnabled(self.UseEMGCheckbox.isChecked())
+        self.ACCchannelCombox.setEnabled(self.UseACCCheckbox.isChecked())
+
+    def _on_use_emg(self, checked):
+        # The ACC model variants require EMG, so disable ACC with it.
+        if not checked:
+            self.UseACCCheckbox.setChecked(False)
+        self.EMGchannelCombox.setEnabled(checked)
+
+    def _on_use_acc(self, checked):
+        if checked and not self.UseEMGCheckbox.isChecked():
+            self.UseEMGCheckbox.setChecked(True)  # ACC requires EMG
+        self.ACCchannelCombox.setEnabled(checked)
 
     def auto_stage(self, midata, mianno):
-        """Run LightGBM auto staging on the selected channels."""
+        """Run LightGBM auto staging on the selected channels.
+
+        The predictions are applied to ``mianno`` in place: with the
+        *cover current* checkbox the already-scored states are kept and
+        only the INIT (4) states are filled; otherwise the whole
+        annotation is overwritten.
+
+        Returns
+        -------
+        (pred_label, save_anno, confidence, low_conf_threshold)
+            per-second predicted states, whether the cover-current mode
+            was on (and the annotation should be saved), the per-epoch
+            confidence array, and the low-confidence display threshold.
+        """
         from misleep.analysis.auto_stage import auto_stage_gbm
 
-        EEG_channel_idx = self.EEGChannelCombox.currentIndex()
-        EMG_channel_idx = self.EMGchannelCombox.currentIndex()
-        EEG = deepcopy(midata.signals[EEG_channel_idx])
-        EMG = deepcopy(midata.signals[EMG_channel_idx])
+        eeg_idx = self.EEGChannelCombox.currentIndex()
+        EEG = deepcopy(midata.signals[eeg_idx])
+        EMG = (None if not self.UseEMGCheckbox.isChecked()
+               else deepcopy(midata.signals[self.EMGchannelCombox.currentIndex()]))
+        ACC = (None if not self.UseACCCheckbox.isChecked()
+               else deepcopy(midata.signals[self.ACCchannelCombox.currentIndex()]))
         label = deepcopy(mianno._sleep_state)
-        sf = deepcopy(midata.sf[EEG_channel_idx])
+        sf = deepcopy(midata.sf[eeg_idx])
 
         EEG_site = ["P", "F"][self.EEGSiteCombox.currentIndex()]
         mouse_age = ["adult", "ado", "P30"][self.AgeCombox.currentIndex()]
+        temperature = self.HMMTemperatureSpin.value()
 
-        pred_label = auto_stage_gbm(EEG=EEG, EMG=EMG, label=label, sf=sf,
-                                    EEG_channel=EEG_site, mouse_age=mouse_age)
+        pred_label, conf = auto_stage_gbm(
+            EEG=EEG, EMG=EMG, label=label, sf=sf,
+            EEG_channel=EEG_site, mouse_age=mouse_age,
+            ACC=ACC, return_probs=True, temperature=temperature)
         save_anno = self.SaveAnnoCheckbox.isChecked()
-        return pred_label, save_anno
+
+        # Apply the predictions to the annotation. ``pred_label`` is
+        # already aligned to the full recording (1 value per second).
+        limit = min(len(mianno._sleep_state), len(pred_label))
+        if save_anno:
+            # cover current: keep scored states, only fill INIT (4)
+            for i in range(limit):
+                if mianno._sleep_state[i] == 4:
+                    mianno._sleep_state[i] = pred_label[i]
+        else:
+            mianno._sleep_state[:limit] = pred_label[:limit]
+
+        # Per-epoch confidence (one value per 5 s epoch), attached to the
+        # annotation (static data, like the labels; the GUI draws it as a
+        # separate chart below the hypnogram).
+        mianno._auto_conf = np.asarray(conf, dtype=float)
+
+        return (pred_label, save_anno, mianno._auto_conf,
+                self.ConfidenceThresholdSpin.value())
 
     def ok_event(self):
         self.closed = False

@@ -32,13 +32,11 @@ from misleep.logger import logger
 def _setup_high_dpi():
     """Configure Qt high-DPI behaviour before the QApplication is created.
 
-    Qt6 enables high-DPI scaling by default; this additionally:
-
-    * uses *pass-through* scale-factor rounding so fractional display
-      scales (e.g. 125 % / 150 % on 2K screens) are applied exactly
-      instead of being rounded to 0.5 steps,
-    * requests per-monitor DPI awareness on Windows (best effort) so the
-      window is crisp when moved between monitors with different scales.
+    Qt6 enables high-DPI scaling by default and manages its own
+    per-monitor DPI awareness context; this additionally uses
+    *pass-through* scale-factor rounding so fractional display scales
+    (e.g. 125 % / 150 % on 2K screens) are applied exactly instead of
+    being rounded to 0.5 steps.
     """
     try:
         from PySide6.QtCore import Qt
@@ -49,18 +47,22 @@ def _setup_high_dpi():
     except Exception:  # pragma: no cover
         pass
 
+    # Note: do NOT call SetProcessDpiAwareness/SetProcessDPIAware here -
+    # Qt6 already sets DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2, and a
+    # second explicit call fails with "Access is denied" (the awareness can
+    # only be set once per process).
+
     if sys.platform == "win32":
+        # Give this process an explicit AppUserModelID so the Windows
+        # taskbar shows the MiSleep window icon instead of the generic
+        # python.exe logo. Must be set before the first window is shown.
         try:
             import ctypes
 
-            ctypes.windll.shcore.SetProcessDpiAwareness(2)  # per-monitor v2
-        except Exception:
-            try:
-                import ctypes
-
-                ctypes.windll.user32.SetProcessDPIAware()
-            except Exception:
-                pass
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
+                "BryanWang0702.MiSleep")
+        except Exception:  # pragma: no cover
+            pass
 
 
 def _parse_args(argv=None):
@@ -106,11 +108,13 @@ def _version():
 
 def _prewarm():
     """Pay the one-time warm-up costs (font cache, heavy scipy imports)
-    at application startup instead of inside the first file load.
+    in the background so the window appears instantly.
 
     Without this, the very first plot after loading a file silently pays
     ~1-2 s of matplotlib font-cache building and scipy imports, which the
-    user perceives as a slow "initialize/draw" phase.
+    user perceives as a slow "initialize/draw" phase.  Running it in a
+    daemon thread keeps the UI responsive; if a file is loaded before the
+    warm-up finishes, the import lock simply blocks until it completes.
     """
     try:
         import scipy.integrate  # noqa: F401
@@ -157,8 +161,11 @@ def show(data_path=None, anno_path=None):
     app.setApplicationDisplayName("MiSleep")
     app.setWindowIcon(app_icon())
 
-    # Warm-up one-time costs so the first file load renders immediately
-    _prewarm()
+    # Warm-up one-time costs in a background thread so the window appears
+    # immediately and the first file load renders fast.
+    import threading
+
+    threading.Thread(target=_prewarm, daemon=True).start()
 
     main_win = MainWindow()
 

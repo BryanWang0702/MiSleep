@@ -7,7 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.3.1] — 2026-08-18
 
+### Added
+
+- **Epoch / BIDS annotation import**: the CSV/TSV annotation loader now
+  understands `onset` / `duration` / `stage` (BIDS `events.tsv`),
+  headerless `[epoch index, epoch second, epoch label]` and
+  `[epoch second, epoch label]` tables (with or without a header row), on
+  top of the existing `start`/`end`/`state` and per-second layouts.
+
 ### Changed
+
+- **Faster startup**: the one-time warm-up (scipy imports, matplotlib font
+  cache) now runs in a background thread so the window appears instantly,
+  and the redundant `SetProcessDpiAwareness` calls were removed (Qt6
+  manages its own per-monitor DPI context - the old call produced an
+  "Access is denied" warning).
+- **Hypnogram layout**: the initial hypnogram strip is shorter (drag the
+  splitter to resize), the figure now fills the whole strip even without
+  the confidence chart, and the axis margins were widened so the time
+  tick labels are always visible (no overflow below the panel).
+- **Auto-staging defaults**: the low-confidence rate now defaults to
+  **0.8** and the HMM temperature to **0.1**. The HMM decoding is
+  confidence-based: the LightGBM probabilities drive the emissions and
+  the learned transition matrix only constrains state transitions.
+
+- **LightGBM auto-staging rewritten on the benchmark models**
+  (`benchmark_models.pkl`, 6 channel-combo models). Every mouse age and
+  EEG site uses the same model; the dialog lets the user pick the EEG
+  channel, an optional EMG channel and an optional ACC channel (ACC
+  requires EMG), the EEG site, the age group, the HMM temperature and the
+  **low-confidence rate**. Predictions are decoded with a learned 3-state
+  HMM and cover the **whole recording** (the first window and the tail
+  take the nearest epoch). The per-epoch **confidence** is attached to the
+  annotation and drawn as a separate line chart below the hypnogram with a
+  dashed threshold line - static, so page flips stay fast and label edits
+  never recompute it. The *cover current* checkbox only fills the INIT
+  states, keeping already-scored labels.
 
 - **Python support**: the package now supports **Python 3.8 through 3.14**
   (`requires-python >= 3.8`); annotations and resource loading were made

@@ -117,6 +117,36 @@ def test_json_and_csv_annotations(tmp_path):
     assert csv_anno.sleep_state == [1, 1, 2, 2]
 
 
+def test_epoch_tsv_annotations(tmp_path):
+    """BIDS onset/duration/stage and epoch [second, label] tables."""
+    # BIDS-style events.tsv
+    bids = tmp_path / "events.tsv"
+    bids.write_text("onset\tduration\tstage\n0\t4\t1\n4\t4\t2\n8\t4\t3\n",
+                    encoding="utf-8")
+    anno = load_annotation(bids)
+    assert anno.sleep_state[:12] == [1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3]
+
+    # headerless 3 columns: epoch index, epoch second, epoch label
+    three = tmp_path / "three.tsv"
+    three.write_text("0\t0\t1\n1\t4\t2\n", encoding="utf-8")
+    anno3 = load_annotation(three)
+    assert anno3.sleep_state[:8] == [1, 1, 1, 1, 2, 2, 2, 2]
+
+    # headerless 2 columns: epoch second, epoch label (no index column)
+    two = tmp_path / "two.tsv"
+    two.write_text("0\t1\n10\t3\n", encoding="utf-8")
+    anno2 = load_annotation(two)
+    assert anno2.sleep_state[:10] == [1] * 10
+    assert anno2.sleep_state[10:15] == [3] * 5
+
+    # header [epoch, second, label]
+    hdr = tmp_path / "hdr.tsv"
+    hdr.write_text("epoch\tsecond\tlabel\n0\t0\tNREM\n1\t5\tREM\n", encoding="utf-8")
+    anno4 = load_annotation(hdr, state_map={1: "NREM", 2: "REM", 3: "Wake", 4: "Init"})
+    assert anno4.sleep_state[:5] == [1] * 5
+    assert anno4.sleep_state[5:10] == [2] * 5
+
+
 def test_load_signal_dispatch():
     midata = load_signal(DATA_DIR / "10mins_example_mat.mat")
     assert midata.n_channels >= 1

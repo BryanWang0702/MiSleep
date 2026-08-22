@@ -32,6 +32,7 @@ from PySide6.QtWidgets import (
     QPushButton,
     QScrollArea,
     QSizePolicy,
+    QSplitter,
     QVBoxLayout,
     QWidget,
 )
@@ -168,9 +169,12 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         # Start-end for milliseconds, for start_end label
         self.start_end_ms = []
 
-        # Hypnogram area figure
-        self.hypo_figure = plt.figure(layout="constrained")
+        # Hypnogram area figure (plain figure + manual subplots_adjust; the
+        # constrained layout engine recomputes on every draw and is slow)
+        self.hypo_figure = plt.figure()
         self.hypo_ax = self.hypo_figure.subplots()
+        self.hypo_figure.subplots_adjust(
+            left=0.09, right=0.99, top=0.97, bottom=0.14)
         self.hypo_canvas = FigureCanvas(self.hypo_figure)
         self.hypo_canvas.mpl_connect("button_release_event", self.click_hypo)
         self.hypo_axvline = self.hypo_ax.axvline(
@@ -186,6 +190,13 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         self._hypo_transient = []            # per-flip overlay artists
         self._signal_artists = {}            # signal-axes idx -> artists we own
         self._spec_artist = None             # current spectrogram QuadMesh
+
+        # Auto-staging confidence threshold (display setting for the
+        # confidence chart below the hypnogram). The per-second confidence
+        # itself lives on the annotation (``mianno._auto_conf``), so it is
+        # naturally cleared when a new annotation is loaded.
+        self._auto_stage_conf_threshold = 0.8
+        self._hypo_conf_mode = False  # False = 1 axes, True = 2 axes (with conf chart)
 
         # Initial params for widgets
         self.channel_slm = ChannelListModel()
@@ -237,6 +248,8 @@ class MainWindow(QMainWindow, Ui_MiSleep):
 
         # Unified right-hand sidebar (replaces the four separate docks)
         self._build_sidebar()
+        # Signal / hypnogram split is user-adjustable
+        self._build_resizable_split()
         self._rebuild_compact_tool_layouts()
         self._constrain_inputs()
         self.setMinimumSize(960, 600)
@@ -382,6 +395,48 @@ class MainWindow(QMainWindow, Ui_MiSleep):
                      self.AnnotationDock, self.TimeDock):
             self.removeDockWidget(dock)
             dock.hide()
+
+    def _build_resizable_split(self):
+        """Make the signal / hypnogram vertical split user-adjustable.
+
+        The hypnogram used to be locked to ~130 px (a hard maximum in the
+        .ui), which squeezes the state bars once many labels are shown.
+        The central area is now a vertical ``QSplitter``: the signal on
+        top, and a bottom pane holding the (fixed) scroll bar plus the
+        hypnogram. Drag the handle between them to give the annotation
+        area more room - the scroll bar keeps its position between the
+        two plot areas.
+        """
+        # The hypnogram must be free to grow (the .ui caps it at 130 px)
+        self.HypnoArea.setMinimumHeight(120)
+        self.HypnoArea.setMaximumHeight(16777215)
+
+        # Bottom pane = scroll bar (fixed height) + hypnogram (grows)
+        bottom = QWidget()
+        bottom_layout = QVBoxLayout(bottom)
+        bottom_layout.setContentsMargins(0, 0, 0, 0)
+        bottom_layout.setSpacing(0)
+        self.gridLayout_3.removeWidget(self.ScrollerBar)
+        bottom_layout.addWidget(self.ScrollerBar)
+        bottom_layout.addWidget(self.HypnoArea, 1)
+
+        self.splitter = QSplitter(Qt.Orientation.Vertical)
+        self.splitter.setChildrenCollapsible(False)
+        self.splitter.setHandleWidth(5)
+        self.splitter.setStretchFactor(0, 1)
+        self.splitter.setStretchFactor(1, 0)
+        self.splitter.addWidget(self.SignalArea)
+        self.splitter.addWidget(bottom)
+
+        # Replace the three grid rows with the splitter (same span as the
+        # sidebar column, so both stay side by side).
+        self.gridLayout_3.removeWidget(self.SignalArea)
+        self.gridLayout_3.removeWidget(self.HypnoArea)
+        self.gridLayout_3.addWidget(self.splitter, 0, 0, 3, 1)
+
+        # Default: signal gets most of the space, the hypnogram / confidence
+        # strip a compact height that the user can drag to resize.
+        self.splitter.setSizes([660, 220])
 
     def _rebuild_compact_tool_layouts(self):
         """Arrange the frequently used tools in predictable equal columns."""
@@ -897,10 +952,13 @@ class MainWindow(QMainWindow, Ui_MiSleep):
         self.reset_sec_limit()
 
         self.hypo_ax = self.hypo_figure.subplots(nrows=1, ncols=1)
+        self.hypo_figure.subplots_adjust(
+            left=0.09, right=0.99, top=0.97, bottom=0.14)
         # new axes: the cached hypnogram base must be rebuilt
         self._hypo_key = None
         self._hypo_steps = []
         self._hypo_transient = []
+        self._hypo_conf_mode = False  # single-axes structure for now
 
         # Set canvases for the plot areas
         # Keep the canvases hidden until their final axes and DPI-aware size
@@ -1003,12 +1061,15 @@ class MainWindow(QMainWindow, Ui_MiSleep):
             logger.warning("Signal canvas was closed externally - recreated")
 
         if not alive(self.hypo_figure):
-            self.hypo_figure = plt.figure(layout="constrained")
+            self.hypo_figure = plt.figure()
             self.hypo_ax = self.hypo_figure.subplots()
+            self.hypo_figure.subplots_adjust(
+                left=0.09, right=0.99, top=0.97, bottom=0.14)
             self.hypo_canvas = FigureCanvas(self.hypo_figure)
             self.hypo_canvas.mpl_connect("button_release_event", self.click_hypo)
             self.hypo_canvas.installEventFilter(self)
             self.HypnoArea.setWidget(self.hypo_canvas)
+            self._hypo_conf_mode = False  # single-axes structure
             self._hypo_key = None
             self._hypo_steps = []
             self._hypo_transient = []
@@ -1496,9 +1557,37 @@ class MainWindow(QMainWindow, Ui_MiSleep):
             self.signal_figure.canvas.flush_events()
 
     def plot_hypo(self):
-        """Redraw the hypnogram area (one colored segment per sleep state)."""
-        # The state-step background only changes when the annotation changes;
-        # rebuild it lazily and reuse it across page flips.
+        """Redraw the hypnogram area (state bands + confidence chart).
+
+        The state bands only change when the annotation changes; they are
+        rebuilt lazily and reused across page flips. When the annotation
+        carries per-second auto-staging confidence (``mianno._auto_conf``),
+        a second small axes below the hypnogram shows the confidence as a
+        line with a horizontal threshold line - static, never recomputed
+        on label edits or page flips.
+        """
+        want_conf = (self.mianno is not None
+                     and getattr(self.mianno, "_auto_conf", None) is not None
+                     and len(self.mianno._auto_conf) > 0)
+
+        # Rebuild the figure structure when the confidence chart appears
+        # or disappears (1 axes <-> 2 stacked axes).
+        if want_conf != self._hypo_conf_mode:
+            self.hypo_figure.clf()
+            if want_conf:
+                self.hypo_ax, self.hypo_conf_ax = self.hypo_figure.subplots(
+                    2, 1, sharex=True, height_ratios=[2, 1],
+                    gridspec_kw={"hspace": 0.22})
+                self.hypo_figure.subplots_adjust(
+                    left=0.09, right=0.99, top=0.97, bottom=0.14)
+            else:
+                self.hypo_ax = self.hypo_figure.subplots()
+                self.hypo_figure.subplots_adjust(
+                    left=0.09, right=0.99, top=0.97, bottom=0.14)
+            self._hypo_conf_mode = want_conf
+            self._hypo_key = None
+            self._hypo_transient = []
+
         key = None
         if self.mianno is not None:
             key = (
@@ -1507,6 +1596,7 @@ class MainWindow(QMainWindow, Ui_MiSleep):
                 tuple(sorted(self.state_map_dict.items())),
                 tuple(sorted(self.state_color_dict.items())),
                 float(self.config["gui"].get("hypnogramstatealpha", "0.55")),
+                want_conf,
             )
         if key != self._hypo_key:
             self.hypo_ax.clear()
@@ -1538,9 +1628,13 @@ class MainWindow(QMainWindow, Ui_MiSleep):
             self.hypo_ax.set_xlim(0, self.total_seconds)
             self.hypo_ax.yaxis.set_ticks(
                 list(self.state_map_dict.keys()), list(self.state_map_dict.values()))
-            self.hypo_ax.set_xlabel("Time (s)")
+            if not want_conf:
+                self.hypo_ax.set_xlabel("Time (s)")
             # faint horizontal guides at each state level
             self.hypo_ax.grid(axis="y", alpha=0.25)
+            # confidence chart below the hypnogram (per-epoch, static)
+            if want_conf:
+                self._draw_confidence_chart()
             self._hypo_key = key
 
         # remove the per-flip overlay artists (current-time / event lines)
@@ -1576,6 +1670,31 @@ class MainWindow(QMainWindow, Ui_MiSleep):
 
         self.hypo_figure.canvas.draw()
         self.hypo_figure.canvas.flush_events()
+
+    def _draw_confidence_chart(self):
+        """Draw the per-epoch confidence line + threshold line.
+
+        One point per 5 s epoch (x = epoch centre), a dashed horizontal
+        line at the configured threshold. Static - it is part of the
+        cached hypnogram base and never recomputed on label edits or page
+        flips.
+        """
+        conf = np.asarray(self.mianno._auto_conf, dtype=float)
+        ax = self.hypo_conf_ax
+        ax.clear()
+        theme = resolved_theme(self._theme_name, self._tone_name)
+        thr = float(getattr(self, "_auto_stage_conf_threshold", 0.6))
+        offset = 10.0  # the first epoch starts at W = 10 s
+        xs = offset + np.arange(len(conf)) * 5.0 + 2.5
+        ax.plot(xs, conf, color=theme["accent"], linewidth=0.9, zorder=2)
+        ax.axhline(thr, color=theme["danger"], linestyle="--",
+                   linewidth=1.0, zorder=3)
+        ax.set_ylim(0, 1)
+        ax.set_xlim(0, self.total_seconds)
+        ax.set_yticks([0.0, 0.5, 1.0])
+        ax.set_ylabel("conf", fontsize=8)
+        ax.set_xlabel("Time (s)")
+        ax.grid(axis="x", alpha=0.2)
 
     def redraw_all(self, second=0):
         """Validate ``second`` and redraw everything."""
@@ -1904,8 +2023,11 @@ class MainWindow(QMainWindow, Ui_MiSleep):
                 QTimer.singleShot(0, self.append_start_end)
 
     def click_hypo(self, event):
-        """Jump to the clicked time on the hypnogram."""
-        if event.inaxes is not self.hypo_ax or event.xdata is None:
+        """Jump to the clicked time on the hypnogram / confidence chart."""
+        if event.xdata is None:
+            return
+        if event.inaxes is not self.hypo_ax \
+                and event.inaxes is not getattr(self, "hypo_conf_ax", None):
             return
         current_sec = int(event.xdata)
         self.redraw_all(second=current_sec)
@@ -2410,11 +2532,13 @@ class MainWindow(QMainWindow, Ui_MiSleep):
             dialog.exec()
             if dialog.closed:
                 return
-            auto_stage_lst, save_anno = dialog.auto_stage(
+            # The dialog applies the predictions (cover-current or full
+            # overwrite), attaches the per-second confidence to the
+            # annotation, and returns the display threshold.
+            pred, save_anno, conf, conf_thr = dialog.auto_stage(
                 self.midata, self.mianno)
 
-            limit = min(len(self.mianno._sleep_state), len(auto_stage_lst))
-            self.mianno._sleep_state[:limit] = auto_stage_lst[:limit]
+            self._auto_stage_conf_threshold = float(conf_thr)
             self._hypo_revision += 1
 
             if save_anno:

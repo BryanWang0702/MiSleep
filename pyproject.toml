@@ -84,6 +84,10 @@ Documentation = "https://bryanwang.cn/MiSleep/"
 [project.scripts]
 misleep = "misleep.gui.app:main"
 
+# Windowless launcher (no console window) - creates misleepw.exe on Windows
+[project.gui-scripts]
+misleepw = "misleep.gui.app:main"
+
 [project.entry-points."misleep.signal_readers"]
 mat = "misleep.io.mat:load_mat"
 edf = "misleep.io.edf:load_edf"

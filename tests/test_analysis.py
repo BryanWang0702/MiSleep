@@ -92,7 +92,7 @@ def test_result_constraints_rem_threshold():
 
 def test_model_path():
     p = model_path(mouse_age="adult", EEG_channel="F")
-    assert p.name == "adult_EEG_F_lightgbm.pkl"
+    assert p.name == "benchmark_models.pkl"
     assert p.exists()
 
 

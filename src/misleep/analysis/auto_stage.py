@@ -1,18 +1,36 @@
 # -*- coding: UTF-8 -*-
-"""Automatic sleep staging with a LightGBM classifier.
+"""Automatic sleep staging with the benchmark LightGBM models.
 
-The model is trained on 20-second windows (stride 5 s) of EEG and EMG
-features; every window label is then expanded back to per-second labels.
+The packaged ``benchmark_models.pkl`` contains six LightGBM classifiers
+(one per channel combo: EEG site x optional EMG x optional ACC), each
+combined with a per-recording z-score normalisation, a learned 3-state HMM
+and class priors. **Every mouse age and EEG site use the same model file**;
+the age / site arguments are kept only for API compatibility.
+
+The pipeline (adapted from the rodent-autostage benchmark):
+
+1. feature extraction on 5 s epochs (STFT band powers + time-domain
+   features + EEG-EMG coherence, W = 10 s window at 1 s stride),
+2. per-recording z-score normalisation,
+3. LightGBM class probabilities,
+4. HMM / Viterbi decoding with a softmax temperature,
+5. physiologically constrained smoothing (Init -> Wake, REM never after
+   Wake, single-epoch flip removal),
+6. per-second expansion of the per-epoch states.
+
+Besides the per-second labels, the per-epoch probability of the predicted
+state is returned (the *confidence* used by the GUI to mark low-confidence
+regions in the hypnogram).
 """
 
+from __future__ import annotations
+
 import copy
-import warnings
 from pathlib import Path
 
 import numpy as np
 
 from misleep._compat import resource_dir
-from misleep.analysis.features import get_data_features, split_window_data
 from misleep.logger import logger
 
 
@@ -22,20 +40,24 @@ def _model_dir() -> Path:
 
 
 def model_path(mouse_age="adult", EEG_channel="F") -> Path:
-    """Return the path of a packaged LightGBM model file.
+    """Return the path of the packaged benchmark models.
+
+    A single model file serves every mouse age and EEG site, so
+    ``mouse_age`` and ``EEG_channel`` are accepted for API compatibility
+    only.
 
     Parameters
     ----------
-    mouse_age : {'adult', 'ado', 'P30'}
-        Age category of the model.
-    EEG_channel : {'F', 'P'}
-        EEG electrode site (frontal or parietal).
+    mouse_age : str
+        Accepted for API compatibility (ignored).
+    EEG_channel : str
+        Accepted for API compatibility (ignored).
 
     Returns
     -------
     Path
     """
-    return _model_dir() / f"{mouse_age}_EEG_{EEG_channel}_lightgbm.pkl"
+    return _model_dir() / "benchmark_models.pkl"
 
 
 def result_constraints(pred_prob):
@@ -76,82 +98,79 @@ def result_constraints(pred_prob):
     return pred_label
 
 
-def auto_stage_gbm(EEG, EMG, label, sf, EEG_channel="F", mouse_age="adult"):
-    """Auto-stage an EEG/EMG recording with the LightGBM model.
+def auto_stage_gbm(EEG, EMG, label, sf, EEG_channel="F", mouse_age="adult",
+                   ACC=None, return_probs=False, temperature=0.1):
+    """Auto-stage a recording with the benchmark LightGBM models.
+
+    All mouse ages use the same model; ``mouse_age`` is kept for API
+    compatibility. The channel combo (EEG site x EMG x ACC) selects which
+    of the six benchmark models is used - ACC requires EMG.
 
     Parameters
     ----------
     EEG : ndarray
         EEG signal.
-    EMG : ndarray
-        EMG signal.
+    EMG : ndarray or None
+        EMG signal (optional; pass ``None`` to run EEG-only).
     label : list
         Reference labels (kept for API compatibility; not used by the model).
     sf : float
-        Sampling frequency of both signals.
+        Sampling frequency of the signals.
     EEG_channel : {'F', 'P'}
         EEG electrode site (frontal or parietal). Default is ``'F'``.
-    mouse_age : {'adult', 'ado', 'P30'}
-        Model age category: adult > P56, ``ado`` is P30~P56, ``P30`` is < P30.
+    mouse_age : str
+        Accepted for API compatibility (ignored - all ages use the same
+        model).
+    ACC : ndarray or None
+        ACC signal (optional; requires ``EMG``).
+    return_probs : bool
+        Also return the per-epoch confidence (probability of the predicted
+        state) as a numpy array.
+    temperature : float
+        HMM softmax temperature (lower sharpens the transition structure).
 
     Returns
     -------
-    list of int
-        Per-second predicted state codes (1 = NREM, 2 = REM, 3 = Wake).
-        May be slightly shorter than the input for the last few seconds.
+    list of int, or (list of int, ndarray) when ``return_probs`` is True.
+        Per-second predicted state codes (1 = NREM, 2 = REM, 3 = Wake),
+        plus the per-epoch confidence when requested. The prediction may
+        be a few seconds shorter than the recording (window drop).
     """
-    try:
-        import joblib
-    except ImportError as e:  # pragma: no cover
-        raise ImportError(
-            "Auto staging requires the 'joblib' package. "
-            "Install it with: pip install joblib") from e
+    from misleep.analysis.autostage import benchmark as _bm
 
-    EEG_windows = split_window_data(EEG, sf, state=4)
-    EMG_windows = split_window_data(EMG, sf, state=4)
-    if not EEG_windows or not EMG_windows:
-        raise ValueError("Signals are too short for auto staging (need >= 20 s).")
+    if EEG is None or len(np.asarray(EEG)) / sf < _bm.W + _bm.EPOCH_S:
+        raise ValueError(
+            "Signal too short for auto staging (need at least "
+            f"{int(_bm.W + _bm.EPOCH_S)} s).")
+    if ACC is not None and EMG is None:
+        raise ValueError("ACC auto-staging requires an EMG channel as well.")
 
-    window_feature_df = get_data_features(EEG_windows, sf, data_format="EEG")
-    emg_feature_df = get_data_features(EMG_windows, sf, data_format="EMG")
-    # Combine and keep only feature columns (drop 'label')
-    window_feature_df = window_feature_df.join(emg_feature_df, lsuffix="_eeg", rsuffix="_emg")
-    window_feature_df = window_feature_df.filter(like="E")
+    use_emg = EMG is not None
+    use_acc = ACC is not None
+    combo = _bm.model_combo(EEG_channel, use_emg, use_acc)
 
-    model_file = model_path(mouse_age=mouse_age, EEG_channel=EEG_channel)
-    if not model_file.exists():
-        raise FileNotFoundError(
-            f"Model file not found: {model_file}. "
-            f"Make sure the 'misleep' package data is installed "
-            f"(pip install misleep) or provide the model manually.")
+    models = _bm.load_models()
+    if combo not in models:
+        # ACC without EMG is not part of the model set - fall back to the
+        # EEG+EMG (or EEG-only) model.
+        if use_acc and use_emg:
+            raise ValueError(
+                f"No model for combo '{combo}' in the packaged models.")
+        combo = _bm.model_combo(EEG_channel, use_emg, False)
 
-    # The bundled LightGBM estimators were trained with scikit-learn 1.3.2.
-    # Their LabelEncoder is only retained as fitted metadata and is not used
-    # by predict_proba(), but newer sklearn versions otherwise print a long
-    # compatibility warning on every run.  Limit the suppression narrowly to
-    # that known packaged object; all other model-loading warnings remain.
-    try:
-        from sklearn.exceptions import InconsistentVersionWarning
-    except ImportError:  # pragma: no cover - sklearn is a LightGBM dependency
-        InconsistentVersionWarning = Warning
-    with warnings.catch_warnings():
-        warnings.filterwarnings(
-            "ignore",
-            message="Setting the shape on a NumPy array has been deprecated.*",
-            category=DeprecationWarning,
-            module=r"joblib\.numpy_pickle",
-        )
-        warnings.filterwarnings(
-            "ignore",
-            message="Trying to unpickle estimator LabelEncoder from version 1.3.2.*",
-            category=InconsistentVersionWarning,
-        )
-        gbm_model = joblib.load(model_file)
+    sig_map = {"eeg": EEG, "emg": EMG, "acc": ACC}
+    res = _bm.predict_model(models[combo], sig_map, sf,
+                            site=EEG_channel, temperature=temperature)
 
-    pred_prob = gbm_model.predict_proba(window_feature_df,
-                                        num_iteration=gbm_model.best_iteration_)
-    pred_label = result_constraints(pred_prob)
-    pred_label = [item for each in pred_label for item in [each] * 5]
-    logger.info("Auto staging finished (%d windows, %d seconds)",
-                len(pred_prob), len(pred_label))
-    return pred_label
+    # Full-length per-second labels (every second gets a label; the first
+    # W seconds and the tail take the nearest epoch) + per-epoch confidence
+    # (one value per 5 s epoch - small data).
+    pred_second = [int(x) for x in res["label_sec"]]
+    conf_epoch = np.asarray(res["prob"], dtype=float)
+    logger.info(
+        "Auto staging finished (combo=%s, %d epochs, %d seconds)",
+        combo, len(res["label"]), len(pred_second))
+
+    if return_probs:
+        return pred_second, conf_epoch
+    return pred_second

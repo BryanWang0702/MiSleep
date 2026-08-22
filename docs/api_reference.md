@@ -119,12 +119,15 @@ Default state map: `{1: 'NREM', 2: 'REM', 3: 'Wake', 4: 'Init'}`.
 
 ### Automatic staging
 
-* `auto_stage_gbm(EEG, EMG, label, sf, EEG_channel='F', mouse_age='adult')`
-  → list of per-second states — LightGBM auto staging.
+* `auto_stage_gbm(EEG, EMG=None, label, sf, EEG_channel='F', mouse_age='adult',
+  ACC=None, return_probs=False)` → list of per-second states (plus per-epoch
+  confidence when `return_probs=True`) — LightGBM auto staging with the
+  benchmark models (all ages use the same model; EMG and ACC are optional,
+  ACC requires EMG).
 * `result_constraints(pred_prob)` → list — smooth/constrain raw model
   probabilities into state labels.
 * `model_path(mouse_age='adult', EEG_channel='F')` → Path — packaged
-  LightGBM model path.
+  benchmark model path.
 * `misleep.analysis.transformer.auto_stage_llm(EEG, EMG, label=None,
   config=None)` → list — transformer auto staging (requires torch).
 * `misleep.analysis.transformer.AutoStageConfig` — dataclass of
