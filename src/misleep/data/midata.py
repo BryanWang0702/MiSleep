@@ -210,15 +210,25 @@ class MiData:
         if not isinstance(sf, (int, float)) or not math.isfinite(sf) or sf <= 0:
             raise TypeError(f"Sample frequency should be a float, got {type(sf)}")
 
-        _duration = math.floor(len(signal) / sf)
-        if _duration < self._duration:
+        # Every channel shares the same integer duration: the sample count a
+        # channel of ``sf`` Hz needs to cover ``self._duration`` seconds is
+        # ``int(self._duration * sf)`` (the same truncation used in
+        # :meth:`__init__`).  Compare sample counts directly instead of
+        # re-deriving the duration from an already-truncated length -- with a
+        # fractional sampling frequency (e.g. 99.9927 Hz) the naive
+        # ``math.floor(len(signal) / sf)`` can come out one second short and
+        # wrongly reject signals that are exactly as long as the existing
+        # channels (this made ``MiData.filter()`` fail on fractional-sf data).
+        expected_samples = int(self._duration * sf)
+        if len(signal) < expected_samples:
             raise ValueError(
-                f"The new signal is shorter ({_duration}s) than the existing data "
-                f"({self._duration}s)")
+                f"The new signal is shorter ({len(signal)} samples) than the "
+                f"existing data ({self._duration}s, {expected_samples} samples "
+                f"at {sf} Hz)")
 
         channel = _unique_name(channel, self.channels)
 
-        self._signals.append(signal[:int(self._duration * sf)])
+        self._signals.append(signal[:expected_samples])
         self._channels.append(channel)
         self._n_channels = len(self._channels)
         self._sf.append(sf)

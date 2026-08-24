@@ -88,6 +88,59 @@ def test_midata_filter(midata):
     assert midata.channels[-1].startswith("EEG_bandpass")
 
 
+@pytest.mark.parametrize("sf", [99.9927, 100.5, 256.256, 305.005])
+def test_midata_filter_fractional_sf_preserves_length(sf):
+    """Filtering must not change the sample count or duration when sf is fractional.
+
+    Regression: ``MiData.add`` re-derived the duration with
+    ``math.floor(len(signal) / sf)`` from a signal already truncated to
+    ``int(duration * sf)`` samples; with a fractional sf that could come out
+    one second short and made ``filter()`` raise a spurious error (or produce
+    a shorter channel).
+    """
+    rng = np.random.default_rng(42)
+    n_raw = int(1000 * sf)
+    md = MiData(signals=[rng.standard_normal(n_raw),
+                         rng.standard_normal(n_raw)],
+                channels=["EEG", "EMG"], sf=[sf, sf], time="20240101-00:00:00")
+    duration, lengths = md.duration, [len(s) for s in md.signals]
+
+    md.filter(chans=["EEG"], btype="bandpass", low=0.5, high=30)
+
+    assert md.n_channels == 3
+    assert md.duration == duration
+    assert len(md.signals) == 3
+    assert all(len(sig) == length for sig, length in zip(md.signals, lengths))
+
+
+def test_midata_add_fractional_sf():
+    """A channel with ``int(duration * sf)`` samples must be accepted."""
+    sf = 99.9927
+    md = MiData(signals=[np.zeros(int(1000 * sf)), np.zeros(int(1000 * sf))],
+                channels=["EEG", "EMG"], sf=[sf, sf], time="20240101-00:00:00")
+    n = md.n_channels
+    duration, expected = md.duration, int(md.duration * sf)
+
+    # Exactly as many samples as the existing channels -> accepted as-is
+    md.add(np.zeros(expected), "EEG2", sf)
+    assert md.n_channels == n + 1
+    assert len(md.signals[-1]) == expected
+    assert md.duration == duration  # duration unchanged by add()
+
+    # A genuinely shorter signal is still rejected
+    with pytest.raises(ValueError):
+        md.add(np.zeros(expected - 10), "TOO_SHORT", sf)
+
+
+def test_midata_add_fractional_sf_rejects_short_signal():
+    """Fractional-sf channels that are truly too short must still be rejected."""
+    sf = 256.256
+    md = MiData(signals=[np.zeros(int(1000 * sf)), np.zeros(int(1000 * sf))],
+                channels=["EEG", "EMG"], sf=[sf, sf], time="20240101-00:00:00")
+    with pytest.raises(ValueError):
+        md.add(np.zeros(500 * 256), "TOO_SHORT", 256.0)
+
+
 def test_midata_differential(midata):
     midata.differential(chan1="EEG", chan2="EMG")
     assert midata.channels[-1] == "EEG_EMG_DIFF"

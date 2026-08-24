@@ -5,6 +5,22 @@ All notable changes to MiSleep are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.2] — 2026-08-24
+
+### Fixed
+
+- **Filtering broke on fractional sampling frequencies**: `MiData.add()` (used
+  by `MiData.filter()`) recomputed the duration with
+  `math.floor(len(signal) / sf)` from a signal that had already been
+  truncated to `int(duration * sf)` samples. When `sf` is a decimal (e.g.
+  `99.9927` Hz), that came out one second short, so filtering either raised a
+  spurious "new signal is shorter" error or produced a channel whose length /
+  duration did not match the original signal, which then failed the signal /
+  label consistency checks in the GUI. The check now compares sample counts
+  against `int(duration * sf)` directly, so filtering preserves the sample
+  count and duration for any positive `sf` while still rejecting genuinely
+  short signals.
+
 ## [0.3.1] — 2026-08-18
 
 ### Added
