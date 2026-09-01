@@ -7,6 +7,7 @@ the two auto-staging dialogs and the save-data dialog, plus the About box.
 """
 
 import datetime
+import math
 import os
 from copy import deepcopy
 
@@ -48,6 +49,33 @@ from misleep.gui.workers import SaveThread
 from misleep.io.annotation import transfer_result
 from misleep.logger import logger
 from misleep.utils.annotation import lst2group
+
+
+def _split_state_data_by_hour(channel_data, sleep_states, states, sf):
+    """Return per-state signal segments in fixed, time-aligned hour slots.
+
+    Every state receives one entry per elapsed hour.  An entry is ``None``
+    when that state has no usable data in the hour, so later hours never
+    shift left to fill an empty ZT column.
+    """
+    hour_count = int(math.ceil(len(sleep_states) / 3600))
+    result = {state: [None] * hour_count for state in states}
+
+    for hour_idx in range(hour_count):
+        hour_start = hour_idx * 3600
+        hour_stop = min(hour_start + 3600, len(sleep_states))
+        groups = lst2group(enumerate(sleep_states[hour_start:hour_stop]))
+        for state in states:
+            parts = [
+                channel_data[
+                    int((hour_start + group_start) * sf):
+                    int((hour_start + group_stop) * sf)]
+                for group_start, group_stop, value in groups
+                if value == state
+            ]
+            if parts:
+                result[state][hour_idx] = np.concatenate(parts)
+    return result
 
 
 class AboutDialog(QDialog, Ui_AboutDialog):
@@ -400,11 +428,13 @@ class StateSpectralDialog(QDialog, Ui_StateSpectralDialog):
             end_sec = mianno.anno_length
 
         midata = midata.crop([start_sec, end_sec])
-        sleep_state = mianno.sleep_state[start_sec:end_sec + 1]
+        # ``end_sec`` is exclusive, matching MiData.crop().  Using end+1 here
+        # created a spurious sample at exact hour boundaries.
+        sleep_state_values = mianno.sleep_state[start_sec:end_sec]
 
         channel_idx = self.ChannelSelector.currentIndex()
         channel_data = midata.signals[channel_idx]
-        sleep_state = lst2group([[idx, each] for idx, each in enumerate(sleep_state)])
+        sleep_state = lst2group(enumerate(sleep_state_values))
         sf = midata.sf[channel_idx]
 
         # Band-pass filter if checked
@@ -422,7 +452,7 @@ class StateSpectralDialog(QDialog, Ui_StateSpectralDialog):
 
         gaussian_sigma = self.GaussianSpinBox.value() if self.GaussianCheckBox.isChecked() else None
 
-        state_codes = sorted(set(mianno.sleep_state[start_sec:end_sec + 1]))
+        state_codes = sorted(set(sleep_state_values))
         state_data = {
             state: np.concatenate([
                 channel_data[int(each[0] * sf): int(each[1] * sf)]
@@ -451,21 +481,21 @@ class StateSpectralDialog(QDialog, Ui_StateSpectralDialog):
         # Optional per-hour spectral segmentation
         hour_spec = {state: [] for state in spectra}
         if self.HourSegmentCheckBox.isChecked():
-            for sec in range(0, end_sec - start_sec, 3600):
-                hour_states = mianno.sleep_state[start_sec + sec:start_sec + sec + 3600]
-                hour_states = lst2group([[idx + sec, each]
-                                         for idx, each in enumerate(hour_states)])
-                for state in spectra:
-                    data_parts = [channel_data[int(each[0] * sf): int(each[1] * sf)]
-                                  for each in hour_states if each[2] == state]
-                    data = np.concatenate(data_parts) if data_parts else np.array([])
-                    if self.RejectArtifactCheckBox.isChecked() and len(data):
-                        data = reject_artifact(data, sf=sf, threshold=threshold)
-                    if len(data) > sf * 10:
-                        hour_spec[state].append(cal_draw_spectrum(
+            hourly_data = _split_state_data_by_hour(
+                channel_data, sleep_state_values, spectra, sf)
+            for state, state_hours in hourly_data.items():
+                for data in state_hours:
+                    if data is not None and self.RejectArtifactCheckBox.isChecked():
+                        data = reject_artifact(
+                            data, sf=sf, threshold=threshold)
+                    if data is not None and len(data) > sf * 10:
+                        power = cal_draw_spectrum(
                             data=data, sf=sf, nperseg=nperseg,
                             freq_band=freq_band, relative=relative, nfft=nfft,
-                            gaussian_sigma=gaussian_sigma)[0][1])
+                            gaussian_sigma=gaussian_sigma)[0][1]
+                        hour_spec[state].append(power)
+                    else:
+                        hour_spec[state].append(None)
 
         fd = QFileDialog.getExistingDirectory(self, "Select a folder to save states' data",
                                               f"{config['gui']['openpath']}")
@@ -485,10 +515,10 @@ class StateSpectralDialog(QDialog, Ui_StateSpectralDialog):
                     figure.savefig(fd + "/" + safe_name + "_spectrum.pdf")
                     _df = pd.DataFrame(
                         data=spec.T, columns=["frequency", "power"])
-                    if hour_spec[state]:
-                        _df[[str(each) for each in range(
-                            1, len(hour_spec[state]) + 1)]] = \
-                            pd.DataFrame(hour_spec[state]).T
+                    for hour_idx, hour_power in enumerate(hour_spec[state]):
+                        column = f"ZT{hour_idx}"
+                        _df[column] = np.nan if hour_power is None \
+                            else pd.Series(hour_power)
                     _df.to_excel(
                         excel_writer=writer, sheet_name=safe_name[:31],
                         index=False)

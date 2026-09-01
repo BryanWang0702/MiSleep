@@ -767,6 +767,65 @@ def test_data_export_always_restores_main_window(tmp_path, monkeypatch):
 
 
 @pytest.mark.skipif(not _pyside6_available(), reason="PySide6 not installed")
+def test_state_spectral_hour_columns_preserve_empty_zt_slots(
+        fresh_config, tmp_path, monkeypatch):
+    """Hourly state spectra stay aligned to ZT0..ZTn despite empty hours."""
+    import numpy as np
+    import pandas as pd
+    from PySide6.QtWidgets import QApplication, QFileDialog
+
+    app = QApplication.instance() or QApplication([])
+    from misleep.data import MiAnnotation, MiData
+    from misleep.gui.dialogs import StateSpectralDialog
+
+    class FakeFigure:
+        def savefig(self, *args, **kwargs):
+            pass
+
+        def clear(self):
+            pass
+
+    def fake_spectrum(data, **kwargs):
+        return np.array([[1.0, 2.0], [len(data), float(np.mean(data))]]), \
+            FakeFigure()
+
+    monkeypatch.setattr(
+        "misleep.gui.dialogs.cal_draw_spectrum", fake_spectrum)
+    monkeypatch.setattr(
+        QFileDialog, "getExistingDirectory",
+        staticmethod(lambda *args, **kwargs: str(tmp_path)))
+
+    # State 1 is absent from ZT1; state 2 is absent from ZT0 and ZT2.
+    states = [1] * 3600 + [2] * 3600 + [1] * 3600
+    midata = MiData(
+        signals=[np.arange(len(states), dtype=float)],
+        channels=["EEG"], sf=[1.0], time="20240409-18:00:00")
+    mianno = MiAnnotation(states, state_map={1: "NREM", 2: "REM"})
+    fresh_config["gui"]["openpath"] = "recording.mat"
+
+    dialog = StateSpectralDialog(config=fresh_config)
+    dialog.dialog_show(midata.channels)
+    dialog.BPFilterCheckBox.setChecked(False)
+    dialog.HourSegmentCheckBox.setChecked(True)
+    assert dialog.spectral_analysis(midata, mianno, fresh_config) is True
+
+    workbook = tmp_path / "recording_power_results.xlsx"
+    nrem = pd.read_excel(workbook, sheet_name="NREM")
+    rem = pd.read_excel(workbook, sheet_name="REM")
+    expected = ["frequency", "power", "ZT0", "ZT1", "ZT2"]
+    assert list(nrem.columns) == expected
+    assert list(rem.columns) == expected
+    assert nrem["ZT1"].isna().all()
+    assert rem["ZT0"].isna().all()
+    assert rem["ZT2"].isna().all()
+    assert nrem["ZT0"].notna().all() and nrem["ZT2"].notna().all()
+    assert rem["ZT1"].notna().all()
+
+    dialog.close()
+    app.processEvents()
+
+
+@pytest.mark.skipif(not _pyside6_available(), reason="PySide6 not installed")
 def test_gui_with_data(tmp_path):
     from PySide6.QtWidgets import QApplication
 
