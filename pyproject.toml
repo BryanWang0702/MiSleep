@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "misleep"
-version = "0.3.2"
+version = "0.3.3"
 description = "MiSleep: Mice sleep EEG/EMG visualization, scoring, and analysis"
 readme = "README.md"
 requires-python = ">=3.8"

@@ -96,6 +96,20 @@ def test_model_path():
     assert p.exists()
 
 
+def test_benchmark_model_loads_through_numpy1_compat(monkeypatch):
+    """NumPy 1.x users can read the model serialized under NumPy 2.x."""
+    from misleep.analysis.autostage import benchmark
+
+    benchmark.load_models.cache_clear()
+    monkeypatch.setattr(benchmark.np, "__version__", "1.26.4")
+    models = benchmark.load_models()
+    assert set(models) == {
+        "eegf", "eegp", "eegf_emg", "eegp_emg",
+        "eegf_emg_acc", "eegp_emg_acc",
+    }
+    benchmark.load_models.cache_clear()
+
+
 def test_auto_stage_gbm():
     sf = 256.0
     eeg = make_signal(sf=sf, duration=100, seed=2)

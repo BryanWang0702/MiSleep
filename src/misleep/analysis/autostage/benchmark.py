@@ -22,6 +22,7 @@ hypnogram.
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 from functools import lru_cache
 from pathlib import Path
 
@@ -48,6 +49,43 @@ STRIDE = 1.0
 COMBO_BASE = {"F": "eegf", "P": "eegp"}
 
 
+@contextmanager
+def _numpy_pickle_compat(joblib_module):
+    """Make NumPy-2-created model pickles readable with NumPy 1.x.
+
+    NumPy 2 renamed its private ``numpy.core`` package to ``numpy._core``.
+    The bundled benchmark was serialized under NumPy 2 and therefore stores
+    the latter module path.  NumPy 1.x cannot import it, even though the
+    referenced scalar implementation is otherwise compatible.  Remap that
+    one private module path inside Joblib's unpickler, without changing the
+    process-wide NumPy module namespace.
+    """
+    try:
+        numpy_major = int(np.__version__.split(".", 1)[0])
+    except (TypeError, ValueError):  # pragma: no cover - non-standard build
+        numpy_major = 2
+
+    if numpy_major >= 2:
+        yield
+        return
+
+    unpickler = joblib_module.numpy_pickle.NumpyUnpickler
+    original_find_class = unpickler.find_class
+
+    def find_class_compat(self, module, name):
+        if module == "numpy._core":
+            module = "numpy.core"
+        elif module.startswith("numpy._core."):
+            module = "numpy.core." + module[len("numpy._core."):]
+        return original_find_class(self, module, name)
+
+    try:
+        unpickler.find_class = find_class_compat
+        yield
+    finally:
+        unpickler.find_class = original_find_class
+
+
 def models_path() -> Path:
     """Return the path of the packaged benchmark models file."""
     return resource_dir("misleep.analysis.models") / "benchmark_models.pkl"
@@ -63,7 +101,8 @@ def load_models(path=None):
         raise FileNotFoundError(
             f"Model file not found: {path}. Make sure the package data is "
             f"installed (pip install misleep).")
-    return joblib.load(path)
+    with _numpy_pickle_compat(joblib):
+        return joblib.load(path)
 
 
 def model_combo(site="F", use_emg=False, use_acc=False):

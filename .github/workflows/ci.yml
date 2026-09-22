@@ -64,3 +64,21 @@ jobs:
         run: |
           python -c "import misleep; print(misleep.__version__)"
           python -c "import misleep.analysis.transformer" || true
+
+  numpy1-model-compat:
+    name: Auto-staging model (NumPy 1.x)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install with NumPy 1.x
+        run: |
+          python -m pip install --upgrade pip
+          pip install "numpy<2"
+          pip install -e ".[analysis,dev]"
+      - name: Verify bundled model loading and prediction
+        run: |
+          pytest tests/test_analysis.py::test_benchmark_model_loads_through_numpy1_compat \
+            tests/test_analysis.py::test_auto_stage_gbm -q

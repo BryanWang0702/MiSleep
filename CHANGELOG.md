@@ -5,6 +5,18 @@ All notable changes to MiSleep are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.3] — 2026-09-22
+
+### Fixed
+
+- **Auto-staging model compatibility**: benchmark models serialized with
+  NumPy 2.x now load under NumPy 1.x as well. This fixes
+  `No module named 'numpy._core'` for users installing MiSleep into an
+  environment with an older supported NumPy release.
+- **Hourly State Spectral export**: columns stay aligned to `ZT0`, `ZT1`,
+  ... from the selected start time. Hours in which a state is absent remain
+  empty instead of shifting later spectra into earlier columns.
+
 ## [0.3.2] — 2026-08-24
 
 ### Fixed
