@@ -136,7 +136,7 @@ class SpecWindow(QMainWindow, Ui_spec_window):
             data_path = fd[:-4]
             fd = data_path + "_data.csv"
             _df = pd.DataFrame(
-                data=np.array([[f"{value:.2f}" for value in self.spectrum[1]], self.spectrum[0]]).T,
+                data=np.array([self.spectrum[1], self.spectrum[0]]).T,
                 columns=["frequency", "power"])
             _df.to_csv(fd, index=False)
         except OSError:
@@ -166,7 +166,7 @@ class SpecWindow(QMainWindow, Ui_spec_window):
             _df = pd.DataFrame(
                 self.spectrogram[2].T,
                 index=[f"{value:.2f}" for value in self.spectrogram[1]],
-                columns=[f"{value:.2f}" for value in self.spectrogram[0]])
+                columns=self.spectrogram[0])
             _df.to_csv(fd, index=True)
         except OSError:
             QMessageBox.about(

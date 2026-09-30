@@ -218,19 +218,17 @@ def cal_draw_spectrum(data, sf, nperseg, freq_band=None, relative=None, nfft=Non
     from matplotlib.figure import Figure
     from scipy.ndimage import gaussian_filter1d
     from scipy.signal import welch
+    from misleep.preprocessing.spectral import _select_frequency_band
 
     if freq_band is None:
         freq_band = [0.5, 30]
     F, P = welch(data, sf, nperseg=nperseg, nfft=nfft, scaling="density")
 
-    F = np.array([round(each, 2) for each in F])
     if gaussian_sigma is not None:
         P = gaussian_filter1d(P, sigma=gaussian_sigma)
 
     if freq_band is not None:
-        idx_band = np.logical_and(F >= freq_band[0], F <= freq_band[1])
-        F = F[idx_band]
-        P = P[idx_band]
+        F, P = _select_frequency_band(F, P, freq_band)
 
     if relative:
         total = sum(P)

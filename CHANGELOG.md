@@ -5,6 +5,17 @@ All notable changes to MiSleep are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.4] — 2026-09-30
+
+### Fixed
+
+- **Spectral export frequency boundaries**: retain the true FFT frequency
+  precision and interpolate power at the exact requested band endpoints.
+  Fractional sample rates no longer drop the 30 Hz endpoint because a nearby
+  FFT bin rounds to 30.01 Hz. Applies to State Spectral, spectrum and
+  spectrogram exports. CSV frequency axes retain full precision, and power
+  integration uses the actual frequency coordinates.
+
 ## [0.3.3] — 2026-09-22
 
 ### Fixed

@@ -9,6 +9,37 @@ from scipy.signal import stft, welch
 from misleep.preprocessing.filtering import signal_filter
 
 
+def _select_frequency_band(freq, power, band):
+    """Crop on the true FFT axis and interpolate exact band endpoints.
+
+    Fractional sample rates and integer FFT lengths need not place a bin
+    exactly on the requested limits. Never round bins before selecting them
+    or relabel an out-of-band bin as the boundary. Interpolate power between
+    the two surrounding bins instead, without extrapolating beyond the axis.
+    The frequency dimension is the first axis of ``power``.
+    """
+    low, high = band
+    selected = (freq >= low) & (freq <= high)
+    result_freq = freq[selected]
+    result_power = power[selected]
+    for boundary, prepend in ((low, True), (high, False)):
+        if not freq[0] <= boundary <= freq[-1]:
+            continue
+        if np.any(result_freq == boundary):
+            continue
+        right = np.searchsorted(freq, boundary)
+        left = right - 1
+        weight = (boundary - freq[left]) / (freq[right] - freq[left])
+        value = power[left] + weight * (power[right] - power[left])
+        if prepend:
+            result_freq = np.concatenate(([boundary], result_freq))
+            result_power = np.concatenate((value[np.newaxis], result_power))
+        else:
+            result_freq = np.concatenate((result_freq, [boundary]))
+            result_power = np.concatenate((result_power, value[np.newaxis]))
+    return result_freq, result_power
+
+
 def spectrum(signal, sf, band=None, relative=True, win_sec=1, nfft=None, gaussian_sigma=None):
     """Calculate the (Welch) power spectrum of a signal.
 
@@ -54,14 +85,11 @@ def spectrum(signal, sf, band=None, relative=True, win_sec=1, nfft=None, gaussia
     signal, _ = signal_filter(data=signal, sf=sf, btype="bandpass", low=band[0], high=band[1])
 
     freq, psd = welch(signal, sf, nperseg=int(sf * win_sec), nfft=nfft, scaling="density")
-    freq = np.array([round(each, 2) for each in freq])
     psd = gaussian_filter1d(psd, sigma=gaussian_sigma) if gaussian_sigma is not None else psd
 
-    idx_freq = np.logical_and(freq >= band[0], freq <= band[1])
-    freq = freq[idx_freq]
-    psd = psd[idx_freq]
+    freq, psd = _select_frequency_band(freq, psd, band)
 
-    total_power = simpson(psd, dx=freq[1] - freq[0])
+    total_power = simpson(psd, x=freq)
     if relative and total_power > 0:
         psd /= total_power
 
@@ -120,12 +148,8 @@ def spectrogram(signal, sf, band=None, step=0.2, win_sec=2, norm=False, nfft=Non
     f, t, Sxx = stft(signal, sf, nperseg=nperseg, nfft=nfft,
                      noverlap=noverlap, padded=False, boundary="zeros")
 
-    f = np.array([round(each, 2) for each in f])
-
-    idx_f = np.logical_and(f >= band[0], f <= band[1])
-    f = f[idx_f]
-    Sxx = Sxx[idx_f, :]
     Sxx = np.square(np.abs(Sxx))
+    f, Sxx = _select_frequency_band(f, Sxx, band)
 
     if norm:
         sum_power = Sxx.sum(0).reshape(1, -1)
@@ -153,14 +177,13 @@ def band_power(psd, freq, bands=None, relative=False):
     dict
         Band name -> band power.
     """
-    freq_res = freq[1] - freq[0]
     band_dict = {}
     for each in bands:
-        idx_band = np.logical_and(freq >= each[0], freq <= each[1])
-        bp = simpson(psd[idx_band], dx=freq_res)
+        band_freq, band_psd = _select_frequency_band(freq, psd, each[:2])
+        bp = simpson(band_psd, x=band_freq)
 
         if relative:
-            total = simpson(psd, dx=freq_res)
+            total = simpson(psd, x=freq)
             if total > 0:
                 bp /= total
 
